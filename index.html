@@ -7,245 +7,379 @@
     <title>PreceptorJus</title>
     <meta
       name="description"
-      content="O PreceptorJus e um assistente academico inteligente para estudantes de Direito, OAB e concursos juridicos."
+      content="PreceptorJus e uma plataforma de estudo juridico com IA para Direito, OAB e concursos."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header class="site-header">
-      <div class="header-line"></div>
-      <nav class="nav-wrap" aria-label="Navegacao principal">
-        <a class="logo" href="#inicio" aria-label="PreceptorJus inicio">
+    <div class="landing-view" data-screen="landing">
+      <header class="site-header">
+        <div class="header-line"></div>
+        <nav class="nav-wrap" aria-label="Navegacao principal">
+          <a class="logo" href="#inicio" aria-label="PreceptorJus inicio">
+            <span class="logo-mark">PJ</span>
+            <span>
+              <strong>PreceptorJus</strong>
+              <small>Curadoria juridica</small>
+            </span>
+          </a>
+
+          <div class="nav-links">
+            <a href="#como-funciona">Como funciona</a>
+            <a href="#recursos">Recursos</a>
+            <a href="#planos">Planos</a>
+          </div>
+
+          <div class="nav-actions">
+            <button class="ghost-button" type="button" data-open-app>Entrar</button>
+            <button class="primary-button" type="button" data-open-app>Comecar</button>
+          </div>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero" id="inicio">
+          <div class="hero-bg"></div>
+          <div class="hero-wrap">
+            <div class="hero-copy">
+              <p class="eyebrow"><span></span>Para estudantes de Direito brasileiros</p>
+              <h1>Estudo juridico que acompanha seu <em>raciocinio</em>.</h1>
+              <p class="hero-text">
+                Fechamentos por materia, simulados OAB, pecas praticas, flashcards e chat de apoio com foco em lei,
+                doutrina e jurisprudencia brasileira.
+              </p>
+              <div class="hero-actions">
+                <button class="primary-button large" type="button" data-open-app>Entrar na plataforma <span>→</span></button>
+                <a class="outline-button large" href="#como-funciona">Ver como funciona</a>
+              </div>
+              <div class="trust-row" aria-label="Modulos principais">
+                <span>OAB</span>
+                <span>Concursos</span>
+                <span>Graduacao</span>
+                <span>Pratica juridica</span>
+              </div>
+            </div>
+
+            <div class="product-card" aria-label="Previa da plataforma">
+              <div class="mock-window">
+                <div class="mock-top">
+                  <span></span><span></span><span></span>
+                  <strong>Civil · Responsabilidade</strong>
+                </div>
+                <div class="mock-body">
+                  <aside>
+                    <button class="active">Fechamento</button>
+                    <button>Simulado</button>
+                    <button>Chat</button>
+                    <button>Biblioteca</button>
+                  </aside>
+                  <article>
+                    <div class="generated">Gerado em 14s</div>
+                    <h2>Responsabilidade civil em cascata</h2>
+                    <p>
+                      Conduta, dano, nexo causal e culpa ou risco. O sistema organiza o raciocinio e aponta o artigo
+                      central para a revisao.
+                    </p>
+                    <div class="law-box">
+                      <strong>Art. 927, CC</strong>
+                      <span>Identifique o dever de reparar e a incidencia de responsabilidade objetiva.</span>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="como-funciona">
+          <div class="section-head centered">
+            <p class="eyebrow"><span></span>Como funciona</p>
+            <h2>Do tema ao treino de prova, sem perder o fio.</h2>
+            <p>O PreceptorJus usa o fluxo de preceptoria: tema, objetivos, secoes, resultado, revisao e pratica.</p>
+          </div>
+
+          <div class="steps-grid">
+            <article>
+              <b>01</b>
+              <h3>Digite o tema</h3>
+              <p>Informe a materia, o caso ou os objetivos que seu professor pediu.</p>
+            </article>
+            <article>
+              <b>02</b>
+              <h3>Gere o fechamento</h3>
+              <p>Receba estrutura por fundamentos, artigos, teses, excecoes e pegadinhas de prova.</p>
+            </article>
+            <article>
+              <b>03</b>
+              <h3>Pratique em seguida</h3>
+              <p>Transforme o fechamento em simulado, flashcards ou conversa com o Preceptor Chat.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="feature-section" id="recursos">
+          <div class="feature-copy">
+            <p class="eyebrow"><span></span>Recursos</p>
+            <h2>Uma area de estudo parecida com uma plataforma real.</h2>
+            <p>
+              A experiencia inclui menu lateral, tela inicial, gerador de fechamento, biblioteca, simulados e chat,
+              mas sem backend por enquanto. E um prototipo pronto para evoluir para React/Supabase depois.
+            </p>
+          </div>
+
+          <div class="feature-demo">
+            <div class="demo-toolbar">
+              <span>Constitucional · Controle de constitucionalidade</span>
+              <strong>Pronto para revisar</strong>
+            </div>
+            <div class="demo-content">
+              <h3>ADI, ADC e ADPF</h3>
+              <p>
+                Compare legitimidade, objeto, efeitos da decisao e cautelar. Foque nas diferencas que costumam derrubar
+                alternativas em questoes objetivas.
+              </p>
+              <ul>
+                <li>Legitimados universais e especiais</li>
+                <li>Efeito vinculante e eficacia contra todos</li>
+                <li>Parametro constitucional e subsidiariedade</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="pricing" id="planos">
+          <div class="section-head centered">
+            <p class="eyebrow"><span></span>Planos</p>
+            <h2>Comece gratis. Assine quando fizer sentido.</h2>
+          </div>
+          <div class="price-grid">
+            <article>
+              <h3>Essencial</h3>
+              <p>Para testar fechamentos, flashcards e simulados.</p>
+              <strong>Gratis</strong>
+              <button class="outline-button" type="button" data-open-app>Criar conta</button>
+            </article>
+            <article class="featured">
+              <span>Mais escolhido</span>
+              <h3>Preceptor</h3>
+              <p>Para OAB, faculdade e rotina intensa de revisao.</p>
+              <strong>R$ 29/mês</strong>
+              <button class="primary-button" type="button" data-open-app>Assinar agora</button>
+            </article>
+            <article>
+              <h3>Turmas</h3>
+              <p>Para grupos de estudo, mentores e cursinhos.</p>
+              <strong>Sob consulta</strong>
+              <button class="outline-button" type="button" data-open-app>Falar com equipe</button>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="app-view is-hidden" data-screen="app">
+      <aside class="app-sidebar">
+        <button class="app-logo" type="button" data-route="menu">
           <span class="logo-mark">PJ</span>
-          <span>
-            <strong>PreceptorJus</strong>
-            <small>Curadoria juridica</small>
-          </span>
-        </a>
+          <strong>PreceptorJus</strong>
+        </button>
 
-        <div class="nav-links">
-          <a href="#como-funciona">Como funciona</a>
-          <a href="#recursos">Recursos</a>
-          <a href="#depoimentos">Depoimentos</a>
-          <a href="#planos">Planos</a>
-        </div>
+        <nav class="app-nav" aria-label="Menu da plataforma">
+          <p>Estudo</p>
+          <button class="active" type="button" data-route="menu"><span>dashboard</span>Inicio</button>
+          <button type="button" data-route="study"><span>auto_awesome</span>Estudo com IA</button>
+          <p>Pratica</p>
+          <button type="button" data-route="exam"><span>assignment</span>Simulados</button>
+          <button type="button" data-route="flashcards"><span>style</span>Flashcards</button>
+          <p>Seus dados</p>
+          <button type="button" data-route="library"><span>library_books</span>Biblioteca</button>
+          <button type="button" data-route="chat"><span>chat_bubble</span>Preceptor Chat</button>
+        </nav>
 
-        <div class="nav-actions">
-          <button class="ghost-button" type="button">Entrar</button>
-          <button class="primary-button" type="button">Comecar agora</button>
-        </div>
-      </nav>
-    </header>
+        <button class="back-site" type="button" data-back-site>Voltar ao site</button>
+      </aside>
 
-    <main>
-      <section class="hero" id="inicio">
-        <div class="hero-bg"></div>
-        <div class="hero-wrap">
-          <div class="hero-copy">
-            <p class="eyebrow"><span></span>Para estudantes de Direito brasileiros</p>
-            <h1>Estudo juridico que acompanha seu <em>raciocinio</em>.</h1>
-            <p class="hero-text">
-              Resumos por materia, simulados no estilo OAB e concursos, pecas praticas guiadas e chat com base em lei,
-              doutrina e jurisprudencia. Em portugues, para a formacao juridica brasileira.
-            </p>
-            <div class="hero-actions">
-              <button class="primary-button large" type="button">Criar conta gratuita <span>→</span></button>
-              <button class="outline-button large" type="button">Ver exemplo</button>
-            </div>
-            <div class="trust-row" aria-label="Recursos principais">
-              <span>OAB</span>
-              <span>Concursos</span>
-              <span>Graduacao</span>
-              <span>Pratica juridica</span>
-            </div>
+      <main class="app-main">
+        <header class="app-topbar">
+          <div>
+            <span>Bem-vindo</span>
+            <strong>Gabriel</strong>
+          </div>
+          <button class="primary-button" type="button" data-route="study">Novo fechamento</button>
+        </header>
+
+        <section class="app-page" data-page="menu">
+          <div class="page-title">
+            <p class="eyebrow"><span></span>Painel</p>
+            <h1>Continue seu ciclo juridico.</h1>
+            <p>Escolha uma ferramenta para estudar, praticar ou revisar seus materiais salvos.</p>
           </div>
 
-          <div class="product-card" aria-label="Previa da plataforma">
-            <div class="mock-window">
-              <div class="mock-top">
-                <span></span><span></span><span></span>
-                <strong>Civil · Responsabilidade</strong>
+          <div class="primary-grid">
+            <button class="feature-card main-card" type="button" data-route="study">
+              <small>Preceptoria</small>
+              <h2>Gerar fechamento juridico</h2>
+              <p>Transforme tema, aula ou caso em uma revisao estruturada por lei, tese e prova.</p>
+              <span>Comecar agora</span>
+            </button>
+            <button class="feature-card" type="button" data-route="chat">
+              <small>Chat</small>
+              <h2>Preceptor Chat</h2>
+              <p>Tire duvidas sobre artigos, temas e casos concretos.</p>
+              <span>Abrir chat</span>
+            </button>
+          </div>
+
+          <div class="tool-grid">
+            <button type="button" data-route="exam">
+              <b>Simulados</b>
+              <span>Questoes OAB e concursos</span>
+            </button>
+            <button type="button" data-route="flashcards">
+              <b>Flashcards</b>
+              <span>Repeticao espacada</span>
+            </button>
+            <button type="button" data-route="library">
+              <b>Biblioteca</b>
+              <span>Fechamentos recentes</span>
+            </button>
+          </div>
+
+          <section class="recent-panel">
+            <div>
+              <h2>Biblioteca recente</h2>
+              <p>Seus fechamentos aparecem aqui depois de gerar conteudo.</p>
+            </div>
+            <div class="empty-state">
+              <strong>Sua biblioteca esta pronta.</strong>
+              <span>Gere um fechamento para salvar automaticamente.</span>
+            </div>
+          </section>
+        </section>
+
+        <section class="app-page is-hidden" data-page="study">
+          <div class="study-layout">
+            <form class="input-panel" id="studyForm">
+              <div class="panel-accent"></div>
+              <p class="eyebrow"><span></span>Novo fechamento academico</p>
+              <h1>Componha seu resumo como um parecer de estudo.</h1>
+              <p>Informe tema, objetivos e secoes. O prototipo gera um fechamento juridico demonstrativo.</p>
+
+              <label>
+                Tema
+                <input id="topicInput" type="text" maxlength="500" value="Responsabilidade civil objetiva" />
+              </label>
+
+              <label>
+                Objetivos <small>opcional · 1 por linha</small>
+                <textarea id="goalsInput" rows="4">Conceituar responsabilidade objetiva
+Comparar culpa e risco
+Aplicar o art. 927 do Codigo Civil</textarea>
+              </label>
+
+              <div class="section-picker" aria-label="Secoes do fechamento">
+                <span>Secoes</span>
+                <button type="button" class="selected">Conceito</button>
+                <button type="button" class="selected">Base legal</button>
+                <button type="button" class="selected">Jurisprudencia</button>
+                <button type="button">Peca pratica</button>
+                <button type="button" class="selected">Questoes</button>
               </div>
-              <div class="mock-body">
-                <aside>
-                  <button class="active">Objetivos</button>
-                  <button>Mapa mental</button>
-                  <button>Questoes</button>
-                  <button>Jurisprudencia</button>
-                </aside>
-                <article>
-                  <div class="generated">Gerado em 14s</div>
-                  <h2>Responsabilidade civil em cascata</h2>
-                  <p>
-                    1. Conduta humana voluntaria. 2. Dano juridicamente relevante. 3. Nexo causal. 4. Culpa ou risco,
-                    conforme o regime aplicavel.
-                  </p>
-                  <div class="law-box">
-                    <strong>Art. 927, CC</strong>
-                    <span>Analise o dever de reparar e a incidencia de responsabilidade objetiva.</span>
-                  </div>
-                </article>
+
+              <button class="primary-button generate-button" type="submit">Gerar fechamento</button>
+            </form>
+
+            <article class="result-panel">
+              <header>
+                <span>Resultado</span>
+                <div>
+                  <button type="button">Salvar</button>
+                  <button type="button">Copiar</button>
+                  <button type="button" data-route="exam">Gerar prova</button>
+                </div>
+              </header>
+              <div id="resultContent" class="result-content">
+                <div class="placeholder">
+                  <strong>Nenhum fechamento gerado</strong>
+                  <span>Insira um tema juridico e gere o resumo.</span>
+                </div>
               </div>
-            </div>
+            </article>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="section" id="como-funciona">
-        <div class="section-head centered">
-          <p class="eyebrow"><span></span>Como funciona</p>
-          <h2>Da materia ao treino de prova, sem perder o fio.</h2>
-          <p>O PreceptorJus organiza o conteudo juridico em ciclos curtos, objetivos e verificaveis.</p>
-        </div>
-
-        <div class="steps-grid">
-          <article>
-            <b>01</b>
-            <h3>Escolha o tema</h3>
-            <p>Selecione Constitucional, Civil, Penal, Administrativo, Trabalho, Tributario ou Processo.</p>
-          </article>
-          <article>
-            <b>02</b>
-            <h3>Receba a trilha</h3>
-            <p>O sistema transforma o assunto em objetivos, fundamentos legais, teses e pontos de prova.</p>
-          </article>
-          <article>
-            <b>03</b>
-            <h3>Treine com feedback</h3>
-            <p>Simulados, pecas e casos comentados mostram onde voce acertou e onde precisa revisar.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="feature-section" id="recursos">
-        <div class="feature-copy">
-          <p class="eyebrow"><span></span>Exemplo real da plataforma</p>
-          <h2>Resumos juridicos com lei, doutrina e aplicacao pratica.</h2>
-          <p>
-            Nao e um resumo solto. Cada resposta conecta conceito, artigo, entendimento dominante, excecoes e como o
-            tema aparece em prova ou caso concreto.
-          </p>
-        </div>
-
-        <div class="feature-demo">
-          <div class="demo-toolbar">
-            <span>Constitucional · Controle de constitucionalidade</span>
-            <strong>Pronto para revisar</strong>
+        <section class="app-page is-hidden" data-page="exam">
+          <div class="page-title compact">
+            <p class="eyebrow"><span></span>Simulados</p>
+            <h1>Treine como a banca cobra.</h1>
           </div>
-          <div class="demo-content">
-            <h3>ADI, ADC e ADPF</h3>
-            <p>
-              Compare legitimidade, objeto, efeitos da decisao e cautelar. Foque nas diferencas que costumam derrubar
-              alternativas em questoes objetivas.
-            </p>
-            <ul>
-              <li>Legitimados universais e especiais</li>
-              <li>Efeito vinculante e eficacia contra todos</li>
-              <li>Parametro constitucional e subsidiariedade</li>
-            </ul>
+          <div class="exam-card">
+            <strong>Direito Constitucional</strong>
+            <p>Sobre controle concentrado de constitucionalidade, assinale a alternativa correta.</p>
+            <button type="button" data-answer="wrong">A ADPF substitui qualquer recurso ordinario.</button>
+            <button type="button" data-answer="right">A ADPF possui carater subsidiario quando nao houver outro meio eficaz.</button>
+            <button type="button" data-answer="wrong">A ADC nao produz efeito vinculante.</button>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="section muted">
-        <div class="section-head">
-          <p class="eyebrow"><span></span>Recursos</p>
-          <h2>Um preceptor para cada etapa do estudo juridico.</h2>
-        </div>
-        <div class="resource-grid">
-          <article>
-            <h3>Fechamento de materia</h3>
-            <p>Transforme aulas extensas em objetivos de aprendizagem, fundamentos e roteiro de revisao.</p>
-          </article>
-          <article>
-            <h3>Simulados OAB</h3>
-            <p>Questoes por materia, nivel e banca, com comentario juridico e reforco dos erros.</p>
-          </article>
-          <article>
-            <h3>Pecas praticas</h3>
-            <p>Estrutura, cabimento, competencia, pedidos e checklist final para treino discursivo.</p>
-          </article>
-          <article>
-            <h3>Jurisprudencia guiada</h3>
-            <p>Entenda teses relevantes sem decorar ementas desconectadas do problema juridico.</p>
-          </article>
-        </div>
-      </section>
+        <section class="app-page is-hidden" data-page="library">
+          <div class="page-title compact">
+            <p class="eyebrow"><span></span>Biblioteca</p>
+            <h1>Seus materiais juridicos.</h1>
+          </div>
+          <div class="library-grid" id="libraryGrid">
+            <article>
+              <span>Civil</span>
+              <h2>Responsabilidade civil objetiva</h2>
+              <p>Conceito, base legal, risco e questoes comentadas.</p>
+            </article>
+            <article>
+              <span>Constitucional</span>
+              <h2>Controle de constitucionalidade</h2>
+              <p>ADI, ADC, ADPF e efeitos das decisoes.</p>
+            </article>
+          </div>
+        </section>
 
-      <section class="testimonials" id="depoimentos">
-        <div class="section-head centered dark">
-          <p class="eyebrow"><span></span>Depoimentos</p>
-          <h2>Feito para estudar Direito com menos ruído.</h2>
-        </div>
-        <div class="testimonial-grid">
-          <article>
-            <p>
-              “Eu usaria para revisar antes das aulas e fechar os pontos principais de cada materia sem virar a noite
-              procurando resumo.”
-            </p>
-            <strong>Aluna de Direito</strong>
-          </article>
-          <article>
-            <p>
-              “A parte de simulados ajuda porque nao mostra so a alternativa certa. Ela explica o raciocinio juridico.”
-            </p>
-            <strong>Candidato OAB</strong>
-          </article>
-          <article>
-            <p>
-              “Gostei da separacao por artigo, tese e aplicacao. Parece mais proximo do jeito que a banca cobra.”
-            </p>
-            <strong>Concurseira juridica</strong>
-          </article>
-        </div>
-      </section>
+        <section class="app-page is-hidden" data-page="chat">
+          <div class="page-title compact">
+            <p class="eyebrow"><span></span>Preceptor Chat</p>
+            <h1>Pergunte sobre o tema.</h1>
+          </div>
+          <div class="chat-panel">
+            <div class="message assistant">Posso explicar o artigo, comparar institutos ou montar uma tese de prova.</div>
+            <div class="message user">Qual a diferenca entre responsabilidade subjetiva e objetiva?</div>
+            <div class="message assistant">Na subjetiva, a culpa precisa ser demonstrada. Na objetiva, basta dano, nexo e enquadramento legal ou atividade de risco.</div>
+            <form id="chatForm">
+              <input type="text" placeholder="Digite sua duvida juridica..." />
+              <button class="primary-button" type="submit">Enviar</button>
+            </form>
+          </div>
+        </section>
 
-      <section class="pricing" id="planos">
-        <div class="section-head centered">
-          <p class="eyebrow"><span></span>Planos</p>
-          <h2>Comece gratis. Assine quando fizer sentido.</h2>
-        </div>
-        <div class="price-grid">
-          <article>
-            <h3>Essencial</h3>
-            <p>Para organizar materias e testar a plataforma.</p>
-            <strong>Gratis</strong>
-            <button class="outline-button" type="button">Criar conta</button>
-          </article>
-          <article class="featured">
-            <span>Mais escolhido</span>
-            <h3>Preceptor</h3>
-            <p>Para OAB, faculdade e rotina intensa de revisao.</p>
-            <strong>R$ 29/mês</strong>
-            <button class="primary-button" type="button">Assinar agora</button>
-          </article>
-          <article>
-            <h3>Turmas</h3>
-            <p>Para grupos de estudo, mentores e cursinhos.</p>
-            <strong>Sob consulta</strong>
-            <button class="outline-button" type="button">Falar com equipe</button>
-          </article>
-        </div>
-      </section>
-
-      <section class="final-cta">
-        <p class="eyebrow"><span></span>PreceptorJus</p>
-        <h2>Comece seu proximo ciclo de estudos juridicos hoje.</h2>
-        <p>Criar conta e gratuito. Assine quando perceber que economiza horas por semana.</p>
-        <button class="primary-button inverse" type="button">Criar conta gratuita <span>→</span></button>
-      </section>
-    </main>
-
-    <footer class="footer">
-      <strong>PreceptorJus</strong>
-      <span>Assistente academico para estudantes de Direito.</span>
-    </footer>
+        <section class="app-page is-hidden" data-page="flashcards">
+          <div class="page-title compact">
+            <p class="eyebrow"><span></span>Flashcards</p>
+            <h1>Revise por repeticao.</h1>
+          </div>
+          <div class="flashcard">
+            <span>Direito Civil</span>
+            <h2>Quais sao os elementos da responsabilidade civil?</h2>
+            <p>Conduta, dano, nexo causal e culpa, salvo hipoteses de responsabilidade objetiva.</p>
+          </div>
+        </section>
+      </main>
+    </div>
 
     <script src="script.js"></script>
   </body>
