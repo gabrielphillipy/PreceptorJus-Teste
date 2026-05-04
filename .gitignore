@@ -2,3 +2,5 @@ preceptor-reference.*
 preceptorjus-screenshot.png
 .env
 .env.*
+
+.vercel
