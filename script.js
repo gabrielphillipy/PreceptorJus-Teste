@@ -82,7 +82,7 @@ function renderError(container, error) {
   container.innerHTML = `
     <h2>Configuracao necessaria</h2>
     <p>${error.message}</p>
-    <p>Na Vercel, configure a variavel <strong>OPENAI_API_KEY</strong>. Opcionalmente, configure <strong>OPENAI_MODEL</strong>.</p>
+    <p>Na Vercel, configure a variavel <strong>GOOGLE_API_KEY</strong>. Opcionalmente, configure <strong>GEMINI_MODEL</strong>.</p>
   `;
 }
 

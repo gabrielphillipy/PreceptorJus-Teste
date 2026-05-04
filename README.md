@@ -15,15 +15,15 @@ vercel dev
 Crie um arquivo `.env` local com:
 
 ```bash
-OPENAI_API_KEY=sua_chave_aqui
-OPENAI_MODEL=gpt-5.5
+GOOGLE_API_KEY=sua_chave_aqui
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
 ## Deploy na Vercel
 
 Configure as variaveis de ambiente no painel da Vercel:
 
-- `OPENAI_API_KEY`: chave da OpenAI usada pela rota `/api/generate`
-- `OPENAI_MODEL`: opcional, por padrao usa `gpt-5.5`
+- `GOOGLE_API_KEY`: chave do Gemini usada pela rota `/api/generate`
+- `GEMINI_MODEL`: opcional, por padrao usa `gemini-2.5-flash`
 
 A chave fica somente no servidor e nao e enviada para o navegador.

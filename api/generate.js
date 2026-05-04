@@ -28,11 +28,9 @@ function readBody(req) {
 }
 
 function extractText(response) {
-  if (typeof response.output_text === "string") return response.output_text;
-
-  return (response.output || [])
-    .flatMap((item) => item.content || [])
-    .map((content) => content.text || "")
+  return (response.candidates || [])
+    .flatMap((candidate) => candidate.content?.parts || [])
+    .map((part) => part.text || "")
     .join("\n")
     .trim();
 }
@@ -124,36 +122,44 @@ module.exports = async function handler(req, res) {
     return send(res, 405, { error: "Use POST." });
   }
 
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env.GOOGLE_API_KEY) {
     return send(res, 500, {
-      error: "OPENAI_API_KEY nao configurada no ambiente da Vercel.",
+      error: "GOOGLE_API_KEY nao configurada no ambiente da Vercel.",
     });
   }
 
   try {
     const body = await readBody(req);
     const prompt = buildPrompt(body);
+    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
-    const response = await fetch("https://api.openai.com/v1/responses", {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "x-goog-api-key": process.env.GOOGLE_API_KEY,
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || "gpt-5.5",
-        instructions: prompt.instructions,
-        input: prompt.input,
-        max_output_tokens: prompt.max_output_tokens,
-        reasoning: { effort: "low" },
-        text: { verbosity: "medium" },
+        systemInstruction: {
+          parts: [{ text: prompt.instructions }],
+        },
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: prompt.input }],
+          },
+        ],
+        generationConfig: {
+          maxOutputTokens: prompt.max_output_tokens,
+          temperature: 0.45,
+        },
       }),
     });
 
     const data = await response.json();
     if (!response.ok) {
       return send(res, response.status, {
-        error: data.error?.message || "Erro ao chamar a OpenAI.",
+        error: data.error?.message || "Erro ao chamar o Gemini.",
       });
     }
 
