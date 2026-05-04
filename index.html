@@ -323,6 +323,10 @@ Aplicar o art. 927 do Codigo Civil</textarea>
             <p class="eyebrow"><span></span>Simulados</p>
             <h1>Treine como a banca cobra.</h1>
           </div>
+          <form class="quick-generate" id="examForm">
+            <input type="text" value="Controle concentrado de constitucionalidade" aria-label="Tema do simulado" />
+            <button class="primary-button" type="submit">Gerar simulado com IA</button>
+          </form>
           <div class="exam-card">
             <strong>Direito Constitucional</strong>
             <p>Sobre controle concentrado de constitucionalidade, assinale a alternativa correta.</p>
@@ -330,6 +334,10 @@ Aplicar o art. 927 do Codigo Civil</textarea>
             <button type="button" data-answer="right">A ADPF possui carater subsidiario quando nao houver outro meio eficaz.</button>
             <button type="button" data-answer="wrong">A ADC nao produz efeito vinculante.</button>
           </div>
+          <article class="result-panel compact-panel">
+            <header><span>Simulado gerado</span></header>
+            <div class="result-content" id="examResult"></div>
+          </article>
         </section>
 
         <section class="app-page is-hidden" data-page="library">
@@ -372,11 +380,19 @@ Aplicar o art. 927 do Codigo Civil</textarea>
             <p class="eyebrow"><span></span>Flashcards</p>
             <h1>Revise por repeticao.</h1>
           </div>
+          <form class="quick-generate" id="flashcardForm">
+            <input type="text" value="Responsabilidade civil objetiva" aria-label="Tema dos flashcards" />
+            <button class="primary-button" type="submit">Gerar flashcards com IA</button>
+          </form>
           <div class="flashcard">
             <span>Direito Civil</span>
             <h2>Quais sao os elementos da responsabilidade civil?</h2>
             <p>Conduta, dano, nexo causal e culpa, salvo hipoteses de responsabilidade objetiva.</p>
           </div>
+          <article class="result-panel compact-panel">
+            <header><span>Flashcards gerados</span></header>
+            <div class="result-content" id="flashcardResult"></div>
+          </article>
         </section>
       </main>
     </div>

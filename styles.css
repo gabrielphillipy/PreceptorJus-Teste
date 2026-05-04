@@ -865,7 +865,8 @@ h3 {
 
 .input-panel input,
 .input-panel textarea,
-.chat-panel input {
+.chat-panel input,
+.quick-generate input {
   width: 100%;
   border: 2px solid var(--line);
   border-radius: 12px;
@@ -889,7 +890,8 @@ h3 {
 
 .input-panel input:focus,
 .input-panel textarea:focus,
-.chat-panel input:focus {
+.chat-panel input:focus,
+.quick-generate input:focus {
   border-color: var(--primary);
   background: white;
   box-shadow: 0 0 0 4px rgba(0, 109, 91, 0.08);
@@ -995,6 +997,25 @@ h3 {
 .flashcard {
   max-width: 820px;
   padding: 28px;
+}
+
+.quick-generate {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  max-width: 820px;
+  margin-bottom: 14px;
+}
+
+.quick-generate input {
+  min-height: 46px;
+  padding: 0 14px;
+}
+
+.compact-panel {
+  max-width: 820px;
+  min-height: 0;
+  margin-top: 14px;
 }
 
 .exam-card button {
@@ -1156,7 +1177,8 @@ h3 {
   .tool-grid,
   .library-grid,
   .recent-panel,
-  .chat-panel form {
+  .chat-panel form,
+  .quick-generate {
     grid-template-columns: 1fr;
   }
 
