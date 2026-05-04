@@ -158,7 +158,7 @@ document.querySelector("#examForm").addEventListener("submit", async (event) => 
 
   try {
     const text = await callAI({ mode: "exam", topic });
-    examResult.innerHTML = markdownToHtml(text);
+    examResult.innerHTML = renderInteractiveExam(text);
   } catch (error) {
     renderError(examResult, error);
   } finally {
@@ -183,14 +183,90 @@ document.querySelector("#flashcardForm").addEventListener("submit", async (event
   }
 });
 
-document.querySelectorAll("[data-answer]").forEach((button) => {
-  button.addEventListener("click", () => {
-    document.querySelectorAll("[data-answer]").forEach((answer) => {
-      answer.classList.toggle("correct", answer.dataset.answer === "right");
-      answer.classList.toggle("wrong", answer === button && button.dataset.answer !== "right");
-    });
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-answer]");
+  if (!button) return;
+
+  const container = button.closest(".exam-card");
+  if (!container) return;
+
+  container.querySelectorAll("[data-answer]").forEach((answer) => {
+    answer.classList.toggle("correct", answer.dataset.answer === "right");
+    answer.classList.toggle("wrong", answer === button && button.dataset.answer !== "right");
   });
+
+  const feedback = container.querySelector(".exam-feedback");
+  if (feedback) feedback.classList.remove("is-hidden");
 });
+
+function renderInteractiveExam(markdown) {
+  const lines = markdown.split('\n').filter(l => l.trim() !== '');
+  let title = '';
+  let question = '';
+  let options = [];
+  let answer = '';
+  let comment = '';
+
+  let currentSection = 'title';
+
+  for (const line of lines) {
+    if (line.startsWith('## ')) {
+      title = line.replace('## ', '').trim();
+      currentSection = 'question';
+      continue;
+    }
+    
+    if (/^[A-E][\)\.]/.test(line)) {
+      currentSection = 'options';
+      options.push(line.trim());
+      continue;
+    }
+    
+    if (/\*?Gabarito:\*?/i.test(line)) {
+      currentSection = 'answer';
+      answer = line.replace(/.*?\*?Gabarito:\*?\s*/i, '').trim();
+      continue;
+    }
+    
+    if (/\*?Coment[aá]rio:\*?/i.test(line)) {
+      currentSection = 'comment';
+      comment = line.replace(/.*?\*?Coment[aá]rio:\*?\s*/i, '').trim();
+      continue;
+    }
+    
+    if (currentSection === 'question') {
+      question += (question ? '<br><br>' : '') + line;
+    } else if (currentSection === 'comment') {
+      comment += (comment ? ' ' : '') + line;
+    }
+  }
+
+  if (options.length === 0 || !answer) {
+    return markdownToHtml(markdown);
+  }
+
+  const correctLetterMatch = answer.match(/^[A-E]/i);
+  const correctLetter = correctLetterMatch ? correctLetterMatch[0].toUpperCase() : '';
+
+  let html = \`<div class="exam-card" style="max-width: 100%; border: none; padding: 0;">\`;
+  if (title) html += \`<strong>\${title}</strong>\`;
+  if (question) html += \`<p>\${question.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>')}</p>\`;
+  
+  options.forEach(opt => {
+    const isCorrect = opt.toUpperCase().startsWith(correctLetter);
+    html += \`<button type="button" data-answer="\${isCorrect ? 'right' : 'wrong'}">\${opt.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>')}</button>\`;
+  });
+  
+  if (answer || comment) {
+    html += \`<div class="exam-feedback is-hidden" style="margin-top: 20px; padding: 15px; background: #f0f7f5; border-radius: 8px; border-left: 4px solid var(--primary);">
+      <strong style="color: var(--primary-dark); display: block; margin-bottom: 8px;">Gabarito: \${answer}</strong>
+      <p style="margin: 0; font-size: 0.9rem;">\${comment.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>')}</p>
+    </div>\`;
+  }
+  
+  html += \`</div>\`;
+  return html;
+}
 
 document.querySelector("#chatForm").addEventListener("submit", async (event) => {
   event.preventDefault();
