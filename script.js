@@ -248,23 +248,23 @@ function renderInteractiveExam(markdown) {
   const correctLetterMatch = answer.match(/^[A-E]/i);
   const correctLetter = correctLetterMatch ? correctLetterMatch[0].toUpperCase() : '';
 
-  let html = \`<div class="exam-card" style="max-width: 100%; border: none; padding: 0;">\`;
-  if (title) html += \`<strong>\${title}</strong>\`;
-  if (question) html += \`<p>\${question.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>')}</p>\`;
+  let html = `<div class="exam-card" style="max-width: 100%; border: none; padding: 0;">`;
+  if (title) html += `<strong>${title}</strong>`;
+  if (question) html += `<p>${question.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
   
   options.forEach(opt => {
     const isCorrect = opt.toUpperCase().startsWith(correctLetter);
-    html += \`<button type="button" data-answer="\${isCorrect ? 'right' : 'wrong'}">\${opt.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>')}</button>\`;
+    html += `<button type="button" data-answer="${isCorrect ? 'right' : 'wrong'}">${opt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</button>`;
   });
   
   if (answer || comment) {
-    html += \`<div class="exam-feedback is-hidden" style="margin-top: 20px; padding: 15px; background: #f0f7f5; border-radius: 8px; border-left: 4px solid var(--primary);">
-      <strong style="color: var(--primary-dark); display: block; margin-bottom: 8px;">Gabarito: \${answer}</strong>
-      <p style="margin: 0; font-size: 0.9rem;">\${comment.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>')}</p>
-    </div>\`;
+    html += `<div class="exam-feedback is-hidden" style="margin-top: 20px; padding: 15px; background: #f0f7f5; border-radius: 8px; border-left: 4px solid var(--primary);">
+      <strong style="color: var(--primary-dark); display: block; margin-bottom: 8px;">Gabarito: ${answer}</strong>
+      <p style="margin: 0; font-size: 0.9rem;">${comment.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>
+    </div>`;
   }
   
-  html += \`</div>\`;
+  html += `</div>`;
   return html;
 }
 
