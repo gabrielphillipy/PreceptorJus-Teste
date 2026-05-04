@@ -60,7 +60,7 @@ function buildPrompt(body) {
         `Pergunta do estudante: ${String(body.message || "").slice(0, 1500)}`,
         body.context ? `Contexto da tela: ${String(body.context).slice(0, 2500)}` : "",
       ].filter(Boolean).join("\n\n"),
-      max_output_tokens: 900,
+      max_output_tokens: 2000,
     };
   }
 
@@ -79,7 +79,7 @@ function buildPrompt(body) {
         "**Gabarito:** letra",
         "**Comentario:** explique a resposta e a pegadinha.",
       ].join("\n"),
-      max_output_tokens: 1100,
+      max_output_tokens: 3000,
     };
   }
 
@@ -94,7 +94,7 @@ function buildPrompt(body) {
         "### Verso",
         "resposta objetiva, com fundamento juridico quando couber.",
       ].join("\n"),
-      max_output_tokens: 1200,
+      max_output_tokens: 3000,
     };
   }
 
@@ -113,7 +113,7 @@ function buildPrompt(body) {
       "## Checklist de revisao",
       "Inclua alertas de prova e diferencie regra, excecao e controversia quando existir.",
     ].filter(Boolean).join("\n\n"),
-    max_output_tokens: 1800,
+    max_output_tokens: 6000,
   };
 }
 
