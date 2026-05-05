@@ -52,11 +52,16 @@ function markdownToHtml(markdown) {
 }
 
 async function callAI(payload) {
+  const controller = new AbortController();
+  const timeoutMs = 55_000;
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   const response = await fetch("/api/generate", {
     method: "POST",
+    signal: controller.signal,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
-  });
+  }).finally(() => clearTimeout(timeoutId));
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -190,82 +195,161 @@ document.addEventListener("click", (event) => {
   const container = button.closest(".exam-card");
   if (!container) return;
 
+  const isCorrect = button.dataset.answer === "right";
+  const selectedLetter = button.dataset.letter || "";
+  const justification = button.dataset.justification || "";
+
   container.querySelectorAll("[data-answer]").forEach((answer) => {
-    answer.classList.toggle("correct", answer.dataset.answer === "right");
-    answer.classList.toggle("wrong", answer === button && button.dataset.answer !== "right");
+    answer.classList.toggle("is-selected", answer === button);
+    answer.classList.toggle("correct", answer === button && isCorrect);
+    answer.classList.toggle("wrong", answer === button && !isCorrect);
   });
 
   const feedback = container.querySelector(".exam-feedback");
-  if (feedback) feedback.classList.remove("is-hidden");
+  if (feedback) {
+    feedback.classList.remove("is-hidden");
+    feedback.dataset.state = isCorrect ? "correct" : "wrong";
+    const stateLabel = isCorrect ? "Certo" : "Errado";
+    const title = feedback.querySelector("[data-feedback-title]");
+    const body = feedback.querySelector("[data-feedback-body]");
+    if (title) title.textContent = `${stateLabel} — alternativa ${selectedLetter}`;
+    if (body) body.innerHTML = justification ? markdownToHtml(justification) : "<p>Sem justificativa.</p>";
+  }
 });
 
 function renderInteractiveExam(markdown) {
-  const lines = markdown.split('\n').filter(l => l.trim() !== '');
-  let title = '';
-  let question = '';
-  let options = [];
-  let answer = '';
-  let comment = '';
-
-  let currentSection = 'title';
-
-  for (const line of lines) {
-    if (line.startsWith('## ')) {
-      title = line.replace('## ', '').trim();
-      currentSection = 'question';
-      continue;
-    }
-    
-    if (/^[A-E][\)\.]/.test(line)) {
-      currentSection = 'options';
-      options.push(line.trim());
-      continue;
-    }
-    
-    if (/\*?Gabarito:\*?/i.test(line)) {
-      currentSection = 'answer';
-      answer = line.replace(/.*?\*?Gabarito:\*?\s*/i, '').trim();
-      continue;
-    }
-    
-    if (/\*?Coment[aá]rio:\*?/i.test(line)) {
-      currentSection = 'comment';
-      comment = line.replace(/.*?\*?Coment[aá]rio:\*?\s*/i, '').trim();
-      continue;
-    }
-    
-    if (currentSection === 'question') {
-      question += (question ? '<br><br>' : '') + line;
-    } else if (currentSection === 'comment') {
-      comment += (comment ? ' ' : '') + line;
-    }
-  }
-
-  if (options.length === 0 || !answer) {
+  const parsed = parseExamMarkdown(markdown);
+  if (!parsed || !parsed.options.length || !parsed.correctLetter) {
     return markdownToHtml(markdown);
   }
 
-  const correctLetterMatch = answer.match(/^[A-E]/i);
-  const correctLetter = correctLetterMatch ? correctLetterMatch[0].toUpperCase() : '';
+  let html = `<div class="exam-card">`;
+  if (parsed.title) html += `<strong>${escapeHtml(parsed.title)}</strong>`;
+  if (parsed.questionHtml) html += `<p>${parsed.questionHtml}</p>`;
 
-  let html = `<div class="exam-card" style="max-width: 100%; border: none; padding: 0;">`;
-  if (title) html += `<strong>${title}</strong>`;
-  if (question) html += `<p>${question.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
-  
-  options.forEach(opt => {
-    const isCorrect = opt.toUpperCase().startsWith(correctLetter);
-    html += `<button type="button" data-answer="${isCorrect ? 'right' : 'wrong'}">${opt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</button>`;
+  parsed.options.forEach((opt) => {
+    const isCorrect = opt.letter === parsed.correctLetter;
+    html += `<button type="button" data-answer="${isCorrect ? "right" : "wrong"}" data-letter="${opt.letter}" data-justification="${escapeHtmlAttr(opt.justification || "")}">${opt.html}</button>`;
   });
-  
-  if (answer || comment) {
-    html += `<div class="exam-feedback is-hidden" style="margin-top: 20px; padding: 15px; background: #f0f7f5; border-radius: 8px; border-left: 4px solid var(--primary);">
-      <strong style="color: var(--primary-dark); display: block; margin-bottom: 8px;">Gabarito: ${answer}</strong>
-      <p style="margin: 0; font-size: 0.9rem;">${comment.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>
-    </div>`;
+
+  html += `<div class="exam-feedback is-hidden">
+    <strong data-feedback-title></strong>
+    <div class="exam-feedback-meta">
+      <span><b>Gabarito:</b> ${escapeHtml(parsed.correctLetter)}</span>
+    </div>
+    <div data-feedback-body></div>
+  </div>`;
+
+  if (parsed.comment) {
+    html += `<div class="exam-comment">${markdownToHtml(parsed.comment)}</div>`;
   }
-  
+
   html += `</div>`;
   return html;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function escapeHtmlAttr(value) {
+  return escapeHtml(value).replaceAll("\n", "&#10;");
+}
+
+function parseExamMarkdown(markdown) {
+  const lines = String(markdown || "")
+    .split("\n")
+    .map((l) => l.trimEnd());
+
+  let title = "";
+  const questionLines = [];
+  const options = [];
+  let correctLetter = "";
+  const commentLines = [];
+  const justifications = new Map();
+
+  let mode = "start";
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+
+    if (line.startsWith("## ")) {
+      title = line.slice(3).trim();
+      mode = "question";
+      continue;
+    }
+
+    const optMatch = line.match(/^([A-E])[\)\.\:]\s*(.+)$/i);
+    if (optMatch) {
+      mode = "options";
+      const letter = optMatch[1].toUpperCase();
+      const text = optMatch[2].trim();
+      options.push({
+        letter,
+        raw: `${letter}) ${text}`,
+        html: `${escapeHtml(letter)}) ${escapeHtml(text).replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")}`,
+        justification: "",
+      });
+      continue;
+    }
+
+    const gabaritoMatch = line.match(/^\*?\*?Gabarito:\*?\*?\s*([A-E])/i);
+    if (gabaritoMatch) {
+      correctLetter = gabaritoMatch[1].toUpperCase();
+      mode = "after_answer";
+      continue;
+    }
+
+    if (/^\*?\*?Coment[aá]rio:\*?\*?/i.test(line)) {
+      mode = "comment";
+      const rest = line.replace(/^\*?\*?Coment[aá]rio:\*?\*?\s*/i, "").trim();
+      if (rest) commentLines.push(rest);
+      continue;
+    }
+
+    if (/^\*?\*?Justificativas:\*?\*?/i.test(line)) {
+      mode = "justifications";
+      continue;
+    }
+
+    if (mode === "justifications") {
+      const jMatch = line.match(/^-?\s*([A-E])\s*[:\-]\s*(.+)$/i);
+      if (jMatch) {
+        justifications.set(jMatch[1].toUpperCase(), jMatch[2].trim());
+      }
+      continue;
+    }
+
+    if (mode === "question") {
+      questionLines.push(line);
+      continue;
+    }
+
+    if (mode === "comment") {
+      commentLines.push(line);
+      continue;
+    }
+  }
+
+  options.forEach((opt) => {
+    const j = justifications.get(opt.letter);
+    if (j) opt.justification = j;
+  });
+
+  return {
+    title,
+    questionHtml: escapeHtml(questionLines.join("\n"))
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replaceAll("\n", "<br><br>"),
+    options,
+    correctLetter,
+    comment: commentLines.join("\n").trim(),
+  };
 }
 
 document.querySelector("#chatForm").addEventListener("submit", async (event) => {
