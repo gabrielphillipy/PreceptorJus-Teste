@@ -66,7 +66,18 @@ async function callGeminiWithRetries({ models, prompt, apiKey }) {
         const data = rawText ? JSON.parse(rawText) : {};
 
         if (response.ok) {
-          return { data, modelUsed: model };
+          const text = extractText(data);
+          if (text) {
+            return { data, modelUsed: model };
+          }
+
+          lastStatus = 502;
+          lastErrorMessage = "Resposta vazia do Gemini.";
+          if (attempt < MAX_ATTEMPTS) {
+            const waitMs = BASE_BACKOFF_MS * Math.pow(2, attempt - 1);
+            await sleep(waitMs);
+            continue;
+          }
         }
 
         lastStatus = response.status;
@@ -269,7 +280,14 @@ module.exports = async function handler(req, res) {
       return send(res, result.status || 503, { error: result.error });
     }
 
-    return send(res, 200, { text: extractText(result.data), id: result.data.id, model: result.modelUsed });
+    const text = extractText(result.data);
+    if (!text) {
+      return send(res, 502, {
+        error: "Resposta vazia do provedor de IA. Tente novamente.",
+      });
+    }
+
+    return send(res, 200, { text, id: result.data.id, model: result.modelUsed });
   } catch (error) {
     if (error && typeof error === "object" && error.name === "AbortError") {
       return send(res, 504, {
