@@ -56,12 +56,22 @@ async function callAI(payload) {
   const timeoutMs = 55_000;
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  const response = await fetch("/api/generate", {
-    method: "POST",
-    signal: controller.signal,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  }).finally(() => clearTimeout(timeoutId));
+  let response;
+  try {
+    response = await fetch("/api/generate", {
+      method: "POST",
+      signal: controller.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    if (error && typeof error === "object" && error.name === "AbortError") {
+      throw new Error("A geracao demorou demais e expirou. Tente novamente com menos secoes.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
