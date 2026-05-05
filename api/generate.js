@@ -4,6 +4,122 @@ const JSON_HEADERS = {
 };
 
 const DEFAULT_TIMEOUT_MS = 55_000;
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+const MAX_ATTEMPTS = 4;
+const BASE_BACKOFF_MS = 900;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getModelCandidates() {
+  const primary = (process.env.GEMINI_MODEL || "gemini-2.5-flash").trim();
+  const fallbacksRaw = String(process.env.GEMINI_MODEL_FALLBACKS || "")
+    .split(",")
+    .map((m) => m.trim())
+    .filter(Boolean);
+
+  const models = [primary, ...fallbacksRaw, "gemini-2.5-flash", "gemini-2.5-pro"];
+  return [...new Set(models)].filter(Boolean);
+}
+
+async function callGeminiWithRetries({ models, prompt, apiKey }) {
+  let lastErrorMessage = "";
+  let lastStatus = 500;
+
+  for (let modelIndex = 0; modelIndex < models.length; modelIndex += 1) {
+    const model = models[modelIndex];
+
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+          {
+            method: "POST",
+            signal: controller.signal,
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": apiKey,
+            },
+            body: JSON.stringify({
+              systemInstruction: {
+                parts: [{ text: prompt.instructions }],
+              },
+              contents: [
+                {
+                  role: "user",
+                  parts: [{ text: prompt.input }],
+                },
+              ],
+              generationConfig: {
+                maxOutputTokens: Math.min(Number(prompt.max_output_tokens) || 2048, 4096),
+                temperature: 0.45,
+              },
+            }),
+          },
+        );
+
+        const rawText = await response.text();
+        const data = rawText ? JSON.parse(rawText) : {};
+
+        if (response.ok) {
+          return { data, modelUsed: model };
+        }
+
+        lastStatus = response.status;
+        lastErrorMessage = data.error?.message || "Erro ao chamar o Gemini.";
+
+        const isRetryable = RETRYABLE_STATUS.has(response.status);
+        if (!isRetryable) {
+          break;
+        }
+
+        const shouldTryNextModel =
+          response.status === 429 ||
+          (response.status === 503 && /high demand|overloaded|temporar/i.test(lastErrorMessage));
+
+        if (shouldTryNextModel && modelIndex < models.length - 1) {
+          break;
+        }
+
+        if (attempt < MAX_ATTEMPTS) {
+          const waitMs = BASE_BACKOFF_MS * Math.pow(2, attempt - 1);
+          await sleep(waitMs);
+          continue;
+        }
+      } catch (error) {
+        if (error && typeof error === "object" && error.name === "AbortError") {
+          lastStatus = 504;
+          lastErrorMessage = "Timeout ao aguardar o Gemini.";
+        } else if (error instanceof Error) {
+          lastStatus = 500;
+          lastErrorMessage = error.message || "Erro inesperado ao chamar o Gemini.";
+        } else {
+          lastStatus = 500;
+          lastErrorMessage = "Erro inesperado ao chamar o Gemini.";
+        }
+
+        if (attempt < MAX_ATTEMPTS) {
+          const waitMs = BASE_BACKOFF_MS * Math.pow(2, attempt - 1);
+          await sleep(waitMs);
+          continue;
+        }
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+  }
+
+  const message =
+    lastStatus === 503 && /high demand|overloaded|temporar/i.test(lastErrorMessage)
+      ? "Modelo em alta demanda no momento. Tente novamente em alguns segundos."
+      : lastErrorMessage || "Erro ao chamar o Gemini.";
+
+  return { error: message, status: lastStatus };
+}
 
 function send(res, status, payload) {
   res.statusCode = status;
@@ -141,47 +257,19 @@ module.exports = async function handler(req, res) {
   try {
     const body = await readBody(req);
     const prompt = buildPrompt(body);
-    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+    const models = getModelCandidates();
+    const result = await callGeminiWithRetries({
+      models,
+      prompt,
+      apiKey: process.env.GOOGLE_API_KEY,
+    });
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-      {
-        method: "POST",
-        signal: controller.signal,
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": process.env.GOOGLE_API_KEY,
-        },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: prompt.instructions }],
-          },
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: prompt.input }],
-            },
-          ],
-          generationConfig: {
-            maxOutputTokens: Math.min(Number(prompt.max_output_tokens) || 2048, 4096),
-            temperature: 0.45,
-          },
-        }),
-      },
-    ).finally(() => clearTimeout(timeoutId));
-
-    const rawText = await response.text();
-    const data = rawText ? JSON.parse(rawText) : {};
-    if (!response.ok) {
-      return send(res, response.status, {
-        error: data.error?.message || "Erro ao chamar o Gemini.",
-      });
+    if (result && result.error) {
+      return send(res, result.status || 503, { error: result.error });
     }
 
-    return send(res, 200, { text: extractText(data), id: data.id });
+    return send(res, 200, { text: extractText(result.data), id: result.data.id, model: result.modelUsed });
   } catch (error) {
     if (error && typeof error === "object" && error.name === "AbortError") {
       return send(res, 504, {
