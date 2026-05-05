@@ -1,7 +1,6 @@
 const landing = document.querySelector('[data-screen="landing"]');
 const app = document.querySelector('[data-screen="app"]');
 const pages = [...document.querySelectorAll("[data-page]")];
-const routeButtons = [...document.querySelectorAll("[data-route]")];
 const navButtons = [...document.querySelectorAll(".app-nav button")];
 const resultContent = document.querySelector("#resultContent");
 const libraryGrid = document.querySelector("#libraryGrid");
@@ -94,25 +93,50 @@ function setLoading(button, loading, label = "Gerando...") {
 }
 
 function renderError(container, error) {
+  const message = error?.message ? String(error.message) : "Erro ao gerar.";
+  const lower = message.toLowerCase();
+
+  let title = "Nao foi possivel gerar agora";
+  let hint = "Tente novamente em instantes.";
+
+  if (lower.includes("alta demanda") || lower.includes("high demand") || lower.includes("overload")) {
+    title = "IA em alta demanda";
+    hint = "Isso costuma ser temporario. Aguarde alguns segundos e tente novamente.";
+  } else if (lower.includes("expirou") || lower.includes("timeout") || lower.includes("demorou demais")) {
+    title = "Tempo limite excedido";
+    hint = "Tente reduzir secoes/objetivos ou gerar novamente.";
+  } else if (lower.includes("google_api_key")) {
+    title = "Chave de IA nao configurada";
+    hint = "Configure a variavel GOOGLE_API_KEY no ambiente da Vercel.";
+  }
+
   container.innerHTML = `
-    <h2>Configuracao necessaria</h2>
-    <p>${error.message}</p>
-    <p>Na Vercel, configure a variavel <strong>GOOGLE_API_KEY</strong>. Opcionalmente, configure <strong>GEMINI_MODEL</strong>.</p>
+    <h2>${title}</h2>
+    <p>${escapeHtml(message)}</p>
+    <p>${escapeHtml(hint)}</p>
   `;
 }
 
-document.querySelectorAll("[data-open-app]").forEach((button) => {
-  button.addEventListener("click", () => openApp("menu"));
-});
+document.addEventListener("click", (event) => {
+  const openAppButton = event.target.closest("[data-open-app]");
+  if (openAppButton) {
+    openApp("menu");
+    return;
+  }
 
-document.querySelector("[data-back-site]").addEventListener("click", backToSite);
+  const backButton = event.target.closest("[data-back-site]");
+  if (backButton) {
+    backToSite();
+    return;
+  }
 
-routeButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    if (button.closest(".landing-view")) return;
-    showRoute(button.dataset.route);
+  const routeButton = event.target.closest("[data-route]");
+  if (routeButton) {
+    if (routeButton.closest(".landing-view")) return;
+    showRoute(routeButton.dataset.route);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  });
+    return;
+  }
 });
 
 document.querySelectorAll('a[href^="#"]').forEach((link) => {
