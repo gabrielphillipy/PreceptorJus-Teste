@@ -231,7 +231,14 @@ document.addEventListener("click", (event) => {
 
   const isCorrect = button.dataset.answer === "right";
   const selectedLetter = button.dataset.letter || "";
-  const justification = button.dataset.justification || "";
+  let justification = button.dataset.justification || "";
+  if (justification) {
+    try {
+      justification = decodeURIComponent(justification);
+    } catch {
+      // ignore
+    }
+  }
 
   container.querySelectorAll("[data-answer]").forEach((answer) => {
     answer.classList.toggle("is-selected", answer === button);
@@ -263,7 +270,8 @@ function renderInteractiveExam(markdown) {
 
   parsed.options.forEach((opt) => {
     const isCorrect = opt.letter === parsed.correctLetter;
-    html += `<button type="button" data-answer="${isCorrect ? "right" : "wrong"}" data-letter="${opt.letter}" data-justification="${escapeHtmlAttr(opt.justification || "")}">${opt.html}</button>`;
+    const encodedJustification = encodeURIComponent(opt.justification || "");
+    html += `<button type="button" data-answer="${isCorrect ? "right" : "wrong"}" data-letter="${opt.letter}" data-justification="${escapeHtmlAttr(encodedJustification)}">${opt.html}</button>`;
   });
 
   html += `<div class="exam-feedback is-hidden">
@@ -318,7 +326,7 @@ function parseExamMarkdown(markdown) {
       continue;
     }
 
-    const optMatch = line.match(/^([A-E])[\)\.\:]\s*(.+)$/i);
+    const optMatch = line.match(/^[\-\*\u2022]?\s*([A-E])\s*[\)\.\:\-]\s*(.+)$/i);
     if (optMatch) {
       mode = "options";
       const letter = optMatch[1].toUpperCase();
@@ -332,9 +340,10 @@ function parseExamMarkdown(markdown) {
       continue;
     }
 
-    const gabaritoMatch = line.match(/^\*?\*?Gabarito:\*?\*?\s*([A-E])/i);
+    const gabaritoLine = line.replace(/\*/g, "");
+    const gabaritoMatch = gabaritoLine.match(/gabarito\s*:\s*([A-E])/i);
     if (gabaritoMatch) {
-      correctLetter = gabaritoMatch[1].toUpperCase();
+      correctLetter = String(gabaritoMatch[1]).toUpperCase();
       mode = "after_answer";
       continue;
     }
@@ -346,13 +355,14 @@ function parseExamMarkdown(markdown) {
       continue;
     }
 
-    if (/^\*?\*?Justificativas:\*?\*?/i.test(line)) {
+    if (/^\*+?\s*Justificativas:\s*\*+?/i.test(line) || /^Justificativas:/i.test(line)) {
       mode = "justifications";
       continue;
     }
 
     if (mode === "justifications") {
-      const jMatch = line.match(/^-?\s*([A-E])\s*[:\-]\s*(.+)$/i);
+      const normalized = line.replace(/^\-\s*/, "");
+      const jMatch = normalized.match(/^([A-E])\s*[:\-]\s*(.+)$/i);
       if (jMatch) {
         justifications.set(jMatch[1].toUpperCase(), jMatch[2].trim());
       }
