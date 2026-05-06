@@ -19,7 +19,7 @@ function getModelCandidates() {
     .map((m) => m.trim())
     .filter(Boolean);
 
-  const models = [primary, ...fallbacksRaw, "gemini-2.5-flash", "gemini-2.0-flash"];
+  const models = [primary, ...fallbacksRaw, "gemini-2.5-flash", "gemini-2.5-flash-lite"];
   return [...new Set(models)].filter(Boolean);
 }
 
