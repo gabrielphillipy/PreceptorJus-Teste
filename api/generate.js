@@ -216,12 +216,12 @@ function buildPrompt(body) {
         "C) alternativa",
         "D) alternativa",
         "**Gabarito:** letra",
-        "**Comentario:** explique por que a correta e correta e por que as demais estao erradas (sem inventar jurisprudencia).",
         "**Justificativas:**",
         "- A: justificativa curta (1-3 frases)",
         "- B: justificativa curta (1-3 frases)",
         "- C: justificativa curta (1-3 frases)",
         "- D: justificativa curta (1-3 frases)",
+        "Nao revele gabarito ou justificativas no enunciado. Eles devem aparecer apenas nos campos Gabarito e Justificativas.",
       ].join("\n"),
       max_output_tokens: 1600,
     };

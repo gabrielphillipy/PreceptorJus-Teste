@@ -309,7 +309,7 @@ function renderInteractiveExam(markdown) {
 
   parsed.options.forEach((opt) => {
     const isCorrect = opt.letter === parsed.correctLetter;
-    const encodedJustification = encodeURIComponent(opt.justification || "");
+    const encodedJustification = encodeURIComponent(opt.justification || parsed.comment || "");
     html += `<button type="button" data-answer="${isCorrect ? "right" : "wrong"}" data-letter="${opt.letter}" data-justification="${escapeHtmlAttr(encodedJustification)}">${opt.html}</button>`;
   });
 
@@ -320,10 +320,6 @@ function renderInteractiveExam(markdown) {
     </div>
     <div data-feedback-body></div>
   </div>`;
-
-  if (parsed.comment) {
-    html += `<div class="exam-comment">${markdownToHtml(parsed.comment)}</div>`;
-  }
 
   html += `</div>`;
   return html;

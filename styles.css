@@ -1281,6 +1281,7 @@ h3 {
 }
 
 .exam-comment {
+  display: none;
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px dashed rgba(0, 109, 91, 0.18);
