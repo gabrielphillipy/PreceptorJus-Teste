@@ -145,6 +145,9 @@ function renderError(container, error) {
   } else if (lower.includes("expirou") || lower.includes("timeout") || lower.includes("demorou demais")) {
     title = "Tempo limite excedido";
     hint = "Tente reduzir secoes/objetivos ou gerar novamente.";
+  } else if (lower.includes("tema") && lower.includes("obrigatorio")) {
+    title = "Tema obrigatorio";
+    hint = "Preencha o campo Tema antes de gerar o estudo juridico.";
   } else if (lower.includes("google_api_key")) {
     title = "Chave de IA nao configurada";
     hint = "Configure a variavel GOOGLE_API_KEY no ambiente da Vercel.";
@@ -254,6 +257,12 @@ document.querySelectorAll(".section-picker button").forEach((button) => {
   button.addEventListener("click", () => {
     button.classList.toggle("selected");
   });
+});
+
+document.querySelector("#topicInput").addEventListener("input", (event) => {
+  if (event.currentTarget.value.trim()) {
+    event.currentTarget.classList.remove("field-error");
+  }
 });
 
 document.querySelector("#studyForm").addEventListener("submit", async (event) => {

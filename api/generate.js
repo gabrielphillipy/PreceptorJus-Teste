@@ -182,7 +182,7 @@ function extractText(response) {
 }
 
 function buildPrompt(body) {
-  const topic = String(body.topic || "tema juridico").slice(0, 500);
+  const topic = String(body.topic || "").trim().slice(0, 500);
   const goals = Array.isArray(body.goals)
     ? body.goals.map((goal) => String(goal).trim()).filter(Boolean).slice(0, 12)
     : [];
@@ -269,20 +269,46 @@ function buildPrompt(body) {
   };
 }
 
+function validateRequest(body) {
+  const mode = String(body.mode || "fechamento");
+  const topic = String(body.topic || "").trim();
+
+  if (["fechamento", "exam", "flashcards"].includes(mode) && !topic) {
+    return {
+      status: 400,
+      error: "O campo Tema e obrigatorio. Preencha o tema antes de gerar.",
+    };
+  }
+
+  if (mode === "chat" && !String(body.message || "").trim()) {
+    return {
+      status: 400,
+      error: "Digite uma pergunta antes de enviar ao chat.",
+    };
+  }
+
+  return null;
+}
+
 async function handler(req, res) {
 
   if (req.method !== "POST") {
     return send(res, 405, { error: "Use POST." });
   }
 
-  if (!process.env.GOOGLE_API_KEY) {
-    return send(res, 500, {
-      error: "GOOGLE_API_KEY nao configurada no ambiente da Vercel.",
-    });
-  }
-
   try {
     const body = await readBody(req);
+    const validationError = validateRequest(body);
+    if (validationError) {
+      return send(res, validationError.status, { error: validationError.error });
+    }
+
+    if (!process.env.GOOGLE_API_KEY) {
+      return send(res, 500, {
+        error: "GOOGLE_API_KEY nao configurada no ambiente da Vercel.",
+      });
+    }
+
     const prompt = buildPrompt(body);
 
     const models = getModelCandidates();
