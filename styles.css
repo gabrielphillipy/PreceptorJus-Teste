@@ -1088,6 +1088,13 @@ h3 {
   box-shadow: 0 0 0 4px rgba(0, 109, 91, 0.08);
 }
 
+.input-panel input.field-error {
+  border-color: rgba(143, 46, 59, 0.72);
+  background: #fff8f8;
+  box-shadow: 0 0 0 4px rgba(143, 46, 59, 0.1);
+  animation: fieldShake 260ms ease;
+}
+
 .section-picker {
   display: flex;
   flex-wrap: wrap;
@@ -1208,6 +1215,10 @@ h3 {
     radial-gradient(circle at top left, rgba(143, 46, 59, 0.08), transparent 16rem),
     rgba(255, 255, 255, 0.74);
   animation: pageIn 260ms ease both;
+}
+
+.validation-error {
+  min-height: 220px;
 }
 
 .error-state h2 {
@@ -1735,6 +1746,19 @@ h3 {
   50% {
     border-color: rgba(185, 144, 77, 0.52);
     transform: translateY(-2px);
+  }
+}
+
+@keyframes fieldShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
   }
 }
 

@@ -160,6 +160,15 @@ function renderError(container, error) {
   `;
 }
 
+function renderValidationError(container, title, message) {
+  container.innerHTML = `
+    <div class="error-state validation-error">
+      <h2>${escapeHtml(title)}</h2>
+      <p>${escapeHtml(message)}</p>
+    </div>
+  `;
+}
+
 function renderGenerationLoader(kind = "study") {
   const labels = {
     study: {
@@ -252,7 +261,15 @@ document.querySelector("#studyForm").addEventListener("submit", async (event) =>
 
   const button = event.currentTarget.querySelector(".generate-button");
   lastSubmitter = button;
-  const topic = document.querySelector("#topicInput").value.trim() || "Tema juridico";
+  const topicInput = document.querySelector("#topicInput");
+  const topic = topicInput.value.trim();
+  if (!topic) {
+    topicInput.classList.add("field-error");
+    topicInput.focus();
+    renderValidationError(resultContent, "Tema obrigatorio", "Preencha o campo Tema antes de gerar o estudo juridico.");
+    return;
+  }
+  topicInput.classList.remove("field-error");
   const goals = document
     .querySelector("#goalsInput")
     .value.split("\n")
