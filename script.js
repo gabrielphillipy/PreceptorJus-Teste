@@ -156,6 +156,50 @@ function renderError(container, error) {
   `;
 }
 
+function renderGenerationLoader(kind = "study") {
+  const labels = {
+    study: {
+      title: "Redigindo nota juridica",
+      subtitle: "A IA esta organizando fatos, fundamentos e pontos de prova.",
+      steps: ["Delimitando o tema", "Buscando estrutura legal", "Montando tese", "Preparando revisao"],
+    },
+    exam: {
+      title: "Montando simulado",
+      subtitle: "Criando enunciado, alternativas e gabarito oculto.",
+      steps: ["Criando caso", "Gerando alternativas", "Validando gabarito", "Separando feedback"],
+    },
+    flashcards: {
+      title: "Criando flashcards",
+      subtitle: "Transformando o tema em perguntas objetivas de revisao.",
+      steps: ["Extraindo conceitos", "Criando frentes", "Redigindo versos", "Ordenando revisao"],
+    },
+  };
+
+  const config = labels[kind] || labels.study;
+  return `
+    <div class="generation-loader">
+      <div class="loader-orbit" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <div class="loader-copy">
+        <strong>${config.title}</strong>
+        <p>${config.subtitle}</p>
+      </div>
+      <div class="loader-steps">
+        ${config.steps.map((step, index) => `<span style="--i:${index}">${step}</span>`).join("")}
+      </div>
+      <div class="skeleton-stack" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  `;
+}
+
 document.addEventListener("click", (event) => {
   const openAppButton = event.target.closest("[data-open-app]");
   if (openAppButton) {
@@ -206,7 +250,7 @@ document.querySelector("#studyForm").addEventListener("submit", async (event) =>
     .filter(Boolean);
   const sections = [...document.querySelectorAll(".section-picker button.selected")].map((item) => item.textContent);
 
-  resultContent.innerHTML = '<div class="placeholder"><strong>Gerando fechamento com IA...</strong><span>Isso pode levar alguns segundos.</span></div>';
+  resultContent.innerHTML = renderGenerationLoader("study");
   setLoading(button, true);
 
   try {
@@ -231,7 +275,7 @@ document.querySelector("#examForm").addEventListener("submit", async (event) => 
   event.preventDefault();
   const button = event.currentTarget.querySelector("button");
   const topic = event.currentTarget.querySelector("input").value.trim();
-  examResult.innerHTML = '<p><strong>Gerando simulado...</strong></p>';
+  examResult.innerHTML = renderGenerationLoader("exam");
   setLoading(button, true);
 
   try {
@@ -248,7 +292,7 @@ document.querySelector("#flashcardForm").addEventListener("submit", async (event
   event.preventDefault();
   const button = event.currentTarget.querySelector("button");
   const topic = event.currentTarget.querySelector("input").value.trim();
-  flashcardResult.innerHTML = '<p><strong>Gerando flashcards...</strong></p>';
+  flashcardResult.innerHTML = renderGenerationLoader("flashcards");
   setLoading(button, true);
 
   try {
