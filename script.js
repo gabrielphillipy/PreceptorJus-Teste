@@ -485,7 +485,7 @@ function parseExamMarkdown(markdown) {
     }
 
     const optMatch = line.match(/^[\-\*\u2022]?\s*([A-E])\s*[\)\.\:\-]\s*(.+)$/i);
-    if (optMatch) {
+    if (optMatch && mode !== "justifications" && mode !== "comment" && !correctLetter) {
       mode = "options";
       const letter = optMatch[1].toUpperCase();
       const text = optMatch[2].trim();
@@ -519,8 +519,8 @@ function parseExamMarkdown(markdown) {
     }
 
     if (mode === "justifications") {
-      const normalized = line.replace(/^\-\s*/, "");
-      const jMatch = normalized.match(/^([A-E])\s*[:\-]\s*(.+)$/i);
+      const normalized = line.replace(/^\-\s*/, "").replace(/\*/g, "");
+      const jMatch = normalized.match(/^(?:Justificativa\s*)?([A-E])\s*[:\-]\s*(.+)$/i);
       if (jMatch) {
         justifications.set(jMatch[1].toUpperCase(), jMatch[2].trim());
       }
@@ -528,7 +528,7 @@ function parseExamMarkdown(markdown) {
     }
 
     if (mode === "question") {
-      questionLines.push(line);
+      questionLines.push(line.replace(/^Enunciado\s*:\s*/i, ""));
       continue;
     }
 
