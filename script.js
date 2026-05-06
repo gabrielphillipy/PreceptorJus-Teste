@@ -6,6 +6,7 @@ const resultContent = document.querySelector("#resultContent");
 const libraryGrid = document.querySelector("#libraryGrid");
 const examResult = document.querySelector("#examResult");
 const flashcardResult = document.querySelector("#flashcardResult");
+let lastSubmitter = null;
 
 initMotion();
 
@@ -140,7 +141,7 @@ function renderError(container, error) {
 
   if (lower.includes("alta demanda") || lower.includes("high demand") || lower.includes("overload")) {
     title = "IA em alta demanda";
-    hint = "Isso costuma ser temporario. Aguarde alguns segundos e tente novamente.";
+    hint = "Isso costuma ser temporario. Aguarde alguns segundos e tente novamente. Se persistir, reduza o tema ou tente gerar em partes.";
   } else if (lower.includes("expirou") || lower.includes("timeout") || lower.includes("demorou demais")) {
     title = "Tempo limite excedido";
     hint = "Tente reduzir secoes/objetivos ou gerar novamente.";
@@ -150,9 +151,12 @@ function renderError(container, error) {
   }
 
   container.innerHTML = `
-    <h2>${title}</h2>
-    <p>${escapeHtml(message)}</p>
-    <p>${escapeHtml(hint)}</p>
+    <div class="error-state">
+      <h2>${title}</h2>
+      <p>${escapeHtml(message)}</p>
+      <p>${escapeHtml(hint)}</p>
+      <button class="outline-button" type="button" data-retry-last> tentar novamente </button>
+    </div>
   `;
 }
 
@@ -220,6 +224,11 @@ document.addEventListener("click", (event) => {
     window.scrollTo({ top: 0, behavior: "smooth" });
     return;
   }
+
+  const retryButton = event.target.closest("[data-retry-last]");
+  if (retryButton && lastSubmitter) {
+    lastSubmitter.click();
+  }
 });
 
 document.querySelectorAll('a[href^="#"]').forEach((link) => {
@@ -242,6 +251,7 @@ document.querySelector("#studyForm").addEventListener("submit", async (event) =>
   event.preventDefault();
 
   const button = event.currentTarget.querySelector(".generate-button");
+  lastSubmitter = button;
   const topic = document.querySelector("#topicInput").value.trim() || "Tema juridico";
   const goals = document
     .querySelector("#goalsInput")
@@ -274,6 +284,7 @@ document.querySelector("#studyForm").addEventListener("submit", async (event) =>
 document.querySelector("#examForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = event.currentTarget.querySelector("button");
+  lastSubmitter = button;
   const topic = event.currentTarget.querySelector("input").value.trim();
   examResult.innerHTML = renderGenerationLoader("exam");
   setLoading(button, true);
@@ -291,6 +302,7 @@ document.querySelector("#examForm").addEventListener("submit", async (event) => 
 document.querySelector("#flashcardForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = event.currentTarget.querySelector("button");
+  lastSubmitter = button;
   const topic = event.currentTarget.querySelector("input").value.trim();
   flashcardResult.innerHTML = renderGenerationLoader("flashcards");
   setLoading(button, true);

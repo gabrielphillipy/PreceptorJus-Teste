@@ -1196,6 +1196,34 @@ h3 {
   isolation: isolate;
 }
 
+.error-state {
+  display: grid;
+  align-content: center;
+  gap: 12px;
+  min-height: 360px;
+  padding: 26px;
+  border: 1px solid rgba(143, 46, 59, 0.16);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at top left, rgba(143, 46, 59, 0.08), transparent 16rem),
+    rgba(255, 255, 255, 0.74);
+  animation: pageIn 260ms ease both;
+}
+
+.error-state h2 {
+  margin: 0;
+}
+
+.error-state p {
+  margin: 0;
+}
+
+.error-state button {
+  justify-self: start;
+  margin-top: 4px;
+  text-transform: capitalize;
+}
+
 .generation-loader::before {
   content: "";
   position: absolute;

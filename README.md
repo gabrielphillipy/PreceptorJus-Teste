@@ -16,7 +16,7 @@ Crie um arquivo `.env` local com:
 
 ```bash
 GOOGLE_API_KEY=sua_chave_aqui
-GEMINI_MODEL=gemini-2.5-flash-lite
+GEMINI_MODEL=gemini-2.0-flash-lite
 ```
 
 ## Deploy na Vercel
@@ -24,6 +24,6 @@ GEMINI_MODEL=gemini-2.5-flash-lite
 Configure as variaveis de ambiente no painel da Vercel:
 
 - `GOOGLE_API_KEY`: chave do Gemini usada pela rota `/api/generate`
-- `GEMINI_MODEL`: opcional, por padrao usa `gemini-2.5-flash-lite`
+- `GEMINI_MODEL`: opcional, por padrao usa `gemini-2.0-flash-lite`
 
 A chave fica somente no servidor e nao e enviada para o navegador.

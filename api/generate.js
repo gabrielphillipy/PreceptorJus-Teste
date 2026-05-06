@@ -5,7 +5,7 @@ const JSON_HEADERS = {
 
 const DEFAULT_TIMEOUT_MS = 50_000;
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
-const MAX_ATTEMPTS = 1;
+const MAX_ATTEMPTS = 2;
 const BASE_BACKOFF_MS = 900;
 
 function sleep(ms) {
@@ -13,13 +13,19 @@ function sleep(ms) {
 }
 
 function getModelCandidates() {
-  const primary = (process.env.GEMINI_MODEL || "gemini-2.5-flash-lite").trim();
+  const primary = (process.env.GEMINI_MODEL || "gemini-2.0-flash-lite").trim();
   const fallbacksRaw = String(process.env.GEMINI_MODEL_FALLBACKS || "")
     .split(",")
     .map((m) => m.trim())
     .filter(Boolean);
 
-  const models = [primary, ...fallbacksRaw, "gemini-2.5-flash-lite", "gemini-2.5-flash"];
+  const models = [
+    primary,
+    ...fallbacksRaw,
+    "gemini-2.0-flash-lite",
+    "gemini-2.5-flash-lite",
+    "gemini-2.5-flash",
+  ];
   return [...new Set(models)].filter(Boolean);
 }
 
@@ -100,6 +106,7 @@ async function callGeminiWithRetries({ models, prompt, apiKey }) {
           (response.status === 503 && /high demand|overloaded|temporar/i.test(lastErrorMessage));
 
         if (shouldTryNextModel && modelIndex < models.length - 1) {
+          await sleep(BASE_BACKOFF_MS);
           break;
         }
 
@@ -133,7 +140,7 @@ async function callGeminiWithRetries({ models, prompt, apiKey }) {
 
   const message =
     lastStatus === 503 && /high demand|overloaded|temporar/i.test(lastErrorMessage)
-      ? "Modelo em alta demanda no momento. Tente novamente em alguns segundos."
+      ? "A IA esta em alta demanda no momento. Tentamos modelos alternativos, mas o provedor ainda recusou a geracao. Tente novamente em alguns segundos."
       : lastErrorMessage || "Erro ao chamar o Gemini.";
 
   return { error: message, status: lastStatus };
