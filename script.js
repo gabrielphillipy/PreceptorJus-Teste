@@ -7,6 +7,7 @@ const libraryGrid = document.querySelector("#libraryGrid");
 const examResult = document.querySelector("#examResult");
 const flashcardResult = document.querySelector("#flashcardResult");
 let lastSubmitter = null;
+let lastStudy = null;
 
 initMotion();
 
@@ -240,6 +241,12 @@ document.addEventListener("click", (event) => {
   const retryButton = event.target.closest("[data-retry-last]");
   if (retryButton && lastSubmitter) {
     lastSubmitter.click();
+    return;
+  }
+
+  const generateExamFromStudyButton = event.target.closest("[data-generate-exam-from-study]");
+  if (generateExamFromStudyButton) {
+    generateExamFromStudy(generateExamFromStudyButton);
   }
 });
 
@@ -291,6 +298,7 @@ document.querySelector("#studyForm").addEventListener("submit", async (event) =>
 
   try {
     const text = await callAI({ mode: "fechamento", topic, goals, sections });
+    lastStudy = { topic, text };
     resultContent.innerHTML = markdownToHtml(text);
 
     const card = document.createElement("article");
@@ -306,6 +314,39 @@ document.querySelector("#studyForm").addEventListener("submit", async (event) =>
     setLoading(button, false);
   }
 });
+
+async function generateExamFromStudy(button) {
+  if (!lastStudy?.topic) {
+    renderValidationError(resultContent, "Gere um estudo primeiro", "Crie um estudo juridico antes de gerar a prova da materia.");
+    return;
+  }
+
+  showRoute("exam");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+
+  const examForm = document.querySelector("#examForm");
+  const input = examForm.querySelector("input");
+  const submit = examForm.querySelector("button");
+  input.value = lastStudy.topic;
+  examResult.innerHTML = renderGenerationLoader("exam");
+  setLoading(button, true, "Gerando prova...");
+  setLoading(submit, true);
+  lastSubmitter = button;
+
+  try {
+    const text = await callAI({
+      mode: "exam",
+      topic: lastStudy.topic,
+      context: lastStudy.text,
+    });
+    examResult.innerHTML = renderInteractiveExam(text);
+  } catch (error) {
+    renderError(examResult, error);
+  } finally {
+    setLoading(button, false);
+    setLoading(submit, false);
+  }
+}
 
 document.querySelector("#examForm").addEventListener("submit", async (event) => {
   event.preventDefault();

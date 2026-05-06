@@ -189,6 +189,7 @@ function buildPrompt(body) {
   const selectedSections = Array.isArray(body.sections)
     ? body.sections.map((section) => String(section).trim()).filter(Boolean)
     : [];
+  const context = String(body.context || "").trim().slice(0, 6000);
 
   const base = [
     "Voce e o PreceptorJus, um assistente academico juridico para estudantes brasileiros de Direito, OAB e concursos.",
@@ -215,6 +216,7 @@ function buildPrompt(body) {
       instructions: base,
       input: [
         `Crie um mini-simulado sobre: ${topic}.`,
+        context ? `Use este estudo gerado como base principal para a prova:\n${context}` : "",
         "Formato obrigatorio em Markdown:",
         "## Mini-simulado",
         "1. Enunciado da questao",
@@ -229,7 +231,7 @@ function buildPrompt(body) {
         "- C: justificativa curta (1-3 frases)",
         "- D: justificativa curta (1-3 frases)",
         "Nao revele gabarito ou justificativas no enunciado. Eles devem aparecer apenas nos campos Gabarito e Justificativas.",
-      ].join("\n"),
+      ].filter(Boolean).join("\n"),
       max_output_tokens: 1600,
     };
   }
