@@ -3,9 +3,9 @@ const JSON_HEADERS = {
   "Cache-Control": "no-store",
 };
 
-const DEFAULT_TIMEOUT_MS = 55_000;
+const DEFAULT_TIMEOUT_MS = 24_000;
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
-const MAX_ATTEMPTS = 4;
+const MAX_ATTEMPTS = 1;
 const BASE_BACKOFF_MS = 900;
 
 function sleep(ms) {
@@ -19,7 +19,7 @@ function getModelCandidates() {
     .map((m) => m.trim())
     .filter(Boolean);
 
-  const models = [primary, ...fallbacksRaw, "gemini-2.5-flash", "gemini-2.5-pro"];
+  const models = [primary, ...fallbacksRaw, "gemini-2.5-flash", "gemini-2.0-flash"];
   return [...new Set(models)].filter(Boolean);
 }
 
@@ -55,8 +55,11 @@ async function callGeminiWithRetries({ models, prompt, apiKey }) {
                 },
               ],
               generationConfig: {
-                maxOutputTokens: Math.min(Number(prompt.max_output_tokens) || 2048, 4096),
+                maxOutputTokens: Math.min(Number(prompt.max_output_tokens) || 2048, 8192),
                 temperature: 0.45,
+                thinkingConfig: {
+                  thinkingBudget: 0,
+                },
               },
             }),
           },
@@ -67,12 +70,16 @@ async function callGeminiWithRetries({ models, prompt, apiKey }) {
 
         if (response.ok) {
           const text = extractText(data);
-          if (text) {
+          const finishReason = data.candidates?.[0]?.finishReason;
+          if (text && finishReason !== "MAX_TOKENS") {
             return { data, modelUsed: model };
           }
 
           lastStatus = 502;
-          lastErrorMessage = "Resposta vazia do Gemini.";
+          lastErrorMessage =
+            finishReason === "MAX_TOKENS"
+              ? "A resposta ficou longa demais e foi interrompida. Tente reduzir secoes ou usar um tema mais especifico."
+              : "Resposta vazia do Gemini.";
           if (attempt < MAX_ATTEMPTS) {
             const waitMs = BASE_BACKOFF_MS * Math.pow(2, attempt - 1);
             await sleep(waitMs);
@@ -192,7 +199,7 @@ function buildPrompt(body) {
         `Pergunta do estudante: ${String(body.message || "").slice(0, 1500)}`,
         body.context ? `Contexto da tela: ${String(body.context).slice(0, 2500)}` : "",
       ].filter(Boolean).join("\n\n"),
-      max_output_tokens: 1800,
+      max_output_tokens: 1200,
     };
   }
 
@@ -216,7 +223,7 @@ function buildPrompt(body) {
         "- C: justificativa curta (1-3 frases)",
         "- D: justificativa curta (1-3 frases)",
       ].join("\n"),
-      max_output_tokens: 2200,
+      max_output_tokens: 1600,
     };
   }
 
@@ -231,7 +238,7 @@ function buildPrompt(body) {
         "### Verso",
         "resposta objetiva, com fundamento juridico quando couber.",
       ].join("\n"),
-      max_output_tokens: 2200,
+      max_output_tokens: 1600,
     };
   }
 
@@ -248,13 +255,15 @@ function buildPrompt(body) {
       "## Doutrina e jurisprudencia em linguagem segura",
       "## Como cai em prova",
       "## Checklist de revisao",
+      "Seja completo, mas evite introducao longa. Va direto ao conteudo.",
       "Inclua alertas de prova e diferencie regra, excecao e controversia quando existir.",
     ].filter(Boolean).join("\n\n"),
-    max_output_tokens: 3600,
+    max_output_tokens: 3000,
   };
 }
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
+
   if (req.method !== "POST") {
     return send(res, 405, { error: "Use POST." });
   }
@@ -299,4 +308,9 @@ module.exports = async function handler(req, res) {
       error: error instanceof Error ? error.message : "Erro inesperado.",
     });
   }
+}
+
+module.exports = handler;
+module.exports.config = {
+  maxDuration: 60,
 };
