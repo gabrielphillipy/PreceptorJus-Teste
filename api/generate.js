@@ -3,7 +3,7 @@ const JSON_HEADERS = {
   "Cache-Control": "no-store",
 };
 
-const DEFAULT_TIMEOUT_MS = 24_000;
+const DEFAULT_TIMEOUT_MS = 50_000;
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 const MAX_ATTEMPTS = 1;
 const BASE_BACKOFF_MS = 900;
@@ -13,13 +13,13 @@ function sleep(ms) {
 }
 
 function getModelCandidates() {
-  const primary = (process.env.GEMINI_MODEL || "gemini-2.5-flash").trim();
+  const primary = (process.env.GEMINI_MODEL || "gemini-2.5-flash-lite").trim();
   const fallbacksRaw = String(process.env.GEMINI_MODEL_FALLBACKS || "")
     .split(",")
     .map((m) => m.trim())
     .filter(Boolean);
 
-  const models = [primary, ...fallbacksRaw, "gemini-2.5-flash", "gemini-2.5-flash-lite"];
+  const models = [primary, ...fallbacksRaw, "gemini-2.5-flash-lite", "gemini-2.5-flash"];
   return [...new Set(models)].filter(Boolean);
 }
 
@@ -252,13 +252,13 @@ function buildPrompt(body) {
       "## Visao geral",
       "## Fundamentos legais",
       "## Requisitos e excecoes",
-      "## Doutrina e jurisprudencia em linguagem segura",
       "## Como cai em prova",
       "## Checklist de revisao",
+      "Limite cada secao a poucos paragrafos objetivos.",
       "Seja completo, mas evite introducao longa. Va direto ao conteudo.",
       "Inclua alertas de prova e diferencie regra, excecao e controversia quando existir.",
     ].filter(Boolean).join("\n\n"),
-    max_output_tokens: 3000,
+    max_output_tokens: 2200,
   };
 }
 
