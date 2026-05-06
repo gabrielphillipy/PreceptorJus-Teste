@@ -7,6 +7,8 @@ const libraryGrid = document.querySelector("#libraryGrid");
 const examResult = document.querySelector("#examResult");
 const flashcardResult = document.querySelector("#flashcardResult");
 
+initMotion();
+
 function openApp(route = "menu") {
   landing.classList.add("is-hidden");
   app.classList.remove("is-hidden");
@@ -22,7 +24,13 @@ function backToSite() {
 
 function showRoute(route) {
   pages.forEach((page) => {
-    page.classList.toggle("is-hidden", page.dataset.page !== route);
+    const isActive = page.dataset.page === route;
+    page.classList.toggle("is-hidden", !isActive);
+    if (isActive) {
+      page.style.animation = "none";
+      page.offsetHeight;
+      page.style.animation = "";
+    }
   });
 
   navButtons.forEach((button) => {
@@ -86,10 +94,41 @@ function setLoading(button, loading, label = "Gerando...") {
     button.dataset.originalText = button.textContent;
     button.textContent = label;
     button.disabled = true;
+    button.classList.add("is-loading");
   } else {
     button.textContent = button.dataset.originalText || button.textContent;
     button.disabled = false;
+    button.classList.remove("is-loading");
   }
+}
+
+function initMotion() {
+  const animatedItems = [
+    ...document.querySelectorAll(".section-head, .steps-grid article, .feature-copy, .feature-demo, .price-grid article, .feature-card, .tool-grid button, .recent-panel, .input-panel, .result-panel, .exam-card, .library-grid article, .chat-panel, .flashcard"),
+  ];
+
+  animatedItems.forEach((item) => item.classList.add("reveal-on-scroll"));
+
+  if (!("IntersectionObserver" in window)) {
+    animatedItems.forEach((item) => item.classList.add("is-visible"));
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-visible");
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0.14, rootMargin: "0px 0px -40px 0px" },
+  );
+
+  animatedItems.forEach((item, index) => {
+    item.style.transitionDelay = `${Math.min(index % 6, 5) * 55}ms`;
+    observer.observe(item);
+  });
 }
 
 function renderError(container, error) {

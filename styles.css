@@ -59,6 +59,7 @@ a {
   border-bottom: 1px solid rgba(226, 232, 240, 0.85);
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(16px);
+  animation: headerDrop 560ms ease both;
 }
 
 .header-line {
@@ -95,6 +96,11 @@ a {
 
 .logo {
   gap: 12px;
+  transition: transform 220ms ease;
+}
+
+.logo:hover {
+  transform: translateY(-1px);
 }
 
 .logo-mark {
@@ -109,6 +115,13 @@ a {
   font-family: var(--display);
   font-weight: 800;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transition: transform 260ms ease, box-shadow 260ms ease;
+}
+
+.logo:hover .logo-mark,
+.app-logo:hover .logo-mark {
+  transform: rotate(-3deg) scale(1.04);
+  box-shadow: 0 14px 30px -18px rgba(17, 29, 46, 0.8), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
 .logo strong,
@@ -129,11 +142,27 @@ a {
 }
 
 .nav-links a {
+  position: relative;
   padding: 10px 18px;
   border-right: 1px solid rgba(226, 232, 240, 0.8);
   color: var(--ink-2);
   font-size: 0.82rem;
   font-weight: 600;
+  transition: color 180ms ease;
+}
+
+.nav-links a::after {
+  content: "";
+  position: absolute;
+  right: 18px;
+  bottom: 2px;
+  left: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 220ms ease;
 }
 
 .nav-links a:last-child {
@@ -144,6 +173,10 @@ a {
   color: var(--primary);
 }
 
+.nav-links a:hover::after {
+  transform: scaleX(1);
+}
+
 .nav-actions {
   gap: 10px;
 }
@@ -151,11 +184,29 @@ a {
 .primary-button,
 .ghost-button,
 .outline-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
   min-height: 42px;
   border: 0;
   border-radius: 8px;
   font-weight: 700;
-  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.primary-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 20%, rgba(255, 255, 255, 0.18) 45%, transparent 70%);
+  transform: translateX(-130%);
+  transition: transform 620ms ease;
+}
+
+.primary-button:hover::after {
+  transform: translateX(130%);
 }
 
 .primary-button {
@@ -167,7 +218,8 @@ a {
 
 .primary-button:hover {
   background: #080f1a;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 38px -18px rgba(17, 29, 46, 0.86);
 }
 
 .ghost-button {
@@ -177,14 +229,18 @@ a {
 }
 
 .outline-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   padding: 0 18px;
   border: 1px solid var(--line);
   background: white;
   color: var(--primary-dark);
   box-shadow: inset 0 0 0 1px rgba(185, 144, 77, 0.16);
+}
+
+.outline-button:hover,
+.ghost-button:hover {
+  border-color: rgba(185, 144, 77, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px -26px rgba(17, 29, 46, 0.55), inset 0 0 0 1px rgba(185, 144, 77, 0.24);
 }
 
 .large {
@@ -202,6 +258,15 @@ a {
     url("https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1800&q=80") center/cover;
 }
 
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 68% 30%, rgba(185, 144, 77, 0.18), transparent 18rem);
+  animation: softPulse 7s ease-in-out infinite;
+}
+
 .hero-bg {
   position: absolute;
   inset: 0;
@@ -210,14 +275,20 @@ a {
     linear-gradient(rgba(185, 144, 77, 0.1) 1px, transparent 1px);
   background-size: 84px 84px;
   mask-image: linear-gradient(180deg, #000, transparent 88%);
+  animation: gridDrift 18s linear infinite;
 }
 
 .hero-wrap {
   position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(420px, 0.86fr);
   align-items: center;
   gap: 72px;
+}
+
+.hero-copy {
+  animation: riseIn 760ms 120ms ease both;
 }
 
 .eyebrow {
@@ -269,8 +340,13 @@ h3 {
   gap: 14px;
 }
 
+.hero-actions {
+  animation: riseIn 720ms 300ms ease both;
+}
+
 .trust-row {
   margin-top: 34px;
+  animation: riseIn 760ms 420ms ease both;
 }
 
 .trust-row span {
@@ -281,10 +357,19 @@ h3 {
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 700;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.trust-row span:hover {
+  transform: translateY(-2px);
+  border-color: rgba(185, 144, 77, 0.45);
+  background: rgba(255, 255, 255, 0.92);
 }
 
 .product-card {
   position: relative;
+  animation: floatIn 820ms 260ms ease both;
+  transform-style: preserve-3d;
 }
 
 .product-card::before {
@@ -294,6 +379,7 @@ h3 {
   border-radius: 28px;
   background: linear-gradient(135deg, rgba(27, 42, 65, 0.24), rgba(185, 144, 77, 0.22));
   filter: blur(4px);
+  animation: shadowBreathe 5s ease-in-out infinite;
 }
 
 .mock-window,
@@ -316,6 +402,29 @@ h3 {
   position: relative;
   overflow: hidden;
   box-shadow: var(--shadow);
+  transition: transform 320ms ease, box-shadow 320ms ease;
+}
+
+.mock-window::after,
+.feature-demo::after,
+.result-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 0 38%, rgba(255, 255, 255, 0.34) 46%, transparent 56% 100%);
+  transform: translateX(-125%);
+}
+
+.product-card:hover .mock-window {
+  transform: translateY(-6px) rotateX(1deg) rotateY(-1deg);
+  box-shadow: 0 34px 90px -40px rgba(17, 29, 46, 0.72);
+}
+
+.product-card:hover .mock-window::after,
+.feature-demo:hover::after,
+.result-panel:hover::after {
+  animation: sheen 880ms ease;
 }
 
 .mock-top,
@@ -479,6 +588,7 @@ h3 {
   padding: 28px;
   position: relative;
   overflow: hidden;
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
 }
 
 .steps-grid article::before,
@@ -489,6 +599,18 @@ h3 {
   inset: 0 auto 0 0;
   width: 4px;
   background: linear-gradient(180deg, var(--gold), transparent);
+}
+
+.steps-grid article:hover,
+.price-grid article:hover,
+.library-grid article:hover,
+.recent-panel:hover,
+.exam-card:hover,
+.chat-panel:hover,
+.flashcard:hover {
+  transform: translateY(-5px);
+  border-color: rgba(185, 144, 77, 0.48);
+  box-shadow: 0 24px 48px -34px rgba(17, 29, 46, 0.56);
 }
 
 .steps-grid b {
@@ -511,8 +633,15 @@ h3 {
 }
 
 .feature-demo {
+  position: relative;
   overflow: hidden;
   box-shadow: 0 18px 55px -34px rgba(25, 28, 29, 0.35);
+  transition: transform 240ms ease, box-shadow 240ms ease;
+}
+
+.feature-demo:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 28px 68px -40px rgba(17, 29, 46, 0.52);
 }
 
 .demo-toolbar {
@@ -594,6 +723,7 @@ h3 {
   display: grid;
   grid-template-columns: 276px minmax(0, 1fr);
   min-height: 100vh;
+  animation: fadeIn 260ms ease both;
 }
 
 .app-sidebar {
@@ -673,6 +803,7 @@ h3 {
   color: rgba(255, 255, 255, 0.72);
   font-weight: 700;
   text-align: left;
+  transition: transform 180ms ease, background 180ms ease, color 180ms ease;
 }
 
 .app-nav button {
@@ -689,6 +820,7 @@ h3 {
 .app-nav button:hover {
   background: rgba(255, 255, 255, 0.11);
   color: white;
+  transform: translateX(3px);
 }
 
 .app-nav button.active {
@@ -734,6 +866,7 @@ h3 {
 .app-page {
   max-width: 1220px;
   margin: 0 auto;
+  animation: pageIn 260ms ease both;
 }
 
 .page-title {
@@ -757,7 +890,24 @@ h3 {
   border-radius: 10px;
   background: white;
   text-align: left;
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  position: relative;
+  overflow: hidden;
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.feature-card::after,
+.tool-grid button::after {
+  content: "";
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(185, 144, 77, 0.16), transparent 68%);
+  transform: scale(0.4);
+  opacity: 0;
+  transition: transform 220ms ease, opacity 220ms ease;
 }
 
 .feature-card {
@@ -767,8 +917,15 @@ h3 {
 
 .feature-card:hover,
 .tool-grid button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 18px 40px -30px rgba(25, 28, 29, 0.5);
+  transform: translateY(-6px);
+  border-color: rgba(185, 144, 77, 0.48);
+  box-shadow: 0 26px 54px -36px rgba(25, 28, 29, 0.58);
+}
+
+.feature-card:hover::after,
+.tool-grid button:hover::after {
+  transform: scale(1);
+  opacity: 1;
 }
 
 .feature-card small {
@@ -862,6 +1019,7 @@ h3 {
   overflow: hidden;
   padding: 34px;
   box-shadow: 0 18px 50px -38px rgba(20, 25, 35, 0.5);
+  animation: slidePanel 320ms ease both;
 }
 
 .panel-accent {
@@ -973,6 +1131,8 @@ h3 {
 .result-panel {
   min-height: 680px;
   overflow: hidden;
+  position: relative;
+  animation: slidePanel 360ms 60ms ease both;
 }
 
 .result-panel header {
@@ -1187,6 +1347,170 @@ h3 {
   align-content: center;
   text-align: center;
   box-shadow: var(--shadow);
+}
+
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 620ms ease, transform 620ms ease;
+}
+
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.primary-button.is-loading,
+.generate-button:disabled {
+  cursor: wait;
+}
+
+.primary-button.is-loading::before,
+.generate-button:disabled::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.34);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 780ms linear infinite;
+}
+
+.message {
+  animation: messageIn 220ms ease both;
+}
+
+@keyframes headerDrop {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes floatIn {
+  from {
+    opacity: 0;
+    transform: translateY(34px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slidePanel {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gridDrift {
+  from {
+    background-position: 0 0, 0 0;
+  }
+  to {
+    background-position: 84px 84px, 84px 84px;
+  }
+}
+
+@keyframes softPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.86;
+  }
+}
+
+@keyframes shadowBreathe {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translateY(8px);
+    opacity: 0.68;
+  }
+}
+
+@keyframes sheen {
+  from {
+    transform: translateX(-125%);
+  }
+  to {
+    transform: translateX(125%);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes messageIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
 }
 
 @media (max-width: 1040px) {
