@@ -1,17 +1,17 @@
 :root {
-  --bg: #f8f9fa;
+  --bg: #f4f1ec;
   --paper: #ffffff;
-  --ink: #191c1d;
-  --ink-2: #46505a;
-  --muted: #74808c;
-  --line: #e3e7ec;
-  --primary: #006d5b;
-  --primary-dark: #005344;
-  --primary-deep: #073b34;
-  --gold: #c9a84c;
-  --gold-soft: #f4ead5;
+  --ink: #141923;
+  --ink-2: #3d4654;
+  --muted: #747b86;
+  --line: #ded6c8;
+  --primary: #1b2a41;
+  --primary-dark: #111d2e;
+  --primary-deep: #0b1320;
+  --gold: #b9904d;
+  --gold-soft: #f2e7d2;
   --danger: #8f2e3b;
-  --shadow: 0 24px 70px -28px rgba(0, 83, 68, 0.35);
+  --shadow: 0 24px 70px -28px rgba(17, 29, 46, 0.42);
   --display: "Manrope", "Inter", sans-serif;
   --body: "Inter", Arial, sans-serif;
 }
@@ -27,7 +27,9 @@ html {
 body {
   margin: 0;
   color: var(--ink);
-  background: var(--bg);
+  background:
+    linear-gradient(rgba(244, 241, 236, 0.94), rgba(244, 241, 236, 0.94)),
+    url("https://images.unsplash.com/photo-1589391886645-d51941baf7fb?auto=format&fit=crop&w=1800&q=80") center/cover fixed;
   font-family: var(--body);
 }
 
@@ -55,13 +57,13 @@ a {
   top: 0;
   z-index: 20;
   border-bottom: 1px solid rgba(226, 232, 240, 0.85);
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(16px);
 }
 
 .header-line {
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.7), transparent);
+  background: linear-gradient(90deg, transparent, rgba(185, 144, 77, 0.85), transparent);
 }
 
 .nav-wrap,
@@ -100,11 +102,13 @@ a {
   place-items: center;
   width: 38px;
   height: 38px;
-  border-radius: 8px;
-  background: var(--primary);
+  border: 1px solid rgba(185, 144, 77, 0.45);
+  border-radius: 6px;
+  background: linear-gradient(145deg, var(--primary), var(--primary-deep));
   color: white;
   font-family: var(--display);
   font-weight: 800;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .logo strong,
@@ -156,13 +160,13 @@ a {
 
 .primary-button {
   padding: 0 18px;
-  background: var(--primary-dark);
+  background: linear-gradient(135deg, var(--primary), var(--primary-deep));
   color: white;
-  box-shadow: 0 10px 28px -12px rgba(0, 109, 91, 0.55);
+  box-shadow: 0 12px 30px -14px rgba(17, 29, 46, 0.72);
 }
 
 .primary-button:hover {
-  background: var(--primary-deep);
+  background: #080f1a;
   transform: translateY(-1px);
 }
 
@@ -180,6 +184,7 @@ a {
   border: 1px solid var(--line);
   background: white;
   color: var(--primary-dark);
+  box-shadow: inset 0 0 0 1px rgba(185, 144, 77, 0.16);
 }
 
 .large {
@@ -193,17 +198,17 @@ a {
   min-height: 720px;
   padding: 92px 0 72px;
   background:
-    radial-gradient(circle at 12% 10%, rgba(201, 168, 76, 0.18), transparent 28rem),
-    linear-gradient(180deg, #fbfcfc 0%, var(--bg) 100%);
+    linear-gradient(90deg, rgba(244, 241, 236, 0.96), rgba(244, 241, 236, 0.86)),
+    url("https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1800&q=80") center/cover;
 }
 
 .hero-bg {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(0, 109, 91, 0.07) 1px, transparent 1px),
-    linear-gradient(rgba(0, 109, 91, 0.06) 1px, transparent 1px);
-  background-size: 74px 74px;
+    linear-gradient(90deg, rgba(27, 42, 65, 0.07) 1px, transparent 1px),
+    linear-gradient(rgba(185, 144, 77, 0.1) 1px, transparent 1px);
+  background-size: 84px 84px;
   mask-image: linear-gradient(180deg, #000, transparent 88%);
 }
 
@@ -246,7 +251,7 @@ h3 {
 }
 
 .hero h1 em {
-  color: var(--primary);
+  color: #8a672d;
   font-style: normal;
 }
 
@@ -287,7 +292,7 @@ h3 {
   position: absolute;
   inset: 48px -22px -26px 42px;
   border-radius: 28px;
-  background: linear-gradient(135deg, rgba(0, 109, 91, 0.18), rgba(201, 168, 76, 0.2));
+  background: linear-gradient(135deg, rgba(27, 42, 65, 0.24), rgba(185, 144, 77, 0.22));
   filter: blur(4px);
 }
 
@@ -303,7 +308,7 @@ h3 {
 .chat-panel,
 .flashcard {
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 10px;
   background: white;
 }
 
@@ -321,7 +326,7 @@ h3 {
   gap: 8px;
   padding: 15px 18px;
   border-bottom: 1px solid var(--line);
-  background: #f7f9fb;
+  background: #f8f5ef;
 }
 
 .mock-top span {
@@ -349,7 +354,7 @@ h3 {
   gap: 8px;
   padding: 18px;
   border-right: 1px solid var(--line);
-  background: #fbfcfd;
+  background: #fbf8f2;
 }
 
 .mock-body aside button,
@@ -368,8 +373,8 @@ h3 {
 }
 
 .mock-body aside button.active {
-  background: rgba(0, 109, 91, 0.1);
-  color: var(--primary);
+  background: rgba(185, 144, 77, 0.16);
+  color: var(--primary-dark);
 }
 
 .mock-body article {
@@ -412,7 +417,7 @@ h3 {
   margin-top: 22px;
   padding: 16px;
   border-left: 4px solid var(--gold);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--gold-soft);
 }
 
@@ -472,6 +477,18 @@ h3 {
 .price-grid article {
   min-height: 230px;
   padding: 28px;
+  position: relative;
+  overflow: hidden;
+}
+
+.steps-grid article::before,
+.price-grid article::before,
+.library-grid article::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--gold), transparent);
 }
 
 .steps-grid b {
@@ -511,8 +528,8 @@ h3 {
 .demo-toolbar strong {
   padding: 4px 8px;
   border-radius: 6px;
-  background: rgba(0, 109, 91, 0.1);
-  color: var(--primary);
+  background: rgba(185, 144, 77, 0.14);
+  color: #7a5923;
   font-size: 0.72rem;
 }
 
@@ -542,8 +559,8 @@ h3 {
 .demo-content li {
   padding: 12px 14px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fbfcfd;
+  border-radius: 6px;
+  background: #fbf8f2;
 }
 
 .price-grid article {
@@ -559,7 +576,7 @@ h3 {
 }
 
 .price-grid .featured {
-  border-color: rgba(0, 109, 91, 0.38);
+  border-color: rgba(185, 144, 77, 0.55);
   box-shadow: var(--shadow);
 }
 
@@ -587,9 +604,21 @@ h3 {
   flex-direction: column;
   padding: 28px 18px;
   background:
-    linear-gradient(180deg, rgba(7, 59, 52, 0.98), rgba(0, 55, 47, 0.98)),
-    radial-gradient(circle at top, rgba(201, 168, 76, 0.14), transparent 16rem);
+    linear-gradient(180deg, rgba(11, 19, 32, 0.98), rgba(20, 28, 42, 0.98)),
+    url("https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=900&q=80") center/cover;
   color: white;
+}
+
+.app-sidebar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(11, 19, 32, 0.92), rgba(11, 19, 32, 0.98));
+}
+
+.app-sidebar > * {
+  position: relative;
 }
 
 .app-logo {
@@ -604,7 +633,7 @@ h3 {
 }
 
 .app-logo .logo-mark {
-  background: white;
+  background: linear-gradient(145deg, #fff, #d9c69d);
   color: var(--primary-dark);
 }
 
@@ -618,7 +647,7 @@ h3 {
   align-items: center;
   gap: 8px;
   margin: 18px 8px 6px;
-  color: rgba(201, 168, 76, 0.86);
+  color: rgba(185, 144, 77, 0.92);
   font-size: 0.64rem;
   font-weight: 800;
   letter-spacing: 0.15em;
@@ -629,7 +658,7 @@ h3 {
   content: "";
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, rgba(201, 168, 76, 0.26), transparent);
+  background: linear-gradient(90deg, rgba(185, 144, 77, 0.34), transparent);
 }
 
 .app-nav button,
@@ -658,7 +687,7 @@ h3 {
 
 .app-nav button.active,
 .app-nav button:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.11);
   color: white;
 }
 
@@ -675,6 +704,9 @@ h3 {
 .app-main {
   min-width: 0;
   padding: 24px;
+  background:
+    radial-gradient(circle at 85% 4%, rgba(185, 144, 77, 0.16), transparent 22rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(244, 241, 236, 0.88));
 }
 
 .app-topbar {
@@ -722,7 +754,7 @@ h3 {
 .feature-card,
 .tool-grid button {
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 10px;
   background: white;
   text-align: left;
   transition: transform 160ms ease, box-shadow 160ms ease;
@@ -761,8 +793,8 @@ h3 {
 .main-card {
   color: white;
   background:
-    linear-gradient(135deg, rgba(7, 59, 52, 0.95), rgba(0, 109, 91, 0.9)),
-    radial-gradient(circle at top right, rgba(201, 168, 76, 0.18), transparent 18rem);
+    linear-gradient(135deg, rgba(11, 19, 32, 0.96), rgba(27, 42, 65, 0.94)),
+    radial-gradient(circle at top right, rgba(185, 144, 77, 0.22), transparent 18rem);
 }
 
 .main-card p,
@@ -829,6 +861,7 @@ h3 {
   position: relative;
   overflow: hidden;
   padding: 34px;
+  box-shadow: 0 18px 50px -38px rgba(20, 25, 35, 0.5);
 }
 
 .panel-accent {
@@ -871,7 +904,7 @@ h3 {
   border: 2px solid var(--line);
   border-radius: 12px;
   outline: 0;
-  background: #fbfcfd;
+  background: #fbf8f2;
   color: var(--ink);
 }
 
@@ -1025,8 +1058,8 @@ h3 {
   margin-top: 10px;
   padding: 12px 14px;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #fbfcfd;
+  border-radius: 8px;
+  background: #fbf8f2;
   color: var(--ink);
   text-align: left;
   transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease, background 120ms ease;
@@ -1098,6 +1131,8 @@ h3 {
 }
 
 .library-grid article {
+  position: relative;
+  overflow: hidden;
   padding: 24px;
 }
 
@@ -1123,7 +1158,7 @@ h3 {
 }
 
 .message.assistant {
-  background: #eef5f3;
+  background: #f3ead9;
   color: var(--primary-deep);
 }
 
