@@ -8,6 +8,7 @@ const examResult = document.querySelector("#examResult");
 const flashcardResult = document.querySelector("#flashcardResult");
 let lastSubmitter = null;
 let lastStudy = null;
+let currentExam = null;
 
 initMotion();
 
@@ -403,8 +404,9 @@ document.addEventListener("click", (event) => {
   }
 
   container.querySelectorAll("[data-answer]").forEach((answer) => {
+    const answerIsCorrect = answer.dataset.answer === "right";
     answer.classList.toggle("is-selected", answer === button);
-    answer.classList.toggle("correct", answer === button && isCorrect);
+    answer.classList.toggle("correct", answerIsCorrect);
     answer.classList.toggle("wrong", answer === button && !isCorrect);
   });
 
@@ -418,34 +420,157 @@ document.addEventListener("click", (event) => {
     if (title) title.textContent = `${stateLabel} — alternativa ${selectedLetter}`;
     if (body) body.innerHTML = justification ? markdownToHtml(justification) : "<p>Sem justificativa.</p>";
   }
+
+  if (currentExam) {
+    currentExam.answers[currentExam.index] = selectedLetter;
+    const nextButton = container.querySelector("[data-next-question]");
+    if (nextButton) nextButton.disabled = false;
+  }
+});
+
+document.addEventListener("click", (event) => {
+  const next = event.target.closest("[data-next-question]");
+  const prev = event.target.closest("[data-prev-question]");
+  if (!currentExam || (!next && !prev)) return;
+
+  if (next) {
+    currentExam.index = Math.min(currentExam.index + 1, currentExam.questions.length - 1);
+  } else {
+    currentExam.index = Math.max(currentExam.index - 1, 0);
+  }
+
+  examResult.innerHTML = renderExamQuestion();
 });
 
 function renderInteractiveExam(markdown) {
-  const parsed = parseExamMarkdown(markdown);
-  if (!parsed || !parsed.options.length || !parsed.correctLetter) {
+  currentExam = parseExamPayload(markdown);
+  if (!currentExam || !currentExam.questions.length) {
     return markdownToHtml(markdown);
   }
 
-  let html = `<div class="exam-card">`;
+  return renderExamQuestion();
+}
+
+function renderExamQuestion() {
+  if (!currentExam || !currentExam.questions.length) return "";
+
+  const index = currentExam.index;
+  const parsed = currentExam.questions[index];
+  const selected = currentExam.answers[index] || "";
+  const total = currentExam.questions.length;
+  const progress = Math.round(((index + 1) / total) * 100);
+
+  let html = `<div class="exam-session">
+    <div class="exam-progress">
+      <span>Questao ${index + 1} de ${total}</span>
+      <div class="exam-progress-track"><i style="width: ${progress}%"></i></div>
+    </div>
+    <div class="exam-card">`;
   if (parsed.title) html += `<strong>${escapeHtml(parsed.title)}</strong>`;
   if (parsed.questionHtml) html += `<p>${parsed.questionHtml}</p>`;
 
   parsed.options.forEach((opt) => {
     const isCorrect = opt.letter === parsed.correctLetter;
     const encodedJustification = encodeURIComponent(opt.justification || parsed.comment || "");
-    html += `<button type="button" data-answer="${isCorrect ? "right" : "wrong"}" data-letter="${opt.letter}" data-justification="${escapeHtmlAttr(encodedJustification)}">${opt.html}</button>`;
+    const isSelected = selected === opt.letter;
+    const stateClass = selected
+      ? `${isSelected ? "is-selected " : ""}${isCorrect ? "correct" : ""}${isSelected && !isCorrect ? "wrong" : ""}`
+      : "";
+    html += `<button type="button" class="${stateClass.trim()}" data-answer="${isCorrect ? "right" : "wrong"}" data-letter="${opt.letter}" data-justification="${escapeHtmlAttr(encodedJustification)}">${opt.html}</button>`;
   });
 
-  html += `<div class="exam-feedback is-hidden">
-    <strong data-feedback-title></strong>
+  const selectedOption = parsed.options.find((opt) => opt.letter === selected);
+  const isCorrect = selected === parsed.correctLetter;
+  const selectedJustification = selectedOption?.justification || parsed.comment || "";
+  html += `<div class="exam-feedback ${selected ? "" : "is-hidden"}" data-state="${selected && !isCorrect ? "wrong" : "correct"}">
+    <strong data-feedback-title>${selected ? `${isCorrect ? "Certo" : "Errado"} - alternativa ${escapeHtml(selected)}` : ""}</strong>
     <div class="exam-feedback-meta">
       <span><b>Gabarito:</b> ${escapeHtml(parsed.correctLetter)}</span>
     </div>
-    <div data-feedback-body></div>
+    <div data-feedback-body>${selected ? markdownToHtml(selectedJustification || "Sem justificativa.") : ""}</div>
   </div>`;
 
-  html += `</div>`;
+  html += `<div class="exam-controls">
+      <button type="button" data-prev-question ${index === 0 ? "disabled" : ""}>Anterior</button>
+      <button type="button" data-next-question ${index === total - 1 || !selected ? "disabled" : ""}>${index === total - 1 ? "Fim do simulado" : "Proxima questao"}</button>
+    </div>
+  </div></div>`;
   return html;
+}
+
+function parseExamPayload(markdown) {
+  const json = extractExamJson(markdown);
+  if (json?.questions?.length) {
+    const questions = json.questions
+      .map((question, index) => normalizeExamQuestion(question, index))
+      .filter((question) => question.options.length >= 2 && question.correctLetter);
+
+    if (questions.length) {
+      return {
+        index: 0,
+        answers: Array.from({ length: questions.length }, () => ""),
+        questions,
+      };
+    }
+  }
+
+  const parsed = parseExamMarkdown(markdown);
+  if (!parsed || !parsed.options.length || !parsed.correctLetter) return null;
+
+  return {
+    index: 0,
+    answers: [""],
+    questions: [parsed],
+  };
+}
+
+function extractExamJson(value) {
+  const text = String(value || "").trim();
+  const withoutFence = text.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+
+  for (const candidate of [text, withoutFence, text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1)]) {
+    if (!candidate) continue;
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      // Try the next candidate.
+    }
+  }
+
+  return null;
+}
+
+function normalizeExamQuestion(question, index) {
+  const rawOptions = Array.isArray(question.options) ? question.options : [];
+  const rawJustifications = question.justifications && typeof question.justifications === "object"
+    ? question.justifications
+    : {};
+  const justifications = Object.fromEntries(
+    Object.entries(rawJustifications).map(([key, value]) => [String(key).toUpperCase(), value]),
+  );
+  const answerText = String(question.answer || question.correctLetter || "").trim().toUpperCase();
+  const answer = answerText.match(/[A-E]/)?.[0] || "";
+
+  const options = rawOptions.map((option, optionIndex) => {
+    const optionData = option && typeof option === "object" ? option : { text: option };
+    const letter = String(optionData.letter || "ABCDE"[optionIndex] || "").trim().slice(0, 1).toUpperCase();
+    const text = String(optionData.text || optionData.content || optionData.answer || optionData || "").trim();
+    return {
+      letter,
+      raw: `${letter}) ${text}`,
+      html: `${escapeHtml(letter)}) ${escapeHtml(text)}`,
+      justification: String(justifications[letter] || optionData.justification || "").trim(),
+    };
+  });
+
+  return {
+    title: `Questao ${index + 1}`,
+    questionHtml: escapeHtml(String(question.statement || question.enunciado || question.question || "").trim())
+      .replaceAll("\n", "<br><br>"),
+    options,
+    correctLetter: answer,
+    comment: String(question.comment || question.explanation || "").trim(),
+  };
 }
 
 function escapeHtml(value) {

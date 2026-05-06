@@ -215,24 +215,14 @@ function buildPrompt(body) {
     return {
       instructions: base,
       input: [
-        `Crie um mini-simulado sobre: ${topic}.`,
+        `Crie um simulado juridico com 5 questoes sobre: ${topic}.`,
         context ? `Use este estudo gerado como base principal para a prova:\n${context}` : "",
-        "Formato obrigatorio em Markdown:",
-        "## Mini-simulado",
-        "Enunciado: texto da questao",
-        "A) alternativa",
-        "B) alternativa",
-        "C) alternativa",
-        "D) alternativa",
-        "**Gabarito:** letra",
-        "**Justificativas:**",
-        "Justificativa A: justificativa curta (1-3 frases)",
-        "Justificativa B: justificativa curta (1-3 frases)",
-        "Justificativa C: justificativa curta (1-3 frases)",
-        "Justificativa D: justificativa curta (1-3 frases)",
-        "Nao revele gabarito ou justificativas no enunciado. Eles devem aparecer apenas nos campos Gabarito e Justificativas.",
+        "Cada questao deve ter enunciado proprio, 4 alternativas (A, B, C, D), uma unica correta e justificativa para cada alternativa.",
+        "Nao revele gabarito ou justificativas no enunciado nem nas alternativas.",
+        "Responda APENAS JSON valido, sem Markdown, sem bloco de codigo e sem texto antes ou depois.",
+        'Use exatamente este formato: {"questions":[{"statement":"...","options":[{"letter":"A","text":"..."},{"letter":"B","text":"..."},{"letter":"C","text":"..."},{"letter":"D","text":"..."}],"answer":"A","justifications":{"A":"...","B":"...","C":"...","D":"..."}}]}',
       ].filter(Boolean).join("\n"),
-      max_output_tokens: 1600,
+      max_output_tokens: 4200,
     };
   }
 
