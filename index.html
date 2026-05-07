@@ -240,6 +240,21 @@
             </button>
           </div>
 
+          <div class="stats-strip" aria-label="Resumo da sua rotina">
+            <article>
+              <span data-stat="studies">0</span>
+              <small>estudos salvos</small>
+            </article>
+            <article>
+              <span data-stat="exams">0</span>
+              <small>simulados feitos</small>
+            </article>
+            <article>
+              <span data-stat="accuracy">0%</span>
+              <small>aproveitamento</small>
+            </article>
+          </div>
+
           <div class="tool-grid">
             <button type="button" data-route="exam">
               <b>Simulados</b>
@@ -277,14 +292,23 @@
 
               <label>
                 Tema
-                <input id="topicInput" type="text" maxlength="500" value="Responsabilidade civil objetiva" />
+                <input id="topicInput" type="text" maxlength="500" placeholder="Ex.: Responsabilidade civil objetiva" />
               </label>
 
               <label>
                 Objetivos <small>opcional · 1 por linha</small>
-                <textarea id="goalsInput" rows="4">Conceituar responsabilidade objetiva
-Comparar culpa e risco
-Aplicar o art. 927 do Codigo Civil</textarea>
+                <textarea id="goalsInput" rows="4" placeholder="Ex.: comparar regra e excecao&#10;mapear artigos importantes&#10;treinar pontos de prova"></textarea>
+              </label>
+
+              <label>
+                Modo de estudo
+                <select id="studyMode">
+                  <option value="fechamento">Resumo juridico completo</option>
+                  <option value="mapa">Mapa mental textual</option>
+                  <option value="peca">Roteiro de peca pratica</option>
+                  <option value="jurisprudencia">Jurisprudencia e teses</option>
+                  <option value="questoes">Questoes comentadas</option>
+                </select>
               </label>
 
               <div class="section-picker" aria-label="Secoes do fechamento">
@@ -303,8 +327,9 @@ Aplicar o art. 927 do Codigo Civil</textarea>
               <header>
                 <span>Resultado</span>
                 <div>
-                  <button type="button">Salvar</button>
-                  <button type="button">Copiar</button>
+                  <button type="button" data-save-study>Salvar</button>
+                  <button type="button" data-copy-result>Copiar</button>
+                  <button type="button" data-export-result>Exportar PDF</button>
                   <button type="button" data-generate-exam-from-study>Gerar prova</button>
                 </div>
               </header>
@@ -325,6 +350,19 @@ Aplicar o art. 927 do Codigo Civil</textarea>
           </div>
           <form class="quick-generate" id="examForm">
             <input type="text" value="Controle concentrado de constitucionalidade" aria-label="Tema do simulado" />
+            <select aria-label="Quantidade de questoes" name="questionCount">
+              <option value="5">5 questoes</option>
+              <option value="10">10 questoes</option>
+              <option value="15">15 questoes</option>
+              <option value="20">20 questoes</option>
+            </select>
+            <select aria-label="Nivel do simulado" name="difficulty">
+              <option value="OAB">OAB</option>
+              <option value="basico">Basico</option>
+              <option value="intermediario">Intermediario</option>
+              <option value="avancado">Avancado</option>
+              <option value="concurso">Concurso</option>
+            </select>
             <button class="primary-button" type="submit">Gerar simulado com IA</button>
           </form>
           <article class="result-panel compact-panel">
@@ -339,12 +377,12 @@ Aplicar o art. 927 do Codigo Civil</textarea>
             <h1>Seus materiais juridicos.</h1>
           </div>
           <div class="library-grid" id="libraryGrid">
-            <article>
+            <article class="seed-card">
               <span>Civil</span>
               <h2>Responsabilidade civil objetiva</h2>
               <p>Conceito, base legal, risco e questoes comentadas.</p>
             </article>
-            <article>
+            <article class="seed-card">
               <span>Constitucional</span>
               <h2>Controle de constitucionalidade</h2>
               <p>ADI, ADC, ADPF e efeitos das decisoes.</p>

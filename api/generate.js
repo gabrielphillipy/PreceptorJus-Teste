@@ -190,6 +190,8 @@ function buildPrompt(body) {
     ? body.sections.map((section) => String(section).trim()).filter(Boolean)
     : [];
   const context = String(body.context || "").trim().slice(0, 6000);
+  const questionCount = Math.min(Math.max(Number(body.questionCount) || 5, 5), 20);
+  const difficulty = String(body.difficulty || "OAB").trim().slice(0, 80);
 
   const base = [
     "Voce e o PreceptorJus, um assistente academico juridico para estudantes brasileiros de Direito, OAB e concursos.",
@@ -215,14 +217,15 @@ function buildPrompt(body) {
     return {
       instructions: base,
       input: [
-        `Crie um simulado juridico com 5 questoes sobre: ${topic}.`,
+        `Crie um simulado juridico com ${questionCount} questoes sobre: ${topic}.`,
+        `Nivel/estilo da prova: ${difficulty}.`,
         context ? `Use este estudo gerado como base principal para a prova:\n${context}` : "",
         "Cada questao deve ter enunciado proprio, 4 alternativas (A, B, C, D), uma unica correta e justificativa para cada alternativa.",
         "Nao revele gabarito ou justificativas no enunciado nem nas alternativas.",
         "Responda APENAS JSON valido, sem Markdown, sem bloco de codigo e sem texto antes ou depois.",
         'Use exatamente este formato: {"questions":[{"statement":"...","options":[{"letter":"A","text":"..."},{"letter":"B","text":"..."},{"letter":"C","text":"..."},{"letter":"D","text":"..."}],"answer":"A","justifications":{"A":"...","B":"...","C":"...","D":"..."}}]}',
       ].filter(Boolean).join("\n"),
-      max_output_tokens: 4200,
+      max_output_tokens: questionCount > 10 ? 7600 : 4200,
     };
   }
 
@@ -241,21 +244,62 @@ function buildPrompt(body) {
     };
   }
 
+  const studyFormats = {
+    mapa: [
+      "Estruture em Markdown como mapa mental textual:",
+      "## Nucleo do tema",
+      "## Ramos principais",
+      "## Artigos e fundamentos",
+      "## Distincoes de prova",
+      "## Revisao em 10 pontos",
+    ],
+    peca: [
+      "Estruture em Markdown como roteiro de peca pratica:",
+      "## Cabimento",
+      "## Competencia e partes",
+      "## Fundamentos juridicos",
+      "## Pedidos",
+      "## Provas e cautelas",
+      "## Checklist antes de protocolar",
+    ],
+    jurisprudencia: [
+      "Estruture em Markdown com foco em jurisprudencia e teses:",
+      "## Tese central",
+      "## Entendimento dos tribunais",
+      "## Sumulas e temas para conferir",
+      "## Divergencias e limites",
+      "## Como usar em prova",
+    ],
+    questoes: [
+      "Estruture em Markdown como questoes comentadas:",
+      "## Pontos que mais caem",
+      "## Pegadinhas comuns",
+      "## Questoes modelo",
+      "## Comentarios e gabaritos",
+      "## Revisao final",
+    ],
+  };
+  const defaultFormat = [
+    "Estruture em Markdown com:",
+    "## Visao geral",
+    "## Fundamentos legais",
+    "## Requisitos e excecoes",
+    "## Como cai em prova",
+    "## Checklist de revisao",
+  ];
+  const formatLines = studyFormats[body.mode] || defaultFormat;
+
   return {
     instructions: base,
     input: [
-      `Gere um fechamento academico juridico sobre: ${topic}.`,
+      `Gere um material academico juridico sobre: ${topic}.`,
       goals.length ? `Objetivos do estudante:\n- ${goals.join("\n- ")}` : "",
       selectedSections.length ? `Secoes desejadas: ${selectedSections.join(", ")}.` : "",
-      "Estruture em Markdown com:",
-      "## Visao geral",
-      "## Fundamentos legais",
-      "## Requisitos e excecoes",
-      "## Como cai em prova",
-      "## Checklist de revisao",
+      ...formatLines,
       "Limite cada secao a poucos paragrafos objetivos.",
       "Seja completo, mas evite introducao longa. Va direto ao conteudo.",
       "Inclua alertas de prova e diferencie regra, excecao e controversia quando existir.",
+      "Quando citar artigo, sumula, tema ou precedente, indique que o estudante deve conferir a fonte primaria oficial.",
     ].filter(Boolean).join("\n\n"),
     max_output_tokens: 2200,
   };
@@ -265,7 +309,7 @@ function validateRequest(body) {
   const mode = String(body.mode || "fechamento");
   const topic = String(body.topic || "").trim();
 
-  if (["fechamento", "exam", "flashcards"].includes(mode) && !topic) {
+  if (["fechamento", "mapa", "peca", "jurisprudencia", "questoes", "exam", "flashcards"].includes(mode) && !topic) {
     return {
       status: 400,
       error: "O campo Tema e obrigatorio. Preencha o tema antes de gerar.",

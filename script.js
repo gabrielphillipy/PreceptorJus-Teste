@@ -6,11 +6,14 @@ const resultContent = document.querySelector("#resultContent");
 const libraryGrid = document.querySelector("#libraryGrid");
 const examResult = document.querySelector("#examResult");
 const flashcardResult = document.querySelector("#flashcardResult");
+const storageKey = "preceptorjus_workspace";
 let lastSubmitter = null;
 let lastStudy = null;
 let currentExam = null;
+let workspace = loadWorkspace();
 
 initMotion();
+renderWorkspace();
 
 function openApp(route = "menu") {
   landing.classList.add("is-hidden");
@@ -59,6 +62,84 @@ function markdownToHtml(markdown) {
     })
     .join("")
     .replace(/(<li>.*?<\/li>)+/gs, (match) => `<ul>${match}</ul>`);
+}
+
+function loadWorkspace() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    return {
+      studies: Array.isArray(parsed.studies) ? parsed.studies : [],
+      exams: Array.isArray(parsed.exams) ? parsed.exams : [],
+    };
+  } catch {
+    return { studies: [], exams: [] };
+  }
+}
+
+function saveWorkspace() {
+  localStorage.setItem(storageKey, JSON.stringify(workspace));
+  renderWorkspace();
+}
+
+function renderWorkspace() {
+  const studies = workspace.studies || [];
+  const exams = workspace.exams || [];
+  const totalAnswers = exams.reduce((sum, exam) => sum + Number(exam.total || 0), 0);
+  const totalCorrect = exams.reduce((sum, exam) => sum + Number(exam.correct || 0), 0);
+  const accuracy = totalAnswers ? Math.round((totalCorrect / totalAnswers) * 100) : 0;
+
+  document.querySelectorAll('[data-stat="studies"]').forEach((item) => (item.textContent = studies.length));
+  document.querySelectorAll('[data-stat="exams"]').forEach((item) => (item.textContent = exams.length));
+  document.querySelectorAll('[data-stat="accuracy"]').forEach((item) => (item.textContent = `${accuracy}%`));
+
+  const recentPanel = document.querySelector(".recent-panel .empty-state");
+  if (recentPanel) {
+    const latest = studies[0];
+    recentPanel.innerHTML = latest
+      ? `<strong>${escapeHtml(latest.topic)}</strong><span>${escapeHtml(latest.modeLabel || "Estudo juridico")} salvo em ${escapeHtml(latest.date)}.</span>`
+      : `<strong>Seu arquivo esta pronto.</strong><span>Gere um estudo para salvar automaticamente.</span>`;
+  }
+
+  if (!libraryGrid) return;
+  libraryGrid.querySelectorAll("[data-saved-study]").forEach((card) => card.remove());
+  studies.slice(0, 12).forEach((study) => {
+    const card = document.createElement("article");
+    card.dataset.savedStudy = study.id;
+    card.innerHTML = `
+      <span>${escapeHtml(study.modeLabel || "Estudo")}</span>
+      <h2>${escapeHtml(study.topic)}</h2>
+      <p>${escapeHtml(study.excerpt || "Material salvo na biblioteca.")}</p>
+      <button class="outline-button" type="button" data-open-study="${escapeHtmlAttr(study.id)}">Abrir</button>
+    `;
+    libraryGrid.prepend(card);
+  });
+}
+
+function saveCurrentStudy() {
+  if (!lastStudy?.topic || !lastStudy?.text) return false;
+  const id = `study-${Date.now()}`;
+  const study = {
+    id,
+    topic: lastStudy.topic,
+    text: lastStudy.text,
+    modeLabel: lastStudy.modeLabel || "Estudo juridico",
+    excerpt: resultContent.textContent.trim().slice(0, 130),
+    date: new Date().toLocaleDateString("pt-BR"),
+  };
+  workspace.studies = [study, ...workspace.studies.filter((item) => item.topic !== study.topic)].slice(0, 30);
+  saveWorkspace();
+  return true;
+}
+
+function exportResult() {
+  if (!lastStudy?.text) return;
+  window.print();
+}
+
+async function copyResult() {
+  const text = resultContent.textContent.trim();
+  if (!text) return;
+  await navigator.clipboard?.writeText(text);
 }
 
 async function callAI(payload) {
@@ -245,6 +326,50 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const reviewButton = event.target.closest("[data-review-errors]");
+  if (reviewButton) {
+    const review = document.querySelector("[data-exam-review]");
+    review?.classList.toggle("is-hidden");
+    reviewButton.textContent = review?.classList.contains("is-hidden") ? "Revisar questoes" : "Ocultar revisao";
+    return;
+  }
+
+  const saveStudyButton = event.target.closest("[data-save-study]");
+  if (saveStudyButton) {
+    const saved = saveCurrentStudy();
+    saveStudyButton.textContent = saved ? "Salvo" : "Nada para salvar";
+    setTimeout(() => (saveStudyButton.textContent = "Salvar"), 1400);
+    return;
+  }
+
+  const copyButton = event.target.closest("[data-copy-result]");
+  if (copyButton) {
+    copyResult().then(() => {
+      copyButton.textContent = "Copiado";
+      setTimeout(() => (copyButton.textContent = "Copiar"), 1400);
+    });
+    return;
+  }
+
+  const exportButton = event.target.closest("[data-export-result]");
+  if (exportButton) {
+    exportResult();
+    return;
+  }
+
+  const openStudyButton = event.target.closest("[data-open-study]");
+  if (openStudyButton) {
+    const study = workspace.studies.find((item) => item.id === openStudyButton.dataset.openStudy);
+    if (study) {
+      lastStudy = study;
+      resultContent.innerHTML = markdownToHtml(study.text);
+      document.querySelector("#topicInput").value = study.topic;
+      showRoute("study");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    return;
+  }
+
   const generateExamFromStudyButton = event.target.closest("[data-generate-exam-from-study]");
   if (generateExamFromStudyButton) {
     generateExamFromStudy(generateExamFromStudyButton);
@@ -293,22 +418,18 @@ document.querySelector("#studyForm").addEventListener("submit", async (event) =>
     .map((goal) => goal.trim())
     .filter(Boolean);
   const sections = [...document.querySelectorAll(".section-picker button.selected")].map((item) => item.textContent);
+  const modeSelect = document.querySelector("#studyMode");
+  const mode = modeSelect?.value || "fechamento";
+  const modeLabel = modeSelect?.selectedOptions?.[0]?.textContent || "Estudo juridico";
 
   resultContent.innerHTML = renderGenerationLoader("study");
   setLoading(button, true);
 
   try {
-    const text = await callAI({ mode: "fechamento", topic, goals, sections });
-    lastStudy = { topic, text };
+    const text = await callAI({ mode, topic, goals, sections });
+    lastStudy = { topic, text, modeLabel };
     resultContent.innerHTML = markdownToHtml(text);
-
-    const card = document.createElement("article");
-    card.innerHTML = `
-      <span>Gerado agora</span>
-      <h2>${topic}</h2>
-      <p>Fechamento com objetivos, base legal e pontos de prova.</p>
-    `;
-    libraryGrid.prepend(card);
+    saveCurrentStudy();
   } catch (error) {
     renderError(resultContent, error);
   } finally {
@@ -328,6 +449,8 @@ async function generateExamFromStudy(button) {
   const examForm = document.querySelector("#examForm");
   const input = examForm.querySelector("input");
   const submit = examForm.querySelector("button");
+  const questionCount = Number(examForm.querySelector('[name="questionCount"]')?.value || 5);
+  const difficulty = examForm.querySelector('[name="difficulty"]')?.value || "OAB";
   input.value = lastStudy.topic;
   examResult.innerHTML = renderGenerationLoader("exam");
   setLoading(button, true, "Gerando prova...");
@@ -339,8 +462,10 @@ async function generateExamFromStudy(button) {
       mode: "exam",
       topic: lastStudy.topic,
       context: lastStudy.text,
+      questionCount,
+      difficulty,
     });
-    examResult.innerHTML = renderInteractiveExam(text);
+    examResult.innerHTML = renderInteractiveExam(text, { topic: lastStudy.topic, difficulty });
   } catch (error) {
     renderError(examResult, error);
   } finally {
@@ -353,13 +478,21 @@ document.querySelector("#examForm").addEventListener("submit", async (event) => 
   event.preventDefault();
   const button = event.currentTarget.querySelector("button");
   lastSubmitter = button;
-  const topic = event.currentTarget.querySelector("input").value.trim();
+  const topicInput = event.currentTarget.querySelector("input");
+  const topic = topicInput.value.trim();
+  if (!topic) {
+    renderValidationError(examResult, "Tema obrigatorio", "Preencha o tema antes de gerar o simulado.");
+    topicInput.focus();
+    return;
+  }
+  const questionCount = Number(event.currentTarget.querySelector('[name="questionCount"]')?.value || 5);
+  const difficulty = event.currentTarget.querySelector('[name="difficulty"]')?.value || "OAB";
   examResult.innerHTML = renderGenerationLoader("exam");
   setLoading(button, true);
 
   try {
-    const text = await callAI({ mode: "exam", topic });
-    examResult.innerHTML = renderInteractiveExam(text);
+    const text = await callAI({ mode: "exam", topic, questionCount, difficulty });
+    examResult.innerHTML = renderInteractiveExam(text, { topic, difficulty });
   } catch (error) {
     renderError(examResult, error);
   } finally {
@@ -371,7 +504,13 @@ document.querySelector("#flashcardForm").addEventListener("submit", async (event
   event.preventDefault();
   const button = event.currentTarget.querySelector("button");
   lastSubmitter = button;
-  const topic = event.currentTarget.querySelector("input").value.trim();
+  const topicInput = event.currentTarget.querySelector("input");
+  const topic = topicInput.value.trim();
+  if (!topic) {
+    renderValidationError(flashcardResult, "Tema obrigatorio", "Preencha o tema antes de gerar flashcards.");
+    topicInput.focus();
+    return;
+  }
   flashcardResult.innerHTML = renderGenerationLoader("flashcards");
   setLoading(button, true);
 
@@ -423,7 +562,7 @@ document.addEventListener("click", (event) => {
 
   if (currentExam) {
     currentExam.answers[currentExam.index] = selectedLetter;
-    const nextButton = container.querySelector("[data-next-question]");
+    const nextButton = container.querySelector("[data-next-question], [data-finish-exam]");
     if (nextButton) nextButton.disabled = false;
   }
 });
@@ -431,7 +570,13 @@ document.addEventListener("click", (event) => {
 document.addEventListener("click", (event) => {
   const next = event.target.closest("[data-next-question]");
   const prev = event.target.closest("[data-prev-question]");
-  if (!currentExam || (!next && !prev)) return;
+  const finish = event.target.closest("[data-finish-exam]");
+  if (!currentExam || (!next && !prev && !finish)) return;
+
+  if (finish) {
+    finishExam();
+    return;
+  }
 
   if (next) {
     currentExam.index = Math.min(currentExam.index + 1, currentExam.questions.length - 1);
@@ -442,11 +587,13 @@ document.addEventListener("click", (event) => {
   examResult.innerHTML = renderExamQuestion();
 });
 
-function renderInteractiveExam(markdown) {
+function renderInteractiveExam(markdown, meta = {}) {
   currentExam = parseExamPayload(markdown);
   if (!currentExam || !currentExam.questions.length) {
     return markdownToHtml(markdown);
   }
+  currentExam.topic = meta.topic || "Simulado juridico";
+  currentExam.difficulty = meta.difficulty || "OAB";
 
   return renderExamQuestion();
 }
@@ -492,10 +639,59 @@ function renderExamQuestion() {
 
   html += `<div class="exam-controls">
       <button type="button" data-prev-question ${index === 0 ? "disabled" : ""}>Anterior</button>
-      <button type="button" data-next-question ${index === total - 1 || !selected ? "disabled" : ""}>${index === total - 1 ? "Fim do simulado" : "Proxima questao"}</button>
+      <button type="button" ${index === total - 1 ? "data-finish-exam" : "data-next-question"} ${!selected ? "disabled" : ""}>${index === total - 1 ? "Ver resultado" : "Proxima questao"}</button>
     </div>
   </div></div>`;
   return html;
+}
+
+function finishExam() {
+  if (!currentExam) return;
+  const correct = currentExam.questions.reduce((sum, question, index) => {
+    return sum + (currentExam.answers[index] === question.correctLetter ? 1 : 0);
+  }, 0);
+  const total = currentExam.questions.length;
+  const percent = Math.round((correct / total) * 100);
+  workspace.exams = [
+    {
+      id: `exam-${Date.now()}`,
+      topic: currentExam.topic,
+      difficulty: currentExam.difficulty,
+      correct,
+      total,
+      date: new Date().toLocaleDateString("pt-BR"),
+    },
+    ...workspace.exams,
+  ].slice(0, 30);
+  saveWorkspace();
+
+  const review = currentExam.questions
+    .map((question, index) => {
+      const selected = currentExam.answers[index] || "-";
+      const wrong = selected !== question.correctLetter;
+      return `
+        <article class="review-item ${wrong ? "wrong" : "correct"}">
+          <strong>Questao ${index + 1}: ${wrong ? "revisar" : "correta"}</strong>
+          <p>${question.questionHtml}</p>
+          <span>Sua resposta: ${escapeHtml(selected)} | Gabarito: ${escapeHtml(question.correctLetter)}</span>
+        </article>
+      `;
+    })
+    .join("");
+
+  examResult.innerHTML = `
+    <div class="exam-summary">
+      <span>Resultado do simulado</span>
+      <h2>${correct} de ${total} acertos</h2>
+      <div class="score-ring" style="--score:${percent}%">${percent}%</div>
+      <p>${percent >= 70 ? "Bom desempenho. Foque em lapidar os detalhes." : "Vale revisar os pontos errados e refazer depois."}</p>
+      <div class="exam-controls">
+        <button type="button" data-route="exam">Novo simulado</button>
+        <button type="button" data-review-errors>Revisar questoes</button>
+      </div>
+      <div class="exam-review is-hidden" data-exam-review>${review}</div>
+    </div>
+  `;
 }
 
 function parseExamPayload(markdown) {
