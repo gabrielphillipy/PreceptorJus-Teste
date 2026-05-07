@@ -1196,8 +1196,7 @@ document.querySelector("#chatForm").addEventListener("submit", async (event) => 
   event.currentTarget.before(assistant);
 
   try {
-    const context = resultContent.textContent || "";
-    assistant.innerHTML = renderChatAnswer(await callAI({ mode: "chat", message: value, context }));
+    assistant.innerHTML = renderChatAnswer(await callAI({ mode: "chat", message: value }));
   } catch (error) {
     assistant.innerHTML = `<div class="chat-answer"><p>Nao consegui responder agora. ${escapeHtml(error.message)}</p></div>`;
   } finally {

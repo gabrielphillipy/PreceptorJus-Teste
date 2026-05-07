@@ -205,9 +205,11 @@ function buildPrompt(body) {
     return {
       instructions: base,
       input: [
-        "Responda como chat de estudo juridico.",
+        "Responda como tira-duvidas juridico rapido e independente. A pergunta pode ser sobre qualquer area do Direito, OAB, faculdade, concursos ou conceitos gerais.",
+        "Nao assuma que a pergunta se refere ao ultimo estudo gerado. Use apenas o que o estudante escreveu nesta mensagem.",
+        "Se a pergunta estiver ambigua, responda com a interpretacao mais provavel e indique o ponto que pode precisar de esclarecimento.",
+        "Organize a resposta em topicos curtos quando ajudar.",
         `Pergunta do estudante: ${String(body.message || "").slice(0, 1500)}`,
-        body.context ? `Contexto da tela: ${String(body.context).slice(0, 2500)}` : "",
       ].filter(Boolean).join("\n\n"),
       max_output_tokens: 1200,
     };
