@@ -250,12 +250,22 @@ function buildPrompt(body) {
 
   const studyFormats = {
     mapa: [
-      "Estruture em Markdown como mapa mental textual:",
-      "## Nucleo do tema",
-      "## Ramos principais",
-      "## Artigos e fundamentos",
-      "## Distincoes de prova",
-      "## Revisao em 10 pontos",
+      "Estruture em Markdown como mapa mental textual real, com ramos curtos e hierarquicos:",
+      "## Nucleo central",
+      "Uma frase curta com o conceito-base.",
+      "## Ramo 1: Conceito",
+      "- subponto curto",
+      "- subponto curto",
+      "## Ramo 2: Base legal",
+      "- artigo ou fundamento",
+      "- artigo ou fundamento",
+      "## Ramo 3: Requisitos",
+      "- requisito",
+      "- excecao",
+      "## Ramo 4: Como cai em prova",
+      "- pegadinha",
+      "- distincao importante",
+      "Use frases curtas. Evite paragrafos longos. Cada ramo deve ter 2 a 5 bullets.",
     ],
     peca: [
       "Estruture em Markdown como roteiro de peca pratica:",

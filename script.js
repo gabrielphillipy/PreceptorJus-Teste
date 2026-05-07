@@ -67,6 +67,9 @@ function markdownToHtml(markdown) {
 
 function renderStudyDocument(markdown, meta = {}) {
   const sections = parseStudySections(markdown, meta);
+  if (isMindMapMode(meta)) {
+    return renderMindMapDocument(sections, meta);
+  }
 
   const body = sections
     .map((section, index) => renderStudySection(section, index, sections.length))
@@ -81,6 +84,60 @@ function renderStudyDocument(markdown, meta = {}) {
       </div>
       ${body}
     </div>
+  `;
+}
+
+function isMindMapMode(meta = {}) {
+  return /mapa/i.test(String(meta.mode || "")) || /mapa mental/i.test(String(meta.modeLabel || ""));
+}
+
+function renderMindMapDocument(sections, meta = {}) {
+  const topic = meta.topic || "Mapa mental juridico";
+  const central = sections.find((section) => /n[uú]cleo|central|tema/i.test(section.title)) || sections[0];
+  const centralText = getSectionPlainLines(central).slice(0, 2).join(" ") || topic;
+  const branches = sections.filter((section) => section !== central && getSectionPlainLines(section).length);
+
+  return `
+    <div class="mindmap-document">
+      <div class="mindmap-header">
+        <span>Mapa mental</span>
+        <h2>${escapeHtml(topic)}</h2>
+        <p>Ramos de revisao rapida para conectar conceito, base legal, requisitos e pontos de prova.</p>
+      </div>
+      <div class="mindmap-canvas">
+        <div class="mindmap-core">
+          <small>Nucleo central</small>
+          <strong>${formatInline(centralText)}</strong>
+        </div>
+        <div class="mindmap-branches">
+          ${branches.map((section, index) => renderMindMapBranch(section, index)).join("")}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function getSectionPlainLines(section) {
+  if (!section) return [];
+  return section.lines
+    .map((item) => (item.type === "subheading" ? item.text : String(item.text || "")))
+    .map((line) => line.trim().replace(/^[\-\*\u2022]\s+/, ""))
+    .filter(Boolean);
+}
+
+function renderMindMapBranch(section, index) {
+  const points = getSectionPlainLines(section).slice(0, 6);
+  const title = section.title.replace(/^Ramo\s*\d+\s*[:\-]\s*/i, "");
+  return `
+    <article class="mindmap-branch" style="--branch:${index}">
+      <div class="mindmap-node-title">
+        <span>${String(index + 1).padStart(2, "0")}</span>
+        <h3>${escapeHtml(title)}</h3>
+      </div>
+      <ul>
+        ${points.map((point) => `<li>${formatInline(point)}</li>`).join("")}
+      </ul>
+    </article>
   `;
 }
 
@@ -464,6 +521,7 @@ function saveCurrentStudy() {
     id,
     topic: lastStudy.topic,
     text: lastStudy.text,
+    mode: lastStudy.mode || "",
     modeLabel: lastStudy.modeLabel || "Estudo juridico",
     excerpt: resultContent.textContent.trim().slice(0, 130),
     date: new Date().toLocaleDateString("pt-BR"),
@@ -857,7 +915,7 @@ document.querySelector("#studyForm").addEventListener("submit", async (event) =>
 
   try {
     const text = await callAI({ mode, topic, goals, sections });
-    lastStudy = { topic, text, modeLabel };
+    lastStudy = { topic, text, mode, modeLabel };
     resultContent.innerHTML = renderStudyDocument(text, lastStudy);
     saveCurrentStudy();
   } catch (error) {
