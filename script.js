@@ -103,7 +103,8 @@ function renderStudyDocument(markdown, meta = {}) {
 }
 
 function renderStudySection(section, index, total) {
-  const content = renderStudyLines(section.lines);
+  const isQuestionSection = /quest|fixa|prova|simulado|treino|banca/i.test(section.title);
+  const content = isQuestionSection ? renderStudyQuestions(section.lines) : renderStudyLines(section.lines);
   if (!content.trim()) return "";
 
   const sectionNumber = String(index + 1).padStart(2, "0");
@@ -116,6 +117,107 @@ function renderStudySection(section, index, total) {
       </div>
       <div class="section-body">${content}</div>
     </section>
+  `;
+}
+
+function renderStudyQuestions(items) {
+  const lines = items
+    .map((item) => (item.type === "subheading" ? `### ${item.text}` : String(item.text || "")))
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const questions = [];
+  let current = null;
+
+  const pushCurrent = () => {
+    if (!current) return;
+    if (current.stem.length || current.options.length || current.comment.length) {
+      questions.push(current);
+    }
+    current = null;
+  };
+
+  lines.forEach((line) => {
+    const clean = line.replace(/\*\*/g, "").trim();
+    const questionMatch = clean.match(/^(?:quest[aã]o\s*)?(\d+)[\)\.\:\-]\s*(.+)$/i);
+    const headingQuestion = clean.match(/^#+\s*(?:quest[aã]o\s*)?(\d+)[\)\.\:\-]?\s*(.*)$/i);
+    const optionMatch = clean.match(/^[\-\*\u2022]?\s*([A-E])\s*[\)\.\:\-]\s*(.+)$/i);
+    const answerMatch = clean.match(/^(?:gabarito|resposta)\s*[:\-]\s*([A-E])(?:\s*[-–—]\s*(.+))?$/i);
+    const commentMatch = clean.match(/^(?:coment[aá]rio|justificativa|explica[cç][aã]o)\s*[:\-]\s*(.+)$/i);
+
+    if (questionMatch || headingQuestion) {
+      pushCurrent();
+      const match = questionMatch || headingQuestion;
+      current = {
+        number: match[1],
+        stem: match[2] ? [match[2]] : [],
+        options: [],
+        answer: "",
+        comment: [],
+      };
+      return;
+    }
+
+    if (!current) {
+      current = { number: String(questions.length + 1), stem: [], options: [], answer: "", comment: [] };
+    }
+
+    if (optionMatch) {
+      current.options.push({ letter: optionMatch[1].toUpperCase(), text: optionMatch[2] });
+      return;
+    }
+
+    if (answerMatch) {
+      current.answer = answerMatch[1].toUpperCase();
+      if (answerMatch[2]) current.comment.push(answerMatch[2]);
+      return;
+    }
+
+    if (commentMatch) {
+      current.comment.push(commentMatch[1]);
+      return;
+    }
+
+    if (current.options.length || current.answer || current.comment.length) {
+      current.comment.push(clean.replace(/^[-*]\s*/, ""));
+    } else {
+      current.stem.push(clean.replace(/^[-*]\s*/, ""));
+    }
+  });
+
+  pushCurrent();
+
+  const usefulQuestions = questions.filter((question) => question.stem.length || question.options.length);
+  if (!usefulQuestions.length) return renderStudyLines(items);
+
+  return `
+    <div class="study-question-set">
+      ${usefulQuestions.map(renderStudyQuestionCard).join("")}
+    </div>
+  `;
+}
+
+function renderStudyQuestionCard(question) {
+  const options = question.options.length
+    ? `<div class="study-question-options">
+        ${question.options
+          .map((option) => `<div><span>${escapeHtml(option.letter)}</span><p>${formatInline(option.text)}</p></div>`)
+          .join("")}
+      </div>`
+    : "";
+  const feedback = question.answer || question.comment.length
+    ? `<div class="study-question-feedback">
+        ${question.answer ? `<strong>Gabarito: ${escapeHtml(question.answer)}</strong>` : ""}
+        ${question.comment.length ? `<p>${formatInline(question.comment.join(" "))}</p>` : ""}
+      </div>`
+    : "";
+
+  return `
+    <article class="study-question-card">
+      <div class="study-question-badge">Questao ${escapeHtml(question.number)}</div>
+      <div class="study-question-stem">${question.stem.map((line) => `<p>${formatInline(line)}</p>`).join("")}</div>
+      ${options}
+      ${feedback}
+    </article>
   `;
 }
 
