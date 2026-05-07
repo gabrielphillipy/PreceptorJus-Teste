@@ -1411,6 +1411,94 @@ h3 {
   font-weight: 800;
 }
 
+.pdf-export-root {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 794px;
+  background: white;
+  color: #141923;
+  font-family: var(--body);
+}
+
+.pdf-document {
+  width: 794px;
+  padding: 0;
+  background: #ffffff;
+}
+
+.pdf-document .study-document {
+  gap: 12px;
+}
+
+.pdf-document .study-cover,
+.pdf-document .study-section {
+  border-color: #d9cfbd;
+  border-radius: 8px;
+  box-shadow: none;
+  animation: none;
+}
+
+.pdf-document .study-cover {
+  min-height: 150px;
+  padding: 26px;
+  background:
+    linear-gradient(135deg, #111d2e, #1b2a41),
+    radial-gradient(circle at 88% 18%, rgba(185, 144, 77, 0.26), transparent 13rem);
+}
+
+.pdf-document .study-cover::after {
+  display: none;
+}
+
+.pdf-document .study-cover h2 {
+  font-size: 2rem;
+}
+
+.pdf-document .study-cover p {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.pdf-document .section-heading {
+  padding: 18px 22px 14px;
+  background: #f8f5ef;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.pdf-document .section-heading h2 {
+  font-size: 1.42rem;
+}
+
+.pdf-document .section-body {
+  gap: 9px;
+  padding: 18px 22px 22px;
+}
+
+.pdf-document .section-body p {
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.pdf-document .study-list {
+  gap: 8px;
+}
+
+.pdf-document .study-list li {
+  padding: 11px 13px 11px 36px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.pdf-document .study-list li::before {
+  top: 10px;
+}
+
+.pdf-document .legal-highlight {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
 .placeholder {
   display: grid;
   place-items: center;

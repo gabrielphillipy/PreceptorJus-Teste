@@ -232,15 +232,66 @@ function saveCurrentStudy() {
   return true;
 }
 
-function exportResult() {
+async function exportResult(button) {
   if (!lastStudy?.text) return;
-  window.print();
+
+  if (!window.html2pdf) {
+    window.print();
+    return;
+  }
+
+  setLoading(button, true, "Gerando PDF...");
+  const filename = `${slugify(lastStudy.topic || "preceptorjus-estudo")}.pdf`;
+  const wrapper = document.createElement("div");
+  wrapper.className = "pdf-export-root";
+  wrapper.innerHTML = `
+    <div class="pdf-document">
+      ${renderStudyDocument(lastStudy.text, lastStudy)}
+    </div>
+  `;
+  document.body.appendChild(wrapper);
+
+  try {
+    await window
+      .html2pdf()
+      .set({
+        margin: [8, 8, 10, 8],
+        filename,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          letterRendering: true,
+        },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: {
+          mode: ["css", "legacy"],
+          avoid: [".study-cover", ".section-heading", ".study-list li", ".legal-highlight"],
+        },
+      })
+      .from(wrapper.querySelector(".pdf-document"))
+      .save();
+  } finally {
+    wrapper.remove();
+    setLoading(button, false);
+  }
 }
 
 async function copyResult() {
   const text = resultContent.textContent.trim();
   if (!text) return;
   await navigator.clipboard?.writeText(text);
+}
+
+function slugify(value) {
+  return String(value || "preceptorjus-estudo")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 80) || "preceptorjus-estudo";
 }
 
 async function callAI(payload) {
@@ -481,7 +532,7 @@ document.addEventListener("click", (event) => {
 
   const exportButton = event.target.closest("[data-export-result]");
   if (exportButton) {
-    exportResult();
+    exportResult(exportButton);
     return;
   }
 
