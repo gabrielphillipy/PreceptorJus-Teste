@@ -234,11 +234,13 @@ function buildPrompt(body) {
       instructions: base,
       input: [
         `Crie 6 flashcards juridicos sobre: ${topic}.`,
-        "Formato obrigatorio:",
+        "Responda somente os flashcards, sem introducao.",
+        "Formato obrigatorio para cada card:",
         "### Frente",
         "pergunta curta",
         "### Verso",
         "resposta objetiva, com fundamento juridico quando couber.",
+        "---",
       ].join("\n"),
       max_output_tokens: 1600,
     };

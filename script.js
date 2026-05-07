@@ -10,6 +10,7 @@ const storageKey = "preceptorjus_workspace";
 let lastSubmitter = null;
 let lastStudy = null;
 let currentExam = null;
+let currentFlashcards = null;
 let workspace = loadWorkspace();
 
 initMotion();
@@ -616,7 +617,7 @@ document.querySelector("#flashcardForm").addEventListener("submit", async (event
 
   try {
     const text = await callAI({ mode: "flashcards", topic });
-    flashcardResult.innerHTML = markdownToHtml(text);
+    flashcardResult.innerHTML = renderFlashcardDeck(text, topic);
   } catch (error) {
     renderError(flashcardResult, error);
   } finally {
@@ -624,7 +625,123 @@ document.querySelector("#flashcardForm").addEventListener("submit", async (event
   }
 });
 
+function renderFlashcardDeck(markdown, topic) {
+  const cards = parseFlashcards(markdown);
+  if (!cards.length) {
+    currentFlashcards = null;
+    return markdownToHtml(markdown);
+  }
+
+  currentFlashcards = {
+    topic,
+    cards,
+    index: 0,
+    flipped: false,
+  };
+  return renderCurrentFlashcard();
+}
+
+function renderCurrentFlashcard() {
+  if (!currentFlashcards?.cards?.length) return "";
+  const { cards, index, flipped, topic } = currentFlashcards;
+  const card = cards[index];
+  const total = cards.length;
+  const progress = Math.round(((index + 1) / total) * 100);
+  const visibleText = flipped ? card.back : card.front;
+
+  return `
+    <div class="flashcard-deck">
+      <div class="flashcard-deck-head">
+        <div>
+          <span>Baralho juridico</span>
+          <h2>${escapeHtml(topic || "Flashcards")}</h2>
+        </div>
+        <small>${index + 1}/${total}</small>
+      </div>
+      <div class="exam-progress-track"><i style="width: ${progress}%"></i></div>
+      <button class="flashcard-study ${flipped ? "is-flipped" : ""}" type="button" data-flip-card>
+        <span>${flipped ? "Verso" : "Frente"}</span>
+        <strong>${formatInline(visibleText)}</strong>
+        <small>${flipped ? "Clique para voltar a pergunta" : "Clique para revelar a resposta"}</small>
+      </button>
+      <div class="flashcard-actions">
+        <button type="button" data-prev-flashcard ${index === 0 ? "disabled" : ""}>Anterior</button>
+        <button type="button" data-flip-card>${flipped ? "Ver frente" : "Virar card"}</button>
+        <button type="button" data-next-flashcard ${index === total - 1 ? "disabled" : ""}>Proximo</button>
+      </div>
+    </div>
+  `;
+}
+
+function parseFlashcards(markdown) {
+  const lines = String(markdown || "")
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((line) => line.trim());
+  const cards = [];
+  let side = "";
+  let front = [];
+  let back = [];
+
+  const pushCard = () => {
+    const frontText = front.join(" ").replace(/^[:\-\s]+/, "").trim();
+    const backText = back.join(" ").replace(/^[:\-\s]+/, "").trim();
+    if (frontText && backText) {
+      cards.push({ front: frontText, back: backText });
+    }
+    front = [];
+    back = [];
+    side = "";
+  };
+
+  lines.forEach((line) => {
+    if (!line || /^-{3,}$/.test(line)) {
+      if (front.length && back.length) pushCard();
+      return;
+    }
+
+    const normalized = line.replace(/^#+\s*/, "").replace(/\*\*/g, "").trim();
+    if (/^frente\b/i.test(normalized)) {
+      if (front.length && back.length) pushCard();
+      side = "front";
+      const rest = normalized.replace(/^frente\s*[:\-]?\s*/i, "").trim();
+      if (rest) front.push(rest);
+      return;
+    }
+
+    if (/^verso\b/i.test(normalized)) {
+      side = "back";
+      const rest = normalized.replace(/^verso\s*[:\-]?\s*/i, "").trim();
+      if (rest) back.push(rest);
+      return;
+    }
+
+    if (side === "front") front.push(line.replace(/^[-*]\s*/, ""));
+    if (side === "back") back.push(line.replace(/^[-*]\s*/, ""));
+  });
+
+  if (front.length && back.length) pushCard();
+  return cards.slice(0, 12);
+}
+
 document.addEventListener("click", (event) => {
+  const flipButton = event.target.closest("[data-flip-card]");
+  const nextFlashcard = event.target.closest("[data-next-flashcard]");
+  const prevFlashcard = event.target.closest("[data-prev-flashcard]");
+  if (currentFlashcards && (flipButton || nextFlashcard || prevFlashcard)) {
+    if (flipButton) {
+      currentFlashcards.flipped = !currentFlashcards.flipped;
+    } else if (nextFlashcard) {
+      currentFlashcards.index = Math.min(currentFlashcards.index + 1, currentFlashcards.cards.length - 1);
+      currentFlashcards.flipped = false;
+    } else {
+      currentFlashcards.index = Math.max(currentFlashcards.index - 1, 0);
+      currentFlashcards.flipped = false;
+    }
+    flashcardResult.innerHTML = renderCurrentFlashcard();
+    return;
+  }
+
   const button = event.target.closest("[data-answer]");
   if (!button) return;
 
