@@ -566,7 +566,7 @@ async function exportResult(button) {
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         pagebreak: {
           mode: ["css", "legacy"],
-          avoid: [".formal-cover", ".formal-summary", ".formal-section header", ".formal-section li", ".formal-question"],
+          avoid: [".formal-section header", ".formal-section li", ".formal-question-options div", ".formal-question-feedback"],
         },
       })
       .from(wrapper.querySelector(".pdf-document"))
