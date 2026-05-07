@@ -66,6 +66,25 @@ function markdownToHtml(markdown) {
 }
 
 function renderStudyDocument(markdown, meta = {}) {
+  const sections = parseStudySections(markdown, meta);
+
+  const body = sections
+    .map((section, index) => renderStudySection(section, index, sections.length))
+    .join("");
+
+  return `
+    <div class="study-document">
+      <div class="study-cover">
+        <span>${escapeHtml(meta.modeLabel || "Nota juridica")}</span>
+        <h2>${escapeHtml(meta.topic || "Estudo juridico")}</h2>
+        <p>Material organizado para leitura, revisao e treino. Confira fontes oficiais quando houver citacao normativa, jurisprudencial ou sumular.</p>
+      </div>
+      ${body}
+    </div>
+  `;
+}
+
+function parseStudySections(markdown, meta = {}) {
   const lines = String(markdown || "").split("\n");
   const sections = [];
   let current = { title: meta.topic || "Estudo juridico", lines: [], intro: true };
@@ -85,21 +104,111 @@ function renderStudyDocument(markdown, meta = {}) {
   });
 
   if (current.lines.length || !sections.length) sections.push(current);
+  return sections;
+}
 
-  const body = sections
-    .map((section, index) => renderStudySection(section, index, sections.length))
-    .join("");
+function renderFormalPdfDocument(markdown, meta = {}) {
+  const sections = parseStudySections(markdown, meta).filter((section) => {
+    return section.lines.some((item) => String(item.text || "").trim());
+  });
+  const date = new Date().toLocaleDateString("pt-BR");
+  const topic = meta.topic || "Estudo juridico";
 
   return `
-    <div class="study-document">
-      <div class="study-cover">
-        <span>${escapeHtml(meta.modeLabel || "Nota juridica")}</span>
-        <h2>${escapeHtml(meta.topic || "Estudo juridico")}</h2>
-        <p>Material organizado para leitura, revisao e treino. Confira fontes oficiais quando houver citacao normativa, jurisprudencial ou sumular.</p>
-      </div>
-      ${body}
-    </div>
+    <article class="formal-pdf">
+      <section class="formal-cover">
+        <div class="formal-brand">
+          <span>PJ</span>
+          <strong>PreceptorJus</strong>
+        </div>
+        <p>${escapeHtml(meta.modeLabel || "Material academico juridico")}</p>
+        <h1>${escapeHtml(topic)}</h1>
+        <div class="formal-meta">
+          <span>Documento de estudo</span>
+          <span>Gerado em ${escapeHtml(date)}</span>
+          <span>Conferencia de fontes recomendada</span>
+        </div>
+      </section>
+
+      <section class="formal-summary">
+        <h2>Sumario</h2>
+        <ol>
+          ${sections.map((section) => `<li>${escapeHtml(section.title)}</li>`).join("")}
+        </ol>
+      </section>
+
+      ${sections.map((section, index) => renderFormalPdfSection(section, index)).join("")}
+
+      <footer class="formal-footer">
+        <strong>PreceptorJus</strong>
+        <span>Conteudo para fins academicos. Confira a legislacao, jurisprudencia e fontes oficiais aplicaveis.</span>
+      </footer>
+    </article>
   `;
+}
+
+function renderFormalPdfSection(section, index) {
+  const isQuestionSection = /quest|fixa|prova|simulado|treino|banca/i.test(section.title);
+  const content = isQuestionSection ? renderFormalPdfQuestions(section.lines) : renderFormalPdfLines(section.lines);
+  if (!content.trim()) return "";
+
+  return `
+    <section class="formal-section">
+      <header>
+        <span>${String(index + 1).padStart(2, "0")}</span>
+        <h2>${escapeHtml(section.title)}</h2>
+      </header>
+      ${content}
+    </section>
+  `;
+}
+
+function renderFormalPdfLines(items) {
+  let html = "";
+  let list = [];
+
+  const flushList = () => {
+    if (!list.length) return;
+    html += `<ul>${list.map((item) => `<li>${formatInline(item)}</li>`).join("")}</ul>`;
+    list = [];
+  };
+
+  items.forEach((item) => {
+    if (item.type === "subheading") {
+      flushList();
+      html += `<h3>${escapeHtml(item.text)}</h3>`;
+      return;
+    }
+
+    const line = String(item.text || "").trim();
+    if (!line) {
+      flushList();
+      return;
+    }
+
+    const bullet = line.match(/^[\-\*\u2022]\s+(.+)$/);
+    if (bullet) {
+      list.push(bullet[1]);
+      return;
+    }
+
+    flushList();
+    html += `<p>${formatInline(line.replace(/^\d+\.\s+/, ""))}</p>`;
+  });
+
+  flushList();
+  return html;
+}
+
+function renderFormalPdfQuestions(items) {
+  const visual = renderStudyQuestions(items);
+  return visual
+    .replaceAll("study-question-set", "formal-question-set")
+    .replaceAll("study-question-card", "formal-question")
+    .replaceAll("study-question-badge", "formal-question-badge")
+    .replaceAll("study-question-stem", "formal-question-stem")
+    .replaceAll("study-question-options", "formal-question-options")
+    .replaceAll("study-question-feedback", "formal-question-feedback");
 }
 
 function renderStudySection(section, index, total) {
@@ -378,7 +487,7 @@ async function exportResult(button) {
   wrapper.className = "pdf-export-root";
   wrapper.innerHTML = `
     <div class="pdf-document">
-      ${renderStudyDocument(lastStudy.text, lastStudy)}
+      ${renderFormalPdfDocument(lastStudy.text, lastStudy)}
     </div>
   `;
   document.body.appendChild(wrapper);
@@ -399,7 +508,7 @@ async function exportResult(button) {
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         pagebreak: {
           mode: ["css", "legacy"],
-          avoid: [".study-cover", ".section-heading", ".study-list li", ".legal-highlight"],
+          avoid: [".formal-cover", ".formal-summary", ".formal-section header", ".formal-section li", ".formal-question"],
         },
       })
       .from(wrapper.querySelector(".pdf-document"))
