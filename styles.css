@@ -864,6 +864,12 @@ h3 {
   font-size: 1.5rem;
 }
 
+.topbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .app-page {
   max-width: 1220px;
   margin: 0 auto;
@@ -1583,6 +1589,123 @@ h3 {
   justify-self: start;
   margin-top: 4px;
   text-transform: capitalize;
+}
+
+.feedback-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.feedback-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 19, 32, 0.56);
+  backdrop-filter: blur(8px);
+}
+
+.feedback-dialog {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 14px;
+  width: min(560px, 100%);
+  padding: 28px;
+  border: 1px solid rgba(185, 144, 77, 0.32);
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 245, 239, 0.94)),
+    radial-gradient(circle at top right, rgba(185, 144, 77, 0.22), transparent 13rem);
+  box-shadow: 0 34px 90px -42px rgba(11, 19, 32, 0.72);
+  animation: pageIn 220ms ease both;
+}
+
+.feedback-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: white;
+  color: var(--primary-dark);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.feedback-dialog > span {
+  color: var(--gold);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.feedback-dialog h2 {
+  margin: 0;
+  padding-right: 34px;
+  color: var(--primary-dark);
+  font-size: 1.8rem;
+}
+
+.feedback-dialog p {
+  margin: 0;
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+
+.feedback-dialog label {
+  display: grid;
+  gap: 8px;
+  color: var(--ink-2);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.feedback-dialog small {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.feedback-dialog input,
+.feedback-dialog select,
+.feedback-dialog textarea {
+  width: 100%;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  outline: 0;
+  background: #fbf8f2;
+  color: var(--ink);
+}
+
+.feedback-dialog input,
+.feedback-dialog select {
+  min-height: 46px;
+  padding: 0 12px;
+}
+
+.feedback-dialog textarea {
+  padding: 12px;
+  resize: vertical;
+}
+
+.feedback-dialog input:focus,
+.feedback-dialog select:focus,
+.feedback-dialog textarea:focus {
+  border-color: var(--primary);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(0, 109, 91, 0.08);
 }
 
 .generation-loader::before {

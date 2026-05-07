@@ -215,7 +215,10 @@
             <span>Bem-vindo</span>
             <strong>Gabriel</strong>
           </div>
-          <button class="primary-button" type="button" data-route="study" data-new-study>Novo fechamento</button>
+          <div class="topbar-actions">
+            <button class="outline-button" type="button" data-open-feedback>Feedback</button>
+            <button class="primary-button" type="button" data-route="study" data-new-study>Novo fechamento</button>
+          </div>
         </header>
 
         <section class="app-page" data-page="menu">
@@ -432,6 +435,38 @@
           </article>
         </section>
       </main>
+    </div>
+
+    <div class="feedback-modal is-hidden" data-feedback-modal>
+      <div class="feedback-backdrop" data-close-feedback></div>
+      <form class="feedback-dialog" data-feedback-form>
+        <button class="feedback-close" type="button" data-close-feedback aria-label="Fechar feedback">×</button>
+        <span>Feedback</span>
+        <h2>Ajude a melhorar o PreceptorJus</h2>
+        <p>Conte o que ficou confuso, o que quebrou ou qual melhoria faria diferença no seu estudo.</p>
+
+        <label>
+          Tipo
+          <select name="type">
+            <option value="Sugestao">Sugestao</option>
+            <option value="Problema">Problema</option>
+            <option value="Elogio">Elogio</option>
+            <option value="Ideia de recurso">Ideia de recurso</option>
+          </select>
+        </label>
+
+        <label>
+          Mensagem
+          <textarea name="message" rows="5" required placeholder="Escreva seu feedback..."></textarea>
+        </label>
+
+        <label>
+          Contato <small>opcional</small>
+          <input name="contact" type="text" placeholder="Email, WhatsApp ou nome" />
+        </label>
+
+        <button class="primary-button" type="submit">Enviar feedback</button>
+      </form>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>

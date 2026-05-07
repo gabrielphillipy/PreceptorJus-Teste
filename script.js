@@ -171,15 +171,45 @@ function loadWorkspace() {
     return {
       studies: Array.isArray(parsed.studies) ? parsed.studies : [],
       exams: Array.isArray(parsed.exams) ? parsed.exams : [],
+      feedbacks: Array.isArray(parsed.feedbacks) ? parsed.feedbacks : [],
     };
   } catch {
-    return { studies: [], exams: [] };
+    return { studies: [], exams: [], feedbacks: [] };
   }
 }
 
 function saveWorkspace() {
   localStorage.setItem(storageKey, JSON.stringify(workspace));
   renderWorkspace();
+}
+
+function openFeedbackModal() {
+  document.querySelector("[data-feedback-modal]")?.classList.remove("is-hidden");
+  document.querySelector('[data-feedback-form] textarea[name="message"]')?.focus();
+}
+
+function closeFeedbackModal() {
+  document.querySelector("[data-feedback-modal]")?.classList.add("is-hidden");
+}
+
+function saveFeedback(form) {
+  const formData = new FormData(form);
+  const message = String(formData.get("message") || "").trim();
+  if (!message) return false;
+
+  const feedback = {
+    id: `feedback-${Date.now()}`,
+    type: String(formData.get("type") || "Sugestao"),
+    message,
+    contact: String(formData.get("contact") || "").trim(),
+    page: document.querySelector("[data-page]:not(.is-hidden)")?.dataset.page || "app",
+    date: new Date().toLocaleString("pt-BR"),
+  };
+
+  workspace.feedbacks = [feedback, ...(workspace.feedbacks || [])].slice(0, 50);
+  saveWorkspace();
+  form.reset();
+  return true;
 }
 
 function renderWorkspace() {
@@ -485,6 +515,16 @@ document.addEventListener("click", (event) => {
   const backButton = event.target.closest("[data-back-site]");
   if (backButton) {
     backToSite();
+    return;
+  }
+
+  if (event.target.closest("[data-open-feedback]")) {
+    openFeedbackModal();
+    return;
+  }
+
+  if (event.target.closest("[data-close-feedback]")) {
+    closeFeedbackModal();
     return;
   }
 
@@ -1257,4 +1297,19 @@ async function handleChatSubmit(event) {
 
 document.querySelectorAll("[data-chat-form]").forEach((form) => {
   form.addEventListener("submit", handleChatSubmit);
+});
+
+document.querySelector("[data-feedback-form]")?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const button = event.currentTarget.querySelector("button[type='submit']");
+  if (!saveFeedback(event.currentTarget)) return;
+  button.textContent = "Feedback enviado";
+  setTimeout(() => {
+    button.textContent = "Enviar feedback";
+    closeFeedbackModal();
+  }, 900);
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeFeedbackModal();
 });
