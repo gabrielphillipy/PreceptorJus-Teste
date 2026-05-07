@@ -724,6 +724,63 @@ function parseFlashcards(markdown) {
   return cards.slice(0, 12);
 }
 
+function renderChatAnswer(markdown) {
+  const lines = String(markdown || "")
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((line) => line.trim());
+  let html = `<div class="chat-answer">`;
+  let list = [];
+
+  const flushList = () => {
+    if (!list.length) return;
+    html += `<ul>${list.map((item) => `<li>${formatInline(item)}</li>`).join("")}</ul>`;
+    list = [];
+  };
+
+  lines.forEach((line) => {
+    if (!line || /^-{3,}$/.test(line)) {
+      flushList();
+      return;
+    }
+
+    const heading = line.match(/^#{2,3}\s+(.+)$/);
+    if (heading) {
+      flushList();
+      html += `<h3>${formatInline(heading[1])}</h3>`;
+      return;
+    }
+
+    const numbered = line.match(/^(\d+)\.\s+(.+)$/);
+    if (numbered) {
+      flushList();
+      html += `<div class="chat-point"><span>${numbered[1]}</span><p>${formatInline(numbered[2])}</p></div>`;
+      return;
+    }
+
+    const bullet = line.match(/^[\-\*\u2022]\s+(.+)$/);
+    if (bullet) {
+      list.push(bullet[1]);
+      return;
+    }
+
+    const titleLike = line.length <= 80 && /:$/.test(line);
+    if (titleLike) {
+      flushList();
+      html += `<h3>${formatInline(line.replace(/:$/, ""))}</h3>`;
+      return;
+    }
+
+    flushList();
+    const isLegal = /\b(lei|art\.|artigo|codigo|constituicao|stf|stj|lgpd|marco civil|jurisprudencia|sumula)\b/i.test(line);
+    html += `<p class="${isLegal ? "chat-legal" : ""}">${formatInline(line)}</p>`;
+  });
+
+  flushList();
+  html += `</div>`;
+  return html;
+}
+
 document.addEventListener("click", (event) => {
   const flipButton = event.target.closest("[data-flip-card]");
   const nextFlashcard = event.target.closest("[data-next-flashcard]");
@@ -1108,14 +1165,14 @@ document.querySelector("#chatForm").addEventListener("submit", async (event) => 
 
   const assistant = document.createElement("div");
   assistant.className = "message assistant";
-  assistant.textContent = "Pensando juridicamente...";
+  assistant.innerHTML = `<div class="chat-thinking"><span></span><span></span><span></span> Analisando juridicamente...</div>`;
   event.currentTarget.before(assistant);
 
   try {
     const context = resultContent.textContent || "";
-    assistant.innerHTML = markdownToHtml(await callAI({ mode: "chat", message: value, context }));
+    assistant.innerHTML = renderChatAnswer(await callAI({ mode: "chat", message: value, context }));
   } catch (error) {
-    assistant.innerHTML = `Nao consegui responder agora. ${error.message}`;
+    assistant.innerHTML = `<div class="chat-answer"><p>Nao consegui responder agora. ${escapeHtml(error.message)}</p></div>`;
   } finally {
     setLoading(submit, false);
   }
