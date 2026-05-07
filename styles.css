@@ -1225,6 +1225,192 @@ h3 {
   padding-left: 20px;
 }
 
+.study-document {
+  display: grid;
+  gap: 18px;
+  color: var(--ink);
+}
+
+.study-cover,
+.study-section {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(185, 144, 77, 0.2);
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(251, 248, 242, 0.9)),
+    radial-gradient(circle at 96% 0%, rgba(185, 144, 77, 0.16), transparent 12rem);
+  box-shadow: 0 20px 48px -42px rgba(17, 29, 46, 0.56);
+  animation: pageIn 280ms ease both;
+}
+
+.study-cover {
+  min-height: 190px;
+  padding: 30px;
+  background:
+    linear-gradient(135deg, rgba(11, 19, 32, 0.96), rgba(27, 42, 65, 0.94)),
+    url("https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1200&q=80") center/cover;
+  color: white;
+}
+
+.study-cover::after {
+  content: "";
+  position: absolute;
+  right: 26px;
+  bottom: 20px;
+  width: 112px;
+  height: 112px;
+  border: 1px solid rgba(185, 144, 77, 0.36);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(185, 144, 77, 0.18), transparent 68%);
+}
+
+.study-cover span,
+.section-heading span,
+.section-heading small {
+  color: var(--gold);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.study-cover h2 {
+  max-width: 680px;
+  margin: 14px 0 12px;
+  color: white;
+  font-size: clamp(1.9rem, 4vw, 2.75rem);
+  line-height: 1.08;
+}
+
+.study-cover p {
+  max-width: 650px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.study-section {
+  padding: 0;
+}
+
+.study-section::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--gold), rgba(185, 144, 77, 0));
+}
+
+.section-heading {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 16px;
+  padding: 22px 26px 18px;
+  border-bottom: 1px solid rgba(222, 214, 200, 0.86);
+  background: rgba(248, 245, 239, 0.68);
+}
+
+.section-heading span {
+  grid-column: 1;
+}
+
+.section-heading h2 {
+  grid-column: 1;
+  margin: 0;
+  color: var(--primary-dark);
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  line-height: 1.16;
+}
+
+.section-heading small {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  padding: 8px 10px;
+  border: 1px solid rgba(185, 144, 77, 0.24);
+  border-radius: 999px;
+  background: white;
+}
+
+.section-body {
+  display: grid;
+  gap: 12px;
+  padding: 24px 26px 28px;
+}
+
+.section-body h3 {
+  margin: 8px 0 0;
+  color: var(--primary-dark);
+  font-size: 1.05rem;
+}
+
+.section-body p {
+  margin: 0;
+  padding: 0 0 0 14px;
+  border-left: 2px solid rgba(185, 144, 77, 0.18);
+}
+
+.section-body p.legal-highlight {
+  padding: 14px 16px;
+  border: 1px solid rgba(185, 144, 77, 0.22);
+  border-left: 4px solid var(--gold);
+  border-radius: 8px;
+  background: #fbf5ea;
+}
+
+.study-list {
+  display: grid;
+  gap: 10px;
+  margin: 2px 0 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.study-list li {
+  position: relative;
+  padding: 14px 16px 14px 42px;
+  border: 1px solid rgba(222, 214, 200, 0.88);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink-2);
+  line-height: 1.58;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.study-list li::before {
+  content: "§";
+  position: absolute;
+  top: 13px;
+  left: 15px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--primary-dark);
+  color: var(--gold);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.study-list li:hover {
+  transform: translateX(4px);
+  border-color: rgba(185, 144, 77, 0.42);
+  box-shadow: 0 18px 34px -30px rgba(17, 29, 46, 0.48);
+}
+
+.section-body strong {
+  color: var(--primary-dark);
+}
+
+.section-body mark {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(185, 144, 77, 0.17);
+  color: #75551f;
+  font-weight: 800;
+}
+
 .placeholder {
   display: grid;
   place-items: center;
@@ -1965,6 +2151,13 @@ h3 {
     display: none !important;
   }
 
+  .study-cover,
+  .study-section {
+    border: 1px solid #ddd;
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
   .app-view,
   .study-layout,
   .app-main {
@@ -2085,5 +2278,22 @@ h3 {
 
   .result-panel {
     min-height: 520px;
+  }
+
+  .study-cover,
+  .section-heading,
+  .section-body {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .section-heading {
+    grid-template-columns: 1fr;
+  }
+
+  .section-heading small {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
   }
 }

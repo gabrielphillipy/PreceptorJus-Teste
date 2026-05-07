@@ -64,6 +64,106 @@ function markdownToHtml(markdown) {
     .replace(/(<li>.*?<\/li>)+/gs, (match) => `<ul>${match}</ul>`);
 }
 
+function renderStudyDocument(markdown, meta = {}) {
+  const lines = String(markdown || "").split("\n");
+  const sections = [];
+  let current = { title: meta.topic || "Estudo juridico", lines: [], intro: true };
+
+  lines.forEach((rawLine) => {
+    const line = rawLine.trim();
+    if (line.startsWith("## ")) {
+      if (current.lines.length || !current.intro) sections.push(current);
+      current = { title: line.slice(3).trim(), lines: [], intro: false };
+      return;
+    }
+    if (line.startsWith("### ")) {
+      current.lines.push({ type: "subheading", text: line.slice(4).trim() });
+      return;
+    }
+    current.lines.push({ type: "line", text: rawLine });
+  });
+
+  if (current.lines.length || !sections.length) sections.push(current);
+
+  const body = sections
+    .map((section, index) => renderStudySection(section, index, sections.length))
+    .join("");
+
+  return `
+    <div class="study-document">
+      <div class="study-cover">
+        <span>${escapeHtml(meta.modeLabel || "Nota juridica")}</span>
+        <h2>${escapeHtml(meta.topic || "Estudo juridico")}</h2>
+        <p>Material organizado para leitura, revisao e treino. Confira fontes oficiais quando houver citacao normativa, jurisprudencial ou sumular.</p>
+      </div>
+      ${body}
+    </div>
+  `;
+}
+
+function renderStudySection(section, index, total) {
+  const content = renderStudyLines(section.lines);
+  if (!content.trim()) return "";
+
+  const sectionNumber = String(index + 1).padStart(2, "0");
+  return `
+    <section class="study-section">
+      <div class="section-heading">
+        <span>${section.intro ? "Abertura" : `Secao ${sectionNumber}`}</span>
+        <h2>${escapeHtml(section.title)}</h2>
+        <small>${sectionNumber}/${String(total).padStart(2, "0")}</small>
+      </div>
+      <div class="section-body">${content}</div>
+    </section>
+  `;
+}
+
+function renderStudyLines(items) {
+  let html = "";
+  let list = [];
+
+  const flushList = () => {
+    if (!list.length) return;
+    html += `<ul class="study-list">${list.map((item) => `<li>${formatInline(item)}</li>`).join("")}</ul>`;
+    list = [];
+  };
+
+  items.forEach((item) => {
+    if (item.type === "subheading") {
+      flushList();
+      html += `<h3>${escapeHtml(item.text)}</h3>`;
+      return;
+    }
+
+    const line = String(item.text || "").trim();
+    if (!line) {
+      flushList();
+      return;
+    }
+
+    const bullet = line.match(/^[\-\*\u2022]\s+(.+)$/);
+    if (bullet) {
+      list.push(bullet[1]);
+      return;
+    }
+
+    flushList();
+    const cleanLine = line.replace(/^\d+\.\s+/, "");
+    const isLegalHighlight = /\b(art\.|artigo|codigo|lei|constituicao|sumula|stf|stj|jurisprudencia|precedente|tema)\b/i.test(cleanLine);
+    html += `<p class="${isLegalHighlight ? "legal-highlight" : ""}">${formatInline(cleanLine)}</p>`;
+  });
+
+  flushList();
+  return html;
+}
+
+function formatInline(value) {
+  return escapeHtml(value)
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\b(Art\.?\s*\d+[^\s,.]*)/gi, "<mark>$1</mark>")
+    .replace(/\b(STF|STJ|OAB|CF|CPC|CPP|CC|CP)\b/g, "<mark>$1</mark>");
+}
+
 function loadWorkspace() {
   try {
     const parsed = JSON.parse(localStorage.getItem(storageKey) || "{}");
@@ -362,7 +462,7 @@ document.addEventListener("click", (event) => {
     const study = workspace.studies.find((item) => item.id === openStudyButton.dataset.openStudy);
     if (study) {
       lastStudy = study;
-      resultContent.innerHTML = markdownToHtml(study.text);
+      resultContent.innerHTML = renderStudyDocument(study.text, study);
       document.querySelector("#topicInput").value = study.topic;
       showRoute("study");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -428,7 +528,7 @@ document.querySelector("#studyForm").addEventListener("submit", async (event) =>
   try {
     const text = await callAI({ mode, topic, goals, sections });
     lastStudy = { topic, text, modeLabel };
-    resultContent.innerHTML = markdownToHtml(text);
+    resultContent.innerHTML = renderStudyDocument(text, lastStudy);
     saveCurrentStudy();
   } catch (error) {
     renderError(resultContent, error);
