@@ -356,6 +356,30 @@ function renderValidationError(container, title, message) {
   `;
 }
 
+function resetStudyForm() {
+  const topicInput = document.querySelector("#topicInput");
+  const goalsInput = document.querySelector("#goalsInput");
+  const modeSelect = document.querySelector("#studyMode");
+
+  lastStudy = null;
+  lastSubmitter = null;
+  if (topicInput) {
+    topicInput.value = "";
+    topicInput.classList.remove("field-error");
+  }
+  if (goalsInput) goalsInput.value = "";
+  if (modeSelect) modeSelect.value = "fechamento";
+
+  resultContent.innerHTML = `
+    <div class="placeholder">
+      <strong>Nenhum estudo gerado</strong>
+      <span>Insira um tema juridico e gere a nota.</span>
+    </div>
+  `;
+
+  topicInput?.focus();
+}
+
 function renderGenerationLoader(kind = "study") {
   const labels = {
     study: {
@@ -417,6 +441,9 @@ document.addEventListener("click", (event) => {
   if (routeButton) {
     if (routeButton.closest(".landing-view")) return;
     showRoute(routeButton.dataset.route);
+    if (routeButton.matches("[data-new-study]")) {
+      resetStudyForm();
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
     return;
   }
