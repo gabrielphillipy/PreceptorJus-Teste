@@ -323,23 +323,42 @@
               <button class="primary-button generate-button" type="submit">Gerar estudo juridico</button>
             </form>
 
-            <article class="result-panel">
-              <header>
-                <span>Resultado</span>
-                <div>
-                  <button type="button" data-save-study>Salvar</button>
-                  <button type="button" data-copy-result>Copiar</button>
-                  <button type="button" data-export-result>Exportar PDF</button>
-                  <button type="button" data-generate-exam-from-study>Gerar prova</button>
+            <div class="study-workspace">
+              <article class="result-panel study-result-panel">
+                <header>
+                  <span>Resultado</span>
+                  <div>
+                    <button type="button" data-save-study>Salvar</button>
+                    <button type="button" data-copy-result>Copiar</button>
+                    <button type="button" data-export-result>Exportar PDF</button>
+                    <button type="button" data-generate-exam-from-study>Gerar prova</button>
+                  </div>
+                </header>
+                <div id="resultContent" class="result-content">
+                  <div class="placeholder">
+                    <strong>Nenhum estudo gerado</strong>
+                    <span>Insira um tema juridico e gere a nota.</span>
+                  </div>
                 </div>
-              </header>
-              <div id="resultContent" class="result-content">
-                <div class="placeholder">
-                  <strong>Nenhum estudo gerado</strong>
-                  <span>Insira um tema juridico e gere a nota.</span>
+              </article>
+
+              <aside class="chat-panel study-chat-panel">
+                <div class="study-chat-head">
+                  <span>Preceptor Chat</span>
+                  <strong>Tire duvidas sem sair do estudo</strong>
                 </div>
-              </div>
-            </article>
+                <div class="message assistant">
+                  <div class="chat-answer">
+                    <h3>Consulta rapida</h3>
+                    <p>Pergunte sobre o estudo gerado ou qualquer outro tema juridico.</p>
+                  </div>
+                </div>
+                <form class="study-chat-form" data-chat-form>
+                  <input type="text" placeholder="Pergunte ao Preceptor Chat..." />
+                  <button class="primary-button" type="submit">Enviar</button>
+                </form>
+              </aside>
+            </div>
           </div>
         </section>
 
@@ -391,7 +410,7 @@
                 <p>Posso explicar artigos, comparar institutos, montar tese de prova ou organizar um roteiro de peca.</p>
               </div>
             </div>
-            <form id="chatForm">
+            <form id="chatForm" data-chat-form>
               <input type="text" placeholder="Digite sua duvida juridica..." />
               <button class="primary-button" type="submit">Enviar</button>
             </form>

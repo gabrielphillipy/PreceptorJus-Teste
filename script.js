@@ -1227,7 +1227,7 @@ function parseExamMarkdown(markdown) {
   };
 }
 
-document.querySelector("#chatForm").addEventListener("submit", async (event) => {
+async function handleChatSubmit(event) {
   event.preventDefault();
   const input = event.currentTarget.querySelector("input");
   const submit = event.currentTarget.querySelector("button");
@@ -1253,4 +1253,8 @@ document.querySelector("#chatForm").addEventListener("submit", async (event) => 
   } finally {
     setLoading(submit, false);
   }
+}
+
+document.querySelectorAll("[data-chat-form]").forEach((form) => {
+  form.addEventListener("submit", handleChatSubmit);
 });
