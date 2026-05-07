@@ -94,8 +94,11 @@ function isMindMapMode(meta = {}) {
 function renderMindMapDocument(sections, meta = {}) {
   const topic = meta.topic || "Mapa mental juridico";
   const central = sections.find((section) => /n[uú]cleo|central|tema/i.test(section.title)) || sections[0];
-  const centralText = getSectionPlainLines(central).slice(0, 2).join(" ") || topic;
-  const branches = sections.filter((section) => section !== central && getSectionPlainLines(section).length);
+  const centralText = topic;
+  let branches = sections.filter((section) => section !== central && getSectionPlainLines(section).length);
+  if (branches.length < 2) {
+    branches = buildMindMapFallbackBranches(sections, central);
+  }
 
   return `
     <div class="mindmap-document">
@@ -110,11 +113,65 @@ function renderMindMapDocument(sections, meta = {}) {
           <strong>${formatInline(centralText)}</strong>
         </div>
         <div class="mindmap-branches">
-          ${branches.map((section, index) => renderMindMapBranch(section, index)).join("")}
+          ${branches.slice(0, 8).map((section, index) => renderMindMapBranch(section, index)).join("")}
         </div>
       </div>
     </div>
   `;
+}
+
+function buildMindMapFallbackBranches(sections, central) {
+  const sourceSections = sections.filter((section) => section !== central);
+  const candidates = sourceSections.length ? sourceSections : sections;
+  const branches = [];
+
+  candidates.forEach((section) => {
+    const plain = getSectionPlainLines(section);
+    if (!plain.length) return;
+
+    if (!/n[uú]cleo|central|tema/i.test(section.title) && section.title) {
+      branches.push({ title: section.title, lines: plain.map((text) => ({ type: "line", text })) });
+      return;
+    }
+
+    let current = null;
+    plain.forEach((line) => {
+      const titleMatch = line.match(/^(?:ramo\s*\d+\s*[:\-]\s*)?([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][^:]{2,48})\s*:\s*(.*)$/i);
+      if (titleMatch) {
+        if (current?.lines.length) branches.push(current);
+        current = { title: titleMatch[1].trim(), lines: [] };
+        if (titleMatch[2]) current.lines.push({ type: "line", text: titleMatch[2].trim() });
+        return;
+      }
+
+      if (!current) {
+        current = { title: inferMindMapBranchTitle(branches.length), lines: [] };
+      }
+      current.lines.push({ type: "line", text: line });
+    });
+
+    if (current?.lines.length) branches.push(current);
+  });
+
+  if (branches.length >= 2) return branches;
+
+  const allLines = sections.flatMap(getSectionPlainLines).filter((line) => !/n[uú]cleo|central/i.test(line));
+  return chunkArray(allLines, 4).map((group, index) => ({
+    title: inferMindMapBranchTitle(index),
+    lines: group.map((text) => ({ type: "line", text })),
+  }));
+}
+
+function inferMindMapBranchTitle(index) {
+  return ["Conceito", "Base legal", "Requisitos", "Prova", "Excecoes", "Revisao"][index] || `Ramo ${index + 1}`;
+}
+
+function chunkArray(items, size) {
+  const chunks = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
 }
 
 function getSectionPlainLines(section) {

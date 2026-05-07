@@ -251,6 +251,7 @@ function buildPrompt(body) {
   const studyFormats = {
     mapa: [
       "Estruture em Markdown como mapa mental textual real, com ramos curtos e hierarquicos:",
+      "Use obrigatoriamente os titulos com ## abaixo. Nao use apenas texto solto.",
       "## Nucleo central",
       "Uma frase curta com o conceito-base.",
       "## Ramo 1: Conceito",
