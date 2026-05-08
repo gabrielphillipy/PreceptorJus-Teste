@@ -3528,7 +3528,21 @@ h3 {
 }
 
 :root[data-theme="dark"] .message.assistant {
+  background: #111b28;
+  color: var(--ink);
   box-shadow: 0 22px 46px -38px rgba(0, 0, 0, 0.85);
+}
+
+:root[data-theme="dark"] .message.assistant .chat-answer {
+  background: transparent;
+}
+
+:root[data-theme="dark"] .message.assistant .chat-answer p {
+  color: #d7dee8;
+}
+
+:root[data-theme="dark"] .message.assistant .chat-answer h3 {
+  color: #f4f6f8;
 }
 
 :root[data-theme="dark"] .loader-orbit,
