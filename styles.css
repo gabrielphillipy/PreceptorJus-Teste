@@ -3388,6 +3388,7 @@ h3 {
 :root[data-theme="dark"] .price-grid article,
 :root[data-theme="dark"] .feature-card,
 :root[data-theme="dark"] .tool-grid button,
+:root[data-theme="dark"] .stats-strip article,
 :root[data-theme="dark"] .recent-panel,
 :root[data-theme="dark"] .input-panel,
 :root[data-theme="dark"] .result-panel,
@@ -3494,9 +3495,14 @@ h3 {
 :root[data-theme="dark"] .page-title h1,
 :root[data-theme="dark"] .feature-card h2,
 :root[data-theme="dark"] .tool-grid b,
+:root[data-theme="dark"] .stats-strip span,
 :root[data-theme="dark"] .feedback-dialog h2,
 :root[data-theme="dark"] .app-topbar strong {
   color: var(--ink);
+}
+
+:root[data-theme="dark"] .stats-strip small {
+  color: var(--muted);
 }
 
 :root[data-theme="dark"] .study-list li,
