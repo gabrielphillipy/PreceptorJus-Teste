@@ -20,6 +20,7 @@ let workspace = loadWorkspace();
 initTheme();
 initMotion();
 renderWorkspace();
+readCheckoutReturn();
 
 function openApp(route = "menu") {
   landing.classList.add("is-hidden");
@@ -1353,7 +1354,72 @@ function renderGenerationLoader(kind = "study") {
   `;
 }
 
+function showCheckoutNotice(type, title, message) {
+  document.querySelector("[data-checkout-notice]")?.remove();
+  const notice = document.createElement("div");
+  notice.className = `checkout-notice ${type}`;
+  notice.dataset.checkoutNotice = "true";
+  notice.innerHTML = `
+    <strong>${escapeHtml(title)}</strong>
+    <span>${escapeHtml(message)}</span>
+    <button type="button" data-close-checkout-notice aria-label="Fechar">×</button>
+  `;
+  document.body.appendChild(notice);
+  setTimeout(() => notice.remove(), 9000);
+}
+
+function readCheckoutReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const checkout = params.get("checkout");
+  if (!checkout) return;
+
+  if (checkout === "success") {
+    showCheckoutNotice("success", "Assinatura iniciada", "Pagamento aprovado. Seu plano Preceptor esta em processamento.");
+  }
+
+  if (checkout === "cancelled") {
+    showCheckoutNotice("warning", "Checkout cancelado", "Voce pode tentar assinar novamente quando quiser.");
+  }
+
+  params.delete("checkout");
+  params.delete("plan");
+  params.delete("session_id");
+  const query = params.toString();
+  const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+  window.history.replaceState({}, "", nextUrl);
+}
+
+async function startCheckout(button, plan) {
+  setLoading(button, true, "Abrindo checkout...");
+  try {
+    const response = await fetch("/api/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plan }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.url) {
+      throw new Error(data.error || "Nao foi possivel abrir o checkout.");
+    }
+    window.location.href = data.url;
+  } catch (error) {
+    showCheckoutNotice("error", "Checkout indisponivel", error.message || "Tente novamente em instantes.");
+    setLoading(button, false);
+  }
+}
+
 document.addEventListener("click", (event) => {
+  const checkoutButton = event.target.closest("[data-checkout-plan]");
+  if (checkoutButton) {
+    startCheckout(checkoutButton, checkoutButton.dataset.checkoutPlan);
+    return;
+  }
+
+  if (event.target.closest("[data-close-checkout-notice]")) {
+    document.querySelector("[data-checkout-notice]")?.remove();
+    return;
+  }
+
   const openAppButton = event.target.closest("[data-open-app]");
   if (openAppButton) {
     openApp("menu");
