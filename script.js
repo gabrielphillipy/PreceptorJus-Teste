@@ -94,13 +94,6 @@ function isMindMapMode(meta = {}) {
 function renderMindMapDocument(sections, meta = {}) {
   const topic = meta.topic || "Mapa mental juridico";
   const model = buildMindMapModel(sections, meta);
-  const leftBranches = model.branches.filter((_, index) => index % 2 === 0);
-  const rightBranches = model.branches.filter((_, index) => index % 2 === 1);
-  const renderColumn = (branches, side) => `
-    <div class="mindmap-branch-column ${side}">
-      ${branches.map((branch) => renderMindMapBranch(branch.section, branch.index, side)).join("")}
-    </div>
-  `;
   return `
     <div class="mindmap-document">
       <div class="mindmap-header">
@@ -110,12 +103,11 @@ function renderMindMapDocument(sections, meta = {}) {
       </div>
       <div class="mindmap-canvas">
         <div class="mindmap-map">
-          ${renderColumn(leftBranches, "left")}
           <div class="mindmap-core">
-            <small>Nucleo central</small>
+            <small>Nucleo</small>
             <strong>${formatInline(model.centralText)}</strong>
           </div>
-          ${renderColumn(rightBranches, "right")}
+          ${model.branches.map((branch, index) => renderMindMapBranch(branch, index, model.branches.length)).join("")}
         </div>
       </div>
     </div>
@@ -126,7 +118,8 @@ function buildMindMapModel(sections, meta = {}) {
   const topic = meta.topic || "Mapa mental juridico";
   const central = sections.find((section) => /n[uú]cleo|central|tema/i.test(section.title)) || sections[0];
   const centralLines = getSectionPlainLines(central).filter((line) => !/^mapa mental/i.test(line));
-  const centralText = centralLines[0]?.length && centralLines[0].length <= 140 ? centralLines[0] : topic;
+  const centralCandidate = compactMindMapText(centralLines[0] || "", 40);
+  const centralText = centralCandidate && centralCandidate.length <= 32 ? centralCandidate : compactMindMapText(topic, 32);
   let branches = sections.filter((section) => section !== central && getSectionPlainLines(section).length);
   if (branches.length < 2) {
     branches = buildMindMapFallbackBranches(sections, central);
@@ -135,8 +128,54 @@ function buildMindMapModel(sections, meta = {}) {
   return {
     topic,
     centralText,
-    branches: branches.slice(0, 8).map((section, index) => ({ section, index })),
+    branches: branches.slice(0, 6).map((section, index) => normalizeMindMapBranch(section, index)),
   };
+}
+
+function normalizeMindMapBranch(section, index) {
+  const title = compactMindMapTitle(section.title || inferMindMapBranchTitle(index), index);
+  const seen = new Set();
+  const points = getSectionPlainLines(section)
+    .map((line) => compactMindMapText(line, 66))
+    .filter((line) => {
+      const key = line.toLowerCase();
+      if (!key || seen.has(key) || key === title.toLowerCase()) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 3);
+
+  return { title, points, index };
+}
+
+function compactMindMapTitle(value, index = 0) {
+  const clean = String(value || "")
+    .replace(/^Ramo\s*\d+\s*[:\-]\s*/i, "")
+    .replace(/\*\*/g, "")
+    .trim();
+  return compactMindMapText(clean || inferMindMapBranchTitle(index), 24);
+}
+
+function compactMindMapText(value, maxLength = 64) {
+  let clean = String(value || "")
+    .replace(/\*\*/g, "")
+    .replace(/^[-*\u2022]\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const colon = clean.indexOf(":");
+  if (colon > -1 && colon < 34) {
+    const label = clean.slice(0, colon + 1);
+    const rest = clean.slice(colon + 1).trim();
+    clean = `${label} ${rest.split(/[.;]/)[0] || rest}`;
+  } else {
+    clean = clean.split(/[.;]/)[0] || clean;
+  }
+
+  if (clean.length <= maxLength) return clean;
+  const clipped = clean.slice(0, maxLength + 1);
+  const lastSpace = clipped.lastIndexOf(" ");
+  return `${clipped.slice(0, lastSpace > 28 ? lastSpace : maxLength).trim()}...`;
 }
 
 function buildMindMapFallbackBranches(sections, central) {
@@ -201,17 +240,17 @@ function getSectionPlainLines(section) {
     .filter(Boolean);
 }
 
-function renderMindMapBranch(section, index, side = "") {
-  const points = getSectionPlainLines(section).slice(0, 4);
-  const title = section.title.replace(/^Ramo\s*\d+\s*[:\-]\s*/i, "");
+function renderMindMapBranch(branch, position, total) {
+  const angle = total > 1 ? -150 + (300 / (total - 1)) * position : 0;
+  const radius = position % 2 ? 250 : 218;
   return `
-    <article class="mindmap-branch ${side}" style="--branch:${index}">
+    <article class="mindmap-branch" style="--angle:${angle}deg; --radius:${radius}px;">
       <div class="mindmap-node-title">
-        <span>${String(index + 1).padStart(2, "0")}</span>
-        <h3>${escapeHtml(title)}</h3>
+        <span>${String(branch.index + 1).padStart(2, "0")}</span>
+        <h3>${escapeHtml(branch.title)}</h3>
       </div>
       <ul>
-        ${points.map((point) => `<li>${formatInline(point)}</li>`).join("")}
+        ${branch.points.map((point) => `<li>${formatInline(point)}</li>`).join("")}
       </ul>
     </article>
   `;
@@ -290,6 +329,8 @@ function renderMindMapPdfDocument(markdown, meta = {}) {
   });
   const model = buildMindMapModel(sections, meta);
   const date = new Date().toLocaleDateString("pt-BR");
+  const leftBranches = model.branches.filter((_, index) => index % 2 === 0);
+  const rightBranches = model.branches.filter((_, index) => index % 2 === 1);
 
   return `
     <article class="formal-pdf formal-pdf-map">
@@ -308,12 +349,17 @@ function renderMindMapPdfDocument(markdown, meta = {}) {
       </section>
 
       <section class="formal-map-sheet">
-        <div class="formal-map-core">
-          <span>Nucleo central</span>
-          <strong>${formatInline(model.centralText)}</strong>
-        </div>
-        <div class="formal-map-branches">
-          ${model.branches.map(({ section, index }) => renderFormalMindMapBranch(section, index)).join("")}
+        <div class="formal-map-diagram">
+          <div class="formal-map-branches left">
+            ${leftBranches.map((branch, index) => renderFormalMindMapBranch(branch, index)).join("")}
+          </div>
+          <div class="formal-map-core">
+            <span>Nucleo</span>
+            <strong>${formatInline(model.centralText)}</strong>
+          </div>
+          <div class="formal-map-branches right">
+            ${rightBranches.map((branch, index) => renderFormalMindMapBranch(branch, index)).join("")}
+          </div>
         </div>
       </section>
 
@@ -325,18 +371,17 @@ function renderMindMapPdfDocument(markdown, meta = {}) {
   `;
 }
 
-function renderFormalMindMapBranch(section, index) {
-  const title = section.title.replace(/^Ramo\s*\d+\s*[:\-]\s*/i, "");
-  const points = getSectionPlainLines(section).slice(0, 5);
+function renderFormalMindMapBranch(branch, index) {
+  const normalized = branch.points ? branch : normalizeMindMapBranch(branch, index);
 
   return `
     <article class="formal-map-branch">
       <header>
-        <span>${String(index + 1).padStart(2, "0")}</span>
-        <h2>${escapeHtml(title)}</h2>
+        <span>${String((normalized.index ?? index) + 1).padStart(2, "0")}</span>
+        <h2>${escapeHtml(normalized.title)}</h2>
       </header>
       <ul>
-        ${points.map((point) => `<li>${formatInline(point)}</li>`).join("")}
+        ${normalized.points.map((point) => `<li>${formatInline(point)}</li>`).join("")}
       </ul>
     </article>
   `;
