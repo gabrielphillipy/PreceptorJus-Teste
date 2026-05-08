@@ -655,7 +655,8 @@ function toggleTheme() {
 function updateThemeButton() {
   const isDark = document.documentElement.dataset.theme === "dark";
   document.querySelectorAll("[data-toggle-theme]").forEach((button) => {
-    button.textContent = isDark ? "Modo claro" : "Modo escuro";
+    button.setAttribute("aria-label", isDark ? "Ativar modo claro" : "Ativar modo escuro");
+    button.setAttribute("title", isDark ? "Ativar modo claro" : "Ativar modo escuro");
   });
 }
 
