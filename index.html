@@ -216,6 +216,7 @@
             <strong>Gabriel</strong>
           </div>
           <div class="topbar-actions">
+            <button class="outline-button" type="button" data-toggle-theme>Modo escuro</button>
             <button class="outline-button" type="button" data-open-feedback>Feedback</button>
             <button class="primary-button" type="button" data-route="study" data-new-study>Novo fechamento</button>
           </div>
@@ -397,6 +398,18 @@
           <div class="page-title compact">
             <p class="eyebrow"><span></span>Biblioteca</p>
             <h1>Seus materiais juridicos.</h1>
+          </div>
+          <div class="library-controls">
+            <input type="search" placeholder="Buscar por tema, trecho ou materia..." data-library-search />
+            <select data-library-filter aria-label="Filtrar biblioteca">
+              <option value="all">Todos os materiais</option>
+              <option value="favorites">Favoritos</option>
+              <option value="fechamento">Resumos</option>
+              <option value="mapa">Mapas mentais</option>
+              <option value="peca">Pecas praticas</option>
+              <option value="jurisprudencia">Jurisprudencia</option>
+              <option value="questoes">Questoes</option>
+            </select>
           </div>
           <div class="library-grid" id="libraryGrid"></div>
         </section>

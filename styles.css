@@ -16,6 +16,21 @@
   --body: "Inter", Arial, sans-serif;
 }
 
+:root[data-theme="dark"] {
+  --bg: #0f1722;
+  --paper: #151f2c;
+  --ink: #f4f6f8;
+  --ink-2: #c7d0dc;
+  --muted: #98a5b7;
+  --line: #2d3848;
+  --primary: #d2ae6d;
+  --primary-dark: #f4f6f8;
+  --primary-deep: #090f18;
+  --gold: #d2ae6d;
+  --gold-soft: #2a241b;
+  --shadow: 0 24px 70px -28px rgba(0, 0, 0, 0.72);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -31,6 +46,12 @@ body {
     linear-gradient(rgba(244, 241, 236, 0.94), rgba(244, 241, 236, 0.94)),
     url("https://images.unsplash.com/photo-1589391886645-d51941baf7fb?auto=format&fit=crop&w=1800&q=80") center/cover fixed;
   font-family: var(--body);
+}
+
+:root[data-theme="dark"] body {
+  background:
+    linear-gradient(rgba(10, 15, 24, 0.94), rgba(10, 15, 24, 0.96)),
+    url("https://images.unsplash.com/photo-1589391886645-d51941baf7fb?auto=format&fit=crop&w=1800&q=80") center/cover fixed;
 }
 
 button,
@@ -840,6 +861,12 @@ h3 {
   background:
     radial-gradient(circle at 85% 4%, rgba(185, 144, 77, 0.16), transparent 22rem),
     linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(244, 241, 236, 0.88));
+}
+
+:root[data-theme="dark"] .app-main {
+  background:
+    radial-gradient(circle at 85% 4%, rgba(210, 174, 109, 0.12), transparent 22rem),
+    linear-gradient(180deg, rgba(15, 23, 34, 0.96), rgba(9, 15, 24, 0.98));
 }
 
 .app-topbar {
@@ -2826,6 +2853,25 @@ h3 {
   margin-top: 14px;
 }
 
+.library-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.library-controls input,
+.library-controls select {
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  outline: 0;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 0 14px;
+  box-shadow: 0 12px 32px -30px rgba(17, 29, 46, 0.5);
+}
+
 .library-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -2834,6 +2880,32 @@ h3 {
   position: relative;
   overflow: hidden;
   padding: 24px;
+}
+
+.library-grid article small {
+  display: block;
+  margin-top: 12px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.library-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.library-actions button {
+  min-height: 34px;
+  margin-top: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink-2);
+  padding: 0 12px;
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 .library-grid span,
@@ -3588,6 +3660,7 @@ h3 {
   .tool-grid,
   .stats-strip,
   .library-grid,
+  .library-controls,
   .recent-panel,
   .chat-panel form,
   .quick-generate {

@@ -7,12 +7,16 @@ const libraryGrid = document.querySelector("#libraryGrid");
 const examResult = document.querySelector("#examResult");
 const flashcardResult = document.querySelector("#flashcardResult");
 const storageKey = "preceptorjus_workspace";
+const themeKey = "preceptorjus_theme";
 let lastSubmitter = null;
 let lastStudy = null;
 let currentExam = null;
 let currentFlashcards = null;
+let libraryQuery = "";
+let libraryFilter = "all";
 let workspace = loadWorkspace();
 
+initTheme();
 initMotion();
 renderWorkspace();
 
@@ -634,6 +638,27 @@ function saveWorkspace() {
   renderWorkspace();
 }
 
+function initTheme() {
+  const theme = localStorage.getItem(themeKey) || "light";
+  document.documentElement.dataset.theme = theme;
+  updateThemeButton();
+}
+
+function toggleTheme() {
+  const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+  const next = current === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem(themeKey, next);
+  updateThemeButton();
+}
+
+function updateThemeButton() {
+  const isDark = document.documentElement.dataset.theme === "dark";
+  document.querySelectorAll("[data-toggle-theme]").forEach((button) => {
+    button.textContent = isDark ? "Modo claro" : "Modo escuro";
+  });
+}
+
 function openFeedbackModal() {
   document.querySelector("[data-feedback-modal]")?.classList.remove("is-hidden");
   document.querySelector('[data-feedback-form] textarea[name="message"]')?.focus();
@@ -684,16 +709,46 @@ function renderWorkspace() {
 
   if (!libraryGrid) return;
   libraryGrid.querySelectorAll("[data-saved-study]").forEach((card) => card.remove());
-  studies.slice(0, 12).forEach((study) => {
+  libraryGrid.querySelectorAll(".library-empty").forEach((card) => card.remove());
+
+  const normalizedQuery = libraryQuery.trim().toLowerCase();
+  const filteredStudies = studies.filter((study) => {
+    const matchesFilter =
+      libraryFilter === "all" ||
+      (libraryFilter === "favorites" && study.favorite) ||
+      study.mode === libraryFilter;
+    const searchable = `${study.topic} ${study.modeLabel || ""} ${study.excerpt || ""}`.toLowerCase();
+    return matchesFilter && (!normalizedQuery || searchable.includes(normalizedQuery));
+  });
+
+  if (!filteredStudies.length) {
+    const empty = document.createElement("article");
+    empty.className = "library-empty";
+    empty.innerHTML = `
+      <span>Arquivo vazio</span>
+      <h2>Nenhum material encontrado</h2>
+      <p>Gere um estudo ou ajuste os filtros da biblioteca.</p>
+    `;
+    libraryGrid.appendChild(empty);
+    return;
+  }
+
+  filteredStudies.slice(0, 30).forEach((study) => {
     const card = document.createElement("article");
     card.dataset.savedStudy = study.id;
     card.innerHTML = `
-      <span>${escapeHtml(study.modeLabel || "Estudo")}</span>
+      <span>${study.favorite ? "Favorito · " : ""}${escapeHtml(study.modeLabel || "Estudo")}</span>
       <h2>${escapeHtml(study.topic)}</h2>
       <p>${escapeHtml(study.excerpt || "Material salvo na biblioteca.")}</p>
-      <button class="outline-button" type="button" data-open-study="${escapeHtmlAttr(study.id)}">Abrir</button>
+      <small>${escapeHtml(study.date || "Sem data")}</small>
+      <div class="library-actions">
+        <button class="outline-button" type="button" data-open-study="${escapeHtmlAttr(study.id)}">Abrir</button>
+        <button type="button" data-favorite-study="${escapeHtmlAttr(study.id)}">${study.favorite ? "Desfavoritar" : "Favoritar"}</button>
+        <button type="button" data-rename-study="${escapeHtmlAttr(study.id)}">Renomear</button>
+        <button type="button" data-delete-study="${escapeHtmlAttr(study.id)}">Apagar</button>
+      </div>
     `;
-    libraryGrid.prepend(card);
+    libraryGrid.appendChild(card);
   });
 }
 
@@ -706,12 +761,42 @@ function saveCurrentStudy() {
     text: lastStudy.text,
     mode: lastStudy.mode || "",
     modeLabel: lastStudy.modeLabel || "Estudo juridico",
+    favorite: Boolean(lastStudy.favorite),
     excerpt: resultContent.textContent.trim().slice(0, 130),
     date: new Date().toLocaleDateString("pt-BR"),
   };
   workspace.studies = [study, ...workspace.studies.filter((item) => item.topic !== study.topic)].slice(0, 30);
   saveWorkspace();
   return true;
+}
+
+function updateStudyById(id, updater) {
+  let changed = false;
+  workspace.studies = (workspace.studies || []).map((study) => {
+    if (study.id !== id) return study;
+    changed = true;
+    return updater({ ...study });
+  });
+  if (changed) saveWorkspace();
+  return changed;
+}
+
+function deleteStudyById(id) {
+  const before = workspace.studies?.length || 0;
+  workspace.studies = (workspace.studies || []).filter((study) => study.id !== id);
+  if ((workspace.studies?.length || 0) !== before) saveWorkspace();
+}
+
+function downloadTextFile(filename, content, type = "text/plain;charset=utf-8") {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 async function exportResult(button) {
@@ -1215,6 +1300,11 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  if (event.target.closest("[data-toggle-theme]")) {
+    toggleTheme();
+    return;
+  }
+
   if (event.target.closest("[data-open-feedback]")) {
     openFeedbackModal();
     return;
@@ -1286,6 +1376,30 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const favoriteStudyButton = event.target.closest("[data-favorite-study]");
+  if (favoriteStudyButton) {
+    updateStudyById(favoriteStudyButton.dataset.favoriteStudy, (study) => ({ ...study, favorite: !study.favorite }));
+    return;
+  }
+
+  const renameStudyButton = event.target.closest("[data-rename-study]");
+  if (renameStudyButton) {
+    const study = workspace.studies.find((item) => item.id === renameStudyButton.dataset.renameStudy);
+    const nextTopic = window.prompt("Novo nome do material:", study?.topic || "");
+    if (nextTopic?.trim()) {
+      updateStudyById(renameStudyButton.dataset.renameStudy, (item) => ({ ...item, topic: nextTopic.trim() }));
+    }
+    return;
+  }
+
+  const deleteStudyButton = event.target.closest("[data-delete-study]");
+  if (deleteStudyButton) {
+    if (window.confirm("Apagar este material da biblioteca?")) {
+      deleteStudyById(deleteStudyButton.dataset.deleteStudy);
+    }
+    return;
+  }
+
   const generateExamFromStudyButton = event.target.closest("[data-generate-exam-from-study]");
   if (generateExamFromStudyButton) {
     generateExamFromStudy(generateExamFromStudyButton);
@@ -1312,6 +1426,16 @@ document.querySelector("#topicInput").addEventListener("input", (event) => {
   if (event.currentTarget.value.trim()) {
     event.currentTarget.classList.remove("field-error");
   }
+});
+
+document.querySelector("[data-library-search]")?.addEventListener("input", (event) => {
+  libraryQuery = event.currentTarget.value || "";
+  renderWorkspace();
+});
+
+document.querySelector("[data-library-filter]")?.addEventListener("change", (event) => {
+  libraryFilter = event.currentTarget.value || "all";
+  renderWorkspace();
 });
 
 document.querySelector("#studyForm").addEventListener("submit", async (event) => {
@@ -1483,9 +1607,20 @@ function renderCurrentFlashcard() {
         <button type="button" data-prev-flashcard ${index === 0 ? "disabled" : ""}>Anterior</button>
         <button type="button" data-flip-card>${flipped ? "Ver frente" : "Virar card"}</button>
         <button type="button" data-next-flashcard ${index === total - 1 ? "disabled" : ""}>Proximo</button>
+        <button type="button" data-export-flashcards>Exportar CSV</button>
       </div>
     </div>
   `;
+}
+
+function exportFlashcardsCsv() {
+  if (!currentFlashcards?.cards?.length) return;
+  const rows = [["Frente", "Verso"]];
+  currentFlashcards.cards.forEach((card) => rows.push([card.front, card.back]));
+  const csv = rows
+    .map((row) => row.map((cell) => `"${String(cell || "").replaceAll('"', '""')}"`).join(","))
+    .join("\n");
+  downloadTextFile(`${slugify(currentFlashcards.topic || "flashcards")}.csv`, csv, "text/csv;charset=utf-8");
 }
 
 function parseFlashcards(markdown) {
@@ -1600,6 +1735,12 @@ document.addEventListener("click", (event) => {
   const flipButton = event.target.closest("[data-flip-card]");
   const nextFlashcard = event.target.closest("[data-next-flashcard]");
   const prevFlashcard = event.target.closest("[data-prev-flashcard]");
+  const exportFlashcardsButton = event.target.closest("[data-export-flashcards]");
+  if (exportFlashcardsButton) {
+    exportFlashcardsCsv();
+    return;
+  }
+
   if (currentFlashcards && (flipButton || nextFlashcard || prevFlashcard)) {
     if (flipButton) {
       currentFlashcards.flipped = !currentFlashcards.flipped;
