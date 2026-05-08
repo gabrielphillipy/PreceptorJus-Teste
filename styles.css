@@ -1673,6 +1673,8 @@ h3 {
   font-family: var(--display);
   font-size: 1.06rem;
   line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .mindmap-branch {
@@ -1736,6 +1738,8 @@ h3 {
   margin: 0;
   color: var(--primary-dark);
   font-size: 0.94rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .mindmap-branch ul {
@@ -1752,6 +1756,8 @@ h3 {
   color: var(--ink-2);
   font-size: 0.86rem;
   line-height: 1.36;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .mindmap-branch li::before {

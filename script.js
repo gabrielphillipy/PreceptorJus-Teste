@@ -136,7 +136,7 @@ function normalizeMindMapBranch(section, index) {
   const title = compactMindMapTitle(section.title || inferMindMapBranchTitle(index), index);
   const seen = new Set();
   const points = getSectionPlainLines(section)
-    .map((line) => compactMindMapText(line, 66))
+    .map((line) => compactMindMapText(line, 48))
     .filter((line) => {
       const key = line.toLowerCase();
       if (!key || seen.has(key) || key === title.toLowerCase()) return false;
@@ -153,7 +153,7 @@ function compactMindMapTitle(value, index = 0) {
     .replace(/^Ramo\s*\d+\s*[:\-]\s*/i, "")
     .replace(/\*\*/g, "")
     .trim();
-  return compactMindMapText(clean || inferMindMapBranchTitle(index), 24);
+  return compactMindMapText(clean || inferMindMapBranchTitle(index), 18);
 }
 
 function compactMindMapText(value, maxLength = 64) {
@@ -242,7 +242,7 @@ function getSectionPlainLines(section) {
 
 function renderMindMapBranch(branch, position, total) {
   const angle = total > 1 ? -150 + (300 / (total - 1)) * position : 0;
-  const radius = position % 2 ? 250 : 218;
+  const radius = position % 2 ? 244 : 214;
   return `
     <article class="mindmap-branch" style="--angle:${angle}deg; --radius:${radius}px;">
       <div class="mindmap-node-title">
@@ -717,13 +717,24 @@ function saveCurrentStudy() {
 async function exportResult(button) {
   if (!lastStudy?.text) return;
 
-  if (!window.html2pdf) {
-    window.print();
+  setLoading(button, true, "Gerando PDF...");
+  const filename = `${slugify(lastStudy.topic || "preceptorjus-estudo")}.pdf`;
+
+  if (window.jspdf?.jsPDF) {
+    try {
+      exportStructuredPdf(filename);
+    } finally {
+      setLoading(button, false);
+    }
     return;
   }
 
-  setLoading(button, true, "Gerando PDF...");
-  const filename = `${slugify(lastStudy.topic || "preceptorjus-estudo")}.pdf`;
+  if (!window.html2pdf) {
+    window.print();
+    setLoading(button, false);
+    return;
+  }
+
   const wrapper = document.createElement("div");
   wrapper.className = "pdf-export-root";
   wrapper.innerHTML = `
@@ -759,6 +770,239 @@ async function exportResult(button) {
     wrapper.remove();
     setLoading(button, false);
   }
+}
+
+function exportStructuredPdf(filename) {
+  const doc = new window.jspdf.jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  if (isMindMapMode(lastStudy)) {
+    drawMindMapPdf(doc, lastStudy.text, lastStudy);
+  } else {
+    drawStudyPdf(doc, lastStudy.text, lastStudy);
+  }
+  doc.save(filename);
+}
+
+function drawStudyPdf(doc, markdown, meta = {}) {
+  const sections = parseStudySections(markdown, meta).filter((section) => getSectionPlainLines(section).length);
+  const state = createPdfState(doc);
+  const topic = meta.topic || "Estudo juridico";
+
+  drawPdfHeader(state, meta.modeLabel || "Documento de estudo", topic);
+  drawPdfSummary(state, sections);
+  sections.forEach((section, index) => drawPdfSection(state, section, index));
+  drawPdfFooter(state);
+}
+
+function drawMindMapPdf(doc, markdown, meta = {}) {
+  const sections = parseStudySections(markdown, meta).filter((section) => getSectionPlainLines(section).length);
+  const model = buildMindMapModel(sections, meta);
+  const state = createPdfState(doc);
+
+  drawPdfHeader(state, "Mapa mental juridico", model.topic);
+  ensurePdfSpace(state, 168);
+
+  const centerX = 105;
+  const centerY = state.y + 74;
+  const coreRadius = 22;
+
+  state.doc.setDrawColor(185, 144, 77);
+  state.doc.setLineWidth(0.3);
+  state.doc.circle(centerX, centerY, 58);
+
+  model.branches.forEach((branch, index) => {
+    const angle = model.branches.length > 1 ? -150 + (300 / (model.branches.length - 1)) * index : 0;
+    const radians = (angle * Math.PI) / 180;
+    const nodeX = centerX + Math.cos(radians) * 67;
+    const nodeY = centerY + Math.sin(radians) * 57;
+    drawPdfLine(state, centerX, centerY, nodeX, nodeY);
+    drawPdfMindMapNode(state, branch, nodeX, nodeY, index);
+  });
+
+  state.doc.setFillColor(17, 29, 46);
+  state.doc.setDrawColor(17, 29, 46);
+  state.doc.circle(centerX, centerY, coreRadius, "FD");
+  state.doc.setTextColor(255, 255, 255);
+  state.doc.setFont("helvetica", "bold");
+  state.doc.setFontSize(11);
+  drawCenteredPdfText(state, model.centralText, centerX, centerY - 4, 31, 5);
+
+  state.y += 168;
+  drawPdfFooter(state);
+}
+
+function createPdfState(doc) {
+  return {
+    doc,
+    margin: 18,
+    width: 174,
+    pageHeight: 297,
+    y: 18,
+  };
+}
+
+function drawPdfHeader(state, label, title) {
+  const date = new Date().toLocaleDateString("pt-BR");
+  const { doc, margin, width } = state;
+
+  doc.setTextColor(17, 29, 46);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("PRECEPTORJUS", margin, state.y);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(122, 128, 138);
+  doc.text(`Gerado em ${date}`, margin + width, state.y, { align: "right" });
+
+  state.y += 12;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(138, 103, 45);
+  doc.text(cleanPdfText(label).toUpperCase(), margin, state.y);
+
+  state.y += 12;
+  doc.setFont("times", "bold");
+  doc.setFontSize(24);
+  doc.setTextColor(17, 29, 46);
+  writePdfWrapped(state, title, 10, "times", "bold", width, 9);
+
+  state.y += 4;
+  doc.setDrawColor(17, 29, 46);
+  doc.setLineWidth(0.6);
+  doc.line(margin, state.y, margin + width, state.y);
+  state.y += 12;
+}
+
+function drawPdfSummary(state, sections) {
+  ensurePdfSpace(state, 32);
+  const { doc, margin, width } = state;
+  doc.setFillColor(248, 245, 239);
+  doc.setDrawColor(216, 209, 196);
+  doc.rect(margin, state.y, width, 12 + sections.length * 6, "FD");
+  state.y += 8;
+  doc.setFont("times", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(17, 29, 46);
+  doc.text("Sumario", margin + 6, state.y);
+  state.y += 8;
+  doc.setFont("times", "normal");
+  doc.setFontSize(10);
+  sections.forEach((section, index) => {
+    doc.text(`${index + 1}. ${cleanPdfText(section.title)}`, margin + 8, state.y);
+    state.y += 6;
+  });
+  state.y += 10;
+}
+
+function drawPdfSection(state, section, index) {
+  ensurePdfSpace(state, 28);
+  const { doc, margin } = state;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(164, 122, 53);
+  doc.text(String(index + 1).padStart(2, "0"), margin, state.y);
+
+  doc.setFont("times", "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(17, 29, 46);
+  doc.text(cleanPdfText(section.title), margin + 10, state.y);
+  state.y += 9;
+
+  const lines = section.lines
+    .map((item) => (item.type === "subheading" ? `### ${item.text}` : String(item.text || "")))
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  lines.forEach((line) => {
+    if (line.startsWith("### ")) {
+      state.y += 2;
+      writePdfWrapped(state, line.slice(4), 11, "times", "bold", state.width, 6);
+      return;
+    }
+    const bullet = line.match(/^[\-*\u2022]\s+(.+)$/);
+    writePdfWrapped(state, bullet ? `• ${bullet[1]}` : line.replace(/^\d+\.\s+/, ""), 10.4, "times", "normal", state.width, 5.6);
+  });
+
+  state.y += 5;
+  doc.setDrawColor(229, 222, 210);
+  doc.line(margin, state.y, margin + state.width, state.y);
+  state.y += 8;
+}
+
+function drawPdfMindMapNode(state, branch, x, y, index) {
+  const { doc } = state;
+  const boxW = 48;
+  const boxH = 31;
+  const left = Math.min(Math.max(x - boxW / 2, state.margin), 210 - state.margin - boxW);
+  const top = Math.min(Math.max(y - boxH / 2, 74), 245);
+
+  doc.setFillColor(251, 250, 247);
+  doc.setDrawColor(216, 209, 196);
+  doc.roundedRect(left, top, boxW, boxH, 3, 3, "FD");
+  doc.setTextColor(17, 29, 46);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.8);
+  doc.text(`${String(index + 1).padStart(2, "0")} ${cleanPdfText(branch.title)}`, left + 4, top + 7);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.2);
+  branch.points.slice(0, 2).forEach((point, pointIndex) => {
+    const wrapped = doc.splitTextToSize(`• ${cleanPdfText(point)}`, boxW - 8).slice(0, 2);
+    doc.text(wrapped, left + 4, top + 14 + pointIndex * 8);
+  });
+}
+
+function drawPdfLine(state, x1, y1, x2, y2) {
+  state.doc.setDrawColor(185, 144, 77);
+  state.doc.setLineWidth(0.25);
+  state.doc.line(x1, y1, x2, y2);
+}
+
+function drawCenteredPdfText(state, text, x, y, maxWidth, lineHeight) {
+  const lines = state.doc.splitTextToSize(cleanPdfText(text), maxWidth).slice(0, 4);
+  const startY = y - ((lines.length - 1) * lineHeight) / 2;
+  lines.forEach((line, index) => state.doc.text(line, x, startY + index * lineHeight, { align: "center" }));
+}
+
+function writePdfWrapped(state, text, fontSize, fontFamily, fontStyle, maxWidth, lineHeight) {
+  const clean = cleanPdfText(text);
+  if (!clean) return;
+  const { doc, margin } = state;
+  doc.setFont(fontFamily, fontStyle);
+  doc.setFontSize(fontSize);
+  doc.setTextColor(41, 50, 68);
+  const lines = doc.splitTextToSize(clean, maxWidth);
+  lines.forEach((line) => {
+    ensurePdfSpace(state, lineHeight + 4);
+    doc.text(line, margin, state.y);
+    state.y += lineHeight;
+  });
+  state.y += 2;
+}
+
+function ensurePdfSpace(state, needed) {
+  if (state.y + needed <= state.pageHeight - 18) return;
+  drawPdfFooter(state);
+  state.doc.addPage();
+  state.y = 18;
+}
+
+function drawPdfFooter(state) {
+  const { doc, margin, width, pageHeight } = state;
+  doc.setDrawColor(216, 209, 196);
+  doc.line(margin, pageHeight - 14, margin + width, pageHeight - 14);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(102, 112, 133);
+  doc.text("Conteudo academico. Confira legislacao, jurisprudencia e fontes oficiais aplicaveis.", margin, pageHeight - 9);
+}
+
+function cleanPdfText(value) {
+  return String(value || "")
+    .replace(/\*\*/g, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 async function copyResult() {
