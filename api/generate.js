@@ -314,6 +314,7 @@ function buildPrompt(body) {
       ...formatLines,
       "Limite cada secao a poucos paragrafos objetivos.",
       "Seja completo, mas evite introducao longa. Va direto ao conteudo.",
+      "Nao use linhas divisorias como '---'. Nao encerre com despedida, assinatura ou 'Atenciosamente'.",
       "Inclua alertas de prova e diferencie regra, excecao e controversia quando existir.",
       "Quando citar artigo, sumula, tema ou precedente, indique que o estudante deve conferir a fonte primaria oficial.",
     ].filter(Boolean).join("\n\n"),

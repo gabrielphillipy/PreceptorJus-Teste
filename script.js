@@ -58,6 +58,7 @@ function markdownToHtml(markdown) {
   return escaped
     .split("\n")
     .map((line) => {
+      if (isMarkdownDivider(line)) return "";
       if (line.startsWith("### ")) return `<h3>${line.slice(4)}</h3>`;
       if (line.startsWith("## ")) return `<h2>${line.slice(3)}</h2>`;
       if (line.startsWith("- ")) return `<li>${line.slice(2)}</li>`;
@@ -67,6 +68,10 @@ function markdownToHtml(markdown) {
     })
     .join("")
     .replace(/(<li>.*?<\/li>)+/gs, (match) => `<ul>${match}</ul>`);
+}
+
+function isMarkdownDivider(value) {
+  return /^[-_*]{3,}$/.test(String(value || "").trim());
 }
 
 function renderStudyDocument(markdown, meta = {}) {
@@ -425,7 +430,7 @@ function renderFormalPdfLines(items) {
     }
 
     const line = String(item.text || "").trim();
-    if (!line) {
+    if (!line || isMarkdownDivider(line)) {
       flushList();
       return;
     }
@@ -592,7 +597,7 @@ function renderStudyLines(items) {
     }
 
     const line = String(item.text || "").trim();
-    if (!line) {
+    if (!line || isMarkdownDivider(line)) {
       flushList();
       return;
     }
