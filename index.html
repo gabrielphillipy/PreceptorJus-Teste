@@ -485,6 +485,26 @@
       </form>
     </div>
 
+    <div class="feedback-modal is-hidden" data-library-modal>
+      <div class="feedback-backdrop" data-close-library-modal></div>
+      <form class="feedback-dialog library-dialog" data-library-modal-form>
+        <button class="feedback-close" type="button" data-close-library-modal aria-label="Fechar">×</button>
+        <span data-library-modal-kicker>Biblioteca</span>
+        <h2 data-library-modal-title>Editar material</h2>
+        <p data-library-modal-description>Atualize as informacoes do material salvo.</p>
+
+        <label data-library-name-field>
+          Nome do material
+          <input name="topic" type="text" maxlength="120" />
+        </label>
+
+        <div class="modal-actions">
+          <button class="outline-button" type="button" data-close-library-modal>Cancelar</button>
+          <button class="primary-button" type="submit" data-library-modal-confirm>Confirmar</button>
+        </div>
+      </form>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
     <script src="script.js" defer></script>

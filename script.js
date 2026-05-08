@@ -14,6 +14,7 @@ let currentExam = null;
 let currentFlashcards = null;
 let libraryQuery = "";
 let libraryFilter = "all";
+let pendingLibraryAction = null;
 let workspace = loadWorkspace();
 
 initTheme();
@@ -674,6 +675,65 @@ function closeFeedbackModal() {
   document.querySelector("[data-feedback-modal]")?.classList.add("is-hidden");
 }
 
+function openLibraryModal(action, studyId) {
+  const study = workspace.studies.find((item) => item.id === studyId);
+  if (!study) return;
+
+  pendingLibraryAction = { action, studyId };
+  const modal = document.querySelector("[data-library-modal]");
+  const form = document.querySelector("[data-library-modal-form]");
+  const title = document.querySelector("[data-library-modal-title]");
+  const description = document.querySelector("[data-library-modal-description]");
+  const kicker = document.querySelector("[data-library-modal-kicker]");
+  const nameField = document.querySelector("[data-library-name-field]");
+  const input = form?.querySelector('input[name="topic"]');
+  const confirm = document.querySelector("[data-library-modal-confirm]");
+
+  if (action === "rename") {
+    kicker.textContent = "Renomear";
+    title.textContent = "Renomear material";
+    description.textContent = "Escolha um nome claro para encontrar este estudo depois.";
+    nameField.classList.remove("is-hidden");
+    input.value = study.topic || "";
+    confirm.textContent = "Salvar nome";
+    modal.classList.remove("is-hidden");
+    input.focus();
+    input.select();
+    return;
+  }
+
+  kicker.textContent = "Apagar";
+  title.textContent = "Apagar material?";
+  description.textContent = `Isso remove "${study.topic}" da biblioteca deste navegador.`;
+  nameField.classList.add("is-hidden");
+  input.value = study.topic || "";
+  confirm.textContent = "Apagar material";
+  modal.classList.remove("is-hidden");
+  confirm.focus();
+}
+
+function closeLibraryModal() {
+  document.querySelector("[data-library-modal]")?.classList.add("is-hidden");
+  pendingLibraryAction = null;
+}
+
+function submitLibraryModal(form) {
+  if (!pendingLibraryAction) return false;
+
+  if (pendingLibraryAction.action === "rename") {
+    const nextTopic = String(new FormData(form).get("topic") || "").trim();
+    if (!nextTopic) return false;
+    updateStudyById(pendingLibraryAction.studyId, (item) => ({ ...item, topic: nextTopic }));
+  }
+
+  if (pendingLibraryAction.action === "delete") {
+    deleteStudyById(pendingLibraryAction.studyId);
+  }
+
+  closeLibraryModal();
+  return true;
+}
+
 function saveFeedback(form) {
   const formData = new FormData(form);
   const message = String(formData.get("message") || "").trim();
@@ -1321,6 +1381,11 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  if (event.target.closest("[data-close-library-modal]")) {
+    closeLibraryModal();
+    return;
+  }
+
   const routeButton = event.target.closest("[data-route]");
   if (routeButton) {
     if (routeButton.closest(".landing-view")) return;
@@ -1390,19 +1455,13 @@ document.addEventListener("click", (event) => {
 
   const renameStudyButton = event.target.closest("[data-rename-study]");
   if (renameStudyButton) {
-    const study = workspace.studies.find((item) => item.id === renameStudyButton.dataset.renameStudy);
-    const nextTopic = window.prompt("Novo nome do material:", study?.topic || "");
-    if (nextTopic?.trim()) {
-      updateStudyById(renameStudyButton.dataset.renameStudy, (item) => ({ ...item, topic: nextTopic.trim() }));
-    }
+    openLibraryModal("rename", renameStudyButton.dataset.renameStudy);
     return;
   }
 
   const deleteStudyButton = event.target.closest("[data-delete-study]");
   if (deleteStudyButton) {
-    if (window.confirm("Apagar este material da biblioteca?")) {
-      deleteStudyById(deleteStudyButton.dataset.deleteStudy);
-    }
+    openLibraryModal("delete", deleteStudyButton.dataset.deleteStudy);
     return;
   }
 
@@ -2250,6 +2309,14 @@ document.querySelector("[data-feedback-form]")?.addEventListener("submit", (even
   }, 900);
 });
 
+document.querySelector("[data-library-modal-form]")?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  submitLibraryModal(event.currentTarget);
+});
+
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") closeFeedbackModal();
+  if (event.key === "Escape") {
+    closeFeedbackModal();
+    closeLibraryModal();
+  }
 });
