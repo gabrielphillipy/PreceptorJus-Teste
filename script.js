@@ -93,13 +93,14 @@ function isMindMapMode(meta = {}) {
 
 function renderMindMapDocument(sections, meta = {}) {
   const topic = meta.topic || "Mapa mental juridico";
-  const central = sections.find((section) => /n[uú]cleo|central|tema/i.test(section.title)) || sections[0];
-  const centralText = topic;
-  let branches = sections.filter((section) => section !== central && getSectionPlainLines(section).length);
-  if (branches.length < 2) {
-    branches = buildMindMapFallbackBranches(sections, central);
-  }
-
+  const model = buildMindMapModel(sections, meta);
+  const leftBranches = model.branches.filter((_, index) => index % 2 === 0);
+  const rightBranches = model.branches.filter((_, index) => index % 2 === 1);
+  const renderColumn = (branches, side) => `
+    <div class="mindmap-branch-column ${side}">
+      ${branches.map((branch) => renderMindMapBranch(branch.section, branch.index, side)).join("")}
+    </div>
+  `;
   return `
     <div class="mindmap-document">
       <div class="mindmap-header">
@@ -108,16 +109,34 @@ function renderMindMapDocument(sections, meta = {}) {
         <p>Ramos de revisao rapida para conectar conceito, base legal, requisitos e pontos de prova.</p>
       </div>
       <div class="mindmap-canvas">
-        <div class="mindmap-core">
-          <small>Nucleo central</small>
-          <strong>${formatInline(centralText)}</strong>
-        </div>
-        <div class="mindmap-branches">
-          ${branches.slice(0, 8).map((section, index) => renderMindMapBranch(section, index)).join("")}
+        <div class="mindmap-map">
+          ${renderColumn(leftBranches, "left")}
+          <div class="mindmap-core">
+            <small>Nucleo central</small>
+            <strong>${formatInline(model.centralText)}</strong>
+          </div>
+          ${renderColumn(rightBranches, "right")}
         </div>
       </div>
     </div>
   `;
+}
+
+function buildMindMapModel(sections, meta = {}) {
+  const topic = meta.topic || "Mapa mental juridico";
+  const central = sections.find((section) => /n[uú]cleo|central|tema/i.test(section.title)) || sections[0];
+  const centralLines = getSectionPlainLines(central).filter((line) => !/^mapa mental/i.test(line));
+  const centralText = centralLines[0]?.length && centralLines[0].length <= 140 ? centralLines[0] : topic;
+  let branches = sections.filter((section) => section !== central && getSectionPlainLines(section).length);
+  if (branches.length < 2) {
+    branches = buildMindMapFallbackBranches(sections, central);
+  }
+
+  return {
+    topic,
+    centralText,
+    branches: branches.slice(0, 8).map((section, index) => ({ section, index })),
+  };
 }
 
 function buildMindMapFallbackBranches(sections, central) {
@@ -182,11 +201,11 @@ function getSectionPlainLines(section) {
     .filter(Boolean);
 }
 
-function renderMindMapBranch(section, index) {
-  const points = getSectionPlainLines(section).slice(0, 6);
+function renderMindMapBranch(section, index, side = "") {
+  const points = getSectionPlainLines(section).slice(0, 4);
   const title = section.title.replace(/^Ramo\s*\d+\s*[:\-]\s*/i, "");
   return `
-    <article class="mindmap-branch" style="--branch:${index}">
+    <article class="mindmap-branch ${side}" style="--branch:${index}">
       <div class="mindmap-node-title">
         <span>${String(index + 1).padStart(2, "0")}</span>
         <h3>${escapeHtml(title)}</h3>
@@ -222,6 +241,10 @@ function parseStudySections(markdown, meta = {}) {
 }
 
 function renderFormalPdfDocument(markdown, meta = {}) {
+  if (isMindMapMode(meta)) {
+    return renderMindMapPdfDocument(markdown, meta);
+  }
+
   const sections = parseStudySections(markdown, meta).filter((section) => {
     return section.lines.some((item) => String(item.text || "").trim());
   });
@@ -257,6 +280,64 @@ function renderFormalPdfDocument(markdown, meta = {}) {
         <strong>PreceptorJus</strong>
         <span>Conteudo para fins academicos. Confira a legislacao, jurisprudencia e fontes oficiais aplicaveis.</span>
       </footer>
+    </article>
+  `;
+}
+
+function renderMindMapPdfDocument(markdown, meta = {}) {
+  const sections = parseStudySections(markdown, meta).filter((section) => {
+    return section.lines.some((item) => String(item.text || "").trim());
+  });
+  const model = buildMindMapModel(sections, meta);
+  const date = new Date().toLocaleDateString("pt-BR");
+
+  return `
+    <article class="formal-pdf formal-pdf-map">
+      <section class="formal-cover compact">
+        <div class="formal-brand">
+          <span>PJ</span>
+          <strong>PreceptorJus</strong>
+        </div>
+        <p>Mapa mental juridico</p>
+        <h1>${escapeHtml(model.topic)}</h1>
+        <div class="formal-meta">
+          <span>Documento visual de revisao</span>
+          <span>Gerado em ${escapeHtml(date)}</span>
+          <span>Conferencia de fontes recomendada</span>
+        </div>
+      </section>
+
+      <section class="formal-map-sheet">
+        <div class="formal-map-core">
+          <span>Nucleo central</span>
+          <strong>${formatInline(model.centralText)}</strong>
+        </div>
+        <div class="formal-map-branches">
+          ${model.branches.map(({ section, index }) => renderFormalMindMapBranch(section, index)).join("")}
+        </div>
+      </section>
+
+      <footer class="formal-footer">
+        <strong>PreceptorJus</strong>
+        <span>Mapa mental para revisao academica. Confira artigos, sumulas e precedentes nas fontes oficiais.</span>
+      </footer>
+    </article>
+  `;
+}
+
+function renderFormalMindMapBranch(section, index) {
+  const title = section.title.replace(/^Ramo\s*\d+\s*[:\-]\s*/i, "");
+  const points = getSectionPlainLines(section).slice(0, 5);
+
+  return `
+    <article class="formal-map-branch">
+      <header>
+        <span>${String(index + 1).padStart(2, "0")}</span>
+        <h2>${escapeHtml(title)}</h2>
+      </header>
+      <ul>
+        ${points.map((point) => `<li>${formatInline(point)}</li>`).join("")}
+      </ul>
     </article>
   `;
 }
@@ -619,11 +700,12 @@ async function exportResult(button) {
           useCORS: true,
           backgroundColor: "#ffffff",
           letterRendering: true,
+          windowWidth: 720,
         },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         pagebreak: {
-          mode: ["css", "legacy"],
-          avoid: [".formal-section header", ".formal-section li", ".formal-question-options div", ".formal-question-feedback"],
+          mode: ["css"],
+          avoid: [".formal-section header", ".formal-question-options div", ".formal-question-feedback", ".formal-map-core", ".formal-map-branch"],
         },
       })
       .from(wrapper.querySelector(".pdf-document"))
