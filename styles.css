@@ -2637,11 +2637,13 @@ h3 {
   color: var(--ink);
   font-family: var(--display);
   font-size: 1.25rem;
+  letter-spacing: 0;
 }
 
 .loader-copy p {
   margin: 8px 0 0;
   color: var(--muted);
+  line-height: 1.55;
 }
 
 .loader-steps {
@@ -3395,6 +3397,7 @@ h3 {
 :root[data-theme="dark"] .exam-card,
 :root[data-theme="dark"] .library-grid article,
 :root[data-theme="dark"] .chat-panel,
+:root[data-theme="dark"] .message.assistant,
 :root[data-theme="dark"] .flashcard,
 :root[data-theme="dark"] .study-section,
 :root[data-theme="dark"] .study-question-card,
@@ -3474,6 +3477,8 @@ h3 {
 :root[data-theme="dark"] .study-question-feedback p,
 :root[data-theme="dark"] .library-grid p,
 :root[data-theme="dark"] .chat-answer p,
+:root[data-theme="dark"] .loader-copy p,
+:root[data-theme="dark"] .loader-steps span,
 :root[data-theme="dark"] .chat-answer li,
 :root[data-theme="dark"] .exam-card p,
 :root[data-theme="dark"] .exam-comment,
@@ -3490,6 +3495,7 @@ h3 {
 :root[data-theme="dark"] .library-grid h2,
 :root[data-theme="dark"] .chat-answer h3,
 :root[data-theme="dark"] .chat-answer strong,
+:root[data-theme="dark"] .loader-copy strong,
 :root[data-theme="dark"] .exam-summary h2,
 :root[data-theme="dark"] .flashcard-deck-head h2,
 :root[data-theme="dark"] .page-title h1,
@@ -3519,6 +3525,21 @@ h3 {
 
 :root[data-theme="dark"] .chat-panel form {
   background: linear-gradient(180deg, transparent, rgba(15, 23, 34, 0.94) 24%);
+}
+
+:root[data-theme="dark"] .message.assistant {
+  box-shadow: 0 22px 46px -38px rgba(0, 0, 0, 0.85);
+}
+
+:root[data-theme="dark"] .loader-orbit,
+:root[data-theme="dark"] .loader-steps span,
+:root[data-theme="dark"] .skeleton-stack span {
+  border-color: rgba(210, 174, 109, 0.26);
+  background: rgba(21, 31, 44, 0.92);
+}
+
+:root[data-theme="dark"] .skeleton-stack span {
+  background: linear-gradient(90deg, rgba(210, 174, 109, 0.32), rgba(244, 246, 248, 0.18), rgba(210, 174, 109, 0.2));
 }
 
 :root[data-theme="dark"] .flashcard-deck-head small,
