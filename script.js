@@ -1635,40 +1635,94 @@ function exportFlashcardsPdf() {
 
   const doc = new window.jspdf.jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   const state = createPdfState(doc);
-  drawPdfHeader(state, "Flashcards juridicos", currentFlashcards.topic || "Flashcards");
+  drawFlashcardPdfCover(state, currentFlashcards.topic || "Flashcards", currentFlashcards.cards.length);
 
   currentFlashcards.cards.forEach((card, index) => {
-    ensurePdfSpace(state, 42);
-    const { doc: pdf, margin, width } = state;
-    pdf.setFillColor(251, 250, 247);
-    pdf.setDrawColor(216, 209, 196);
-    pdf.roundedRect(margin, state.y, width, 34, 3, 3, "FD");
-
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(8);
-    pdf.setTextColor(164, 122, 53);
-    pdf.text(`CARD ${String(index + 1).padStart(2, "0")}`, margin + 5, state.y + 7);
-
-    pdf.setFont("times", "bold");
-    pdf.setFontSize(10.5);
-    pdf.setTextColor(17, 29, 46);
-    pdf.text("Frente", margin + 5, state.y + 14);
-    pdf.setFont("times", "normal");
-    pdf.setFontSize(9.2);
-    pdf.text(pdf.splitTextToSize(cleanPdfText(card.front), width - 22).slice(0, 2), margin + 22, state.y + 14);
-
-    pdf.setFont("times", "bold");
-    pdf.setFontSize(10.5);
-    pdf.text("Verso", margin + 5, state.y + 25);
-    pdf.setFont("times", "normal");
-    pdf.setFontSize(9.2);
-    pdf.text(pdf.splitTextToSize(cleanPdfText(card.back), width - 22).slice(0, 2), margin + 22, state.y + 25);
-
-    state.y += 42;
+    drawFlashcardReviewCard(state, card, index);
   });
 
   drawPdfFooter(state);
   doc.save(filename);
+}
+
+function drawFlashcardPdfCover(state, topic, totalCards) {
+  const { doc, margin, width } = state;
+  const date = new Date().toLocaleDateString("pt-BR");
+
+  doc.setFillColor(17, 29, 46);
+  doc.rect(0, 0, 210, 86, "F");
+  doc.setFillColor(185, 144, 77);
+  doc.rect(0, 84, 210, 2, "F");
+
+  doc.setTextColor(210, 174, 109);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text("PRECEPTORJUS | FLASHCARDS", margin, 24);
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("times", "bold");
+  doc.setFontSize(26);
+  doc.text(doc.splitTextToSize(cleanPdfText(topic), width).slice(0, 2), margin, 42);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(214, 221, 230);
+  doc.text(`${totalCards} cards de revisao`, margin, 68);
+  doc.text(`Gerado em ${date}`, margin + width, 68, { align: "right" });
+
+  state.y = 104;
+}
+
+function drawFlashcardReviewCard(state, card, index) {
+  const { doc, margin, width } = state;
+  const front = cleanPdfText(card.front);
+  const back = cleanPdfText(card.back);
+  const frontLines = doc.splitTextToSize(front, width - 34).slice(0, 4);
+  const backLines = doc.splitTextToSize(back, width - 20).slice(0, 7);
+  const frontHeight = Math.max(28, 12 + frontLines.length * 6);
+  const backHeight = Math.max(42, 14 + backLines.length * 5.3);
+  const cardHeight = 24 + frontHeight + backHeight + 18;
+
+  ensurePdfSpace(state, cardHeight + 6);
+
+  const top = state.y;
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(216, 209, 196);
+  doc.roundedRect(margin, top, width, cardHeight, 4, 4, "FD");
+
+  doc.setFillColor(248, 245, 239);
+  doc.roundedRect(margin + 6, top + 8, 22, 22, 11, 11, "F");
+  doc.setTextColor(138, 103, 45);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text(String(index + 1).padStart(2, "0"), margin + 17, top + 22, { align: "center" });
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(164, 122, 53);
+  doc.text("FRENTE", margin + 34, top + 14);
+
+  doc.setFont("times", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(17, 29, 46);
+  doc.text(frontLines, margin + 34, top + 24);
+
+  const backTop = top + 12 + frontHeight;
+  doc.setFillColor(251, 250, 247);
+  doc.setDrawColor(229, 222, 210);
+  doc.roundedRect(margin + 8, backTop, width - 16, backHeight, 3, 3, "FD");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(164, 122, 53);
+  doc.text("VERSO", margin + 14, backTop + 10);
+
+  doc.setFont("times", "normal");
+  doc.setFontSize(10.4);
+  doc.setTextColor(41, 50, 68);
+  doc.text(backLines, margin + 14, backTop + 20);
+
+  state.y += cardHeight + 10;
 }
 
 function parseFlashcards(markdown) {
