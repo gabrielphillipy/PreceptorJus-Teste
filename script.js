@@ -1596,7 +1596,10 @@ function renderCurrentFlashcard() {
           <span>Baralho juridico</span>
           <h2>${escapeHtml(topic || "Flashcards")}</h2>
         </div>
-        <small>${index + 1}/${total}</small>
+        <div class="flashcard-deck-tools">
+          <button type="button" data-export-flashcards>Exportar PDF</button>
+          <small>${index + 1}/${total}</small>
+        </div>
       </div>
       <div class="exam-progress-track"><i style="width: ${progress}%"></i></div>
       <button class="flashcard-study ${flipped ? "is-flipped" : ""}" type="button" data-flip-card>
@@ -1608,20 +1611,59 @@ function renderCurrentFlashcard() {
         <button type="button" data-prev-flashcard ${index === 0 ? "disabled" : ""}>Anterior</button>
         <button type="button" data-flip-card>${flipped ? "Ver frente" : "Virar card"}</button>
         <button type="button" data-next-flashcard ${index === total - 1 ? "disabled" : ""}>Proximo</button>
-        <button type="button" data-export-flashcards>Exportar CSV</button>
       </div>
     </div>
   `;
 }
 
-function exportFlashcardsCsv() {
+function exportFlashcardsPdf() {
   if (!currentFlashcards?.cards?.length) return;
-  const rows = [["Frente", "Verso"]];
-  currentFlashcards.cards.forEach((card) => rows.push([card.front, card.back]));
-  const csv = rows
-    .map((row) => row.map((cell) => `"${String(cell || "").replaceAll('"', '""')}"`).join(","))
-    .join("\n");
-  downloadTextFile(`${slugify(currentFlashcards.topic || "flashcards")}.csv`, csv, "text/csv;charset=utf-8");
+  const filename = `${slugify(currentFlashcards.topic || "flashcards")}-flashcards.pdf`;
+
+  if (!window.jspdf?.jsPDF) {
+    const text = currentFlashcards.cards
+      .map((card, index) => `Card ${index + 1}\nFrente: ${card.front}\nVerso: ${card.back}`)
+      .join("\n\n");
+    downloadTextFile(filename.replace(/\.pdf$/, ".txt"), text);
+    return;
+  }
+
+  const doc = new window.jspdf.jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  const state = createPdfState(doc);
+  drawPdfHeader(state, "Flashcards juridicos", currentFlashcards.topic || "Flashcards");
+
+  currentFlashcards.cards.forEach((card, index) => {
+    ensurePdfSpace(state, 42);
+    const { doc: pdf, margin, width } = state;
+    pdf.setFillColor(251, 250, 247);
+    pdf.setDrawColor(216, 209, 196);
+    pdf.roundedRect(margin, state.y, width, 34, 3, 3, "FD");
+
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(8);
+    pdf.setTextColor(164, 122, 53);
+    pdf.text(`CARD ${String(index + 1).padStart(2, "0")}`, margin + 5, state.y + 7);
+
+    pdf.setFont("times", "bold");
+    pdf.setFontSize(10.5);
+    pdf.setTextColor(17, 29, 46);
+    pdf.text("Frente", margin + 5, state.y + 14);
+    pdf.setFont("times", "normal");
+    pdf.setFontSize(9.2);
+    pdf.text(pdf.splitTextToSize(cleanPdfText(card.front), width - 22).slice(0, 2), margin + 22, state.y + 14);
+
+    pdf.setFont("times", "bold");
+    pdf.setFontSize(10.5);
+    pdf.text("Verso", margin + 5, state.y + 25);
+    pdf.setFont("times", "normal");
+    pdf.setFontSize(9.2);
+    pdf.text(pdf.splitTextToSize(cleanPdfText(card.back), width - 22).slice(0, 2), margin + 22, state.y + 25);
+
+    state.y += 42;
+  });
+
+  drawPdfFooter(state);
+  doc.save(filename);
 }
 
 function parseFlashcards(markdown) {
@@ -1738,7 +1780,7 @@ document.addEventListener("click", (event) => {
   const prevFlashcard = event.target.closest("[data-prev-flashcard]");
   const exportFlashcardsButton = event.target.closest("[data-export-flashcards]");
   if (exportFlashcardsButton) {
-    exportFlashcardsCsv();
+    exportFlashcardsPdf();
     return;
   }
 

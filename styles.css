@@ -3252,6 +3252,30 @@ h3 {
   font-weight: 800;
 }
 
+.flashcard-deck-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.flashcard-deck-tools button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(185, 144, 77, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--primary-dark);
+  font-size: 0.78rem;
+  font-weight: 800;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.flashcard-deck-tools button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(185, 144, 77, 0.56);
+  box-shadow: 0 16px 30px -26px rgba(17, 29, 46, 0.58);
+}
+
 .flashcard-study {
   position: relative;
   display: grid;
@@ -3766,6 +3790,12 @@ h3 {
 
   .flashcard-actions {
     grid-template-columns: 1fr;
+  }
+
+  .flashcard-deck-head,
+  .flashcard-deck-tools {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .study-cover,
