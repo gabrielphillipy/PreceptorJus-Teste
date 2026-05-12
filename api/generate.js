@@ -3,9 +3,10 @@ const JSON_HEADERS = {
   "Cache-Control": "no-store",
 };
 
-const DEFAULT_TIMEOUT_MS = 50_000;
+const DEFAULT_TIMEOUT_MS = 12_000;
+const OVERALL_TIMEOUT_MS = 40_000;
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
-const MAX_ATTEMPTS = 2;
+const MAX_ATTEMPTS = 1;
 const BASE_BACKOFF_MS = 900;
 
 function sleep(ms) {
@@ -32,13 +33,22 @@ function getModelCandidates() {
 async function callGeminiWithRetries({ models, prompt, apiKey }) {
   let lastErrorMessage = "";
   let lastStatus = 500;
+  const startedAt = Date.now();
 
   for (let modelIndex = 0; modelIndex < models.length; modelIndex += 1) {
     const model = models[modelIndex];
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+      const remainingMs = OVERALL_TIMEOUT_MS - (Date.now() - startedAt);
+      if (remainingMs <= 1500) {
+        return {
+          error: "A geracao demorou demais e foi interrompida antes de travar. Tente novamente com um tema mais especifico.",
+          status: 504,
+        };
+      }
+
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+      const timeoutId = setTimeout(() => controller.abort(), Math.min(DEFAULT_TIMEOUT_MS, remainingMs - 500));
 
       try {
         const response = await fetch(

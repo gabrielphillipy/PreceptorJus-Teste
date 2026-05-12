@@ -1181,7 +1181,7 @@ function slugify(value) {
 
 async function callAI(payload) {
   const controller = new AbortController();
-  const timeoutMs = 55_000;
+  const timeoutMs = 45_000;
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   let response;
@@ -1194,7 +1194,7 @@ async function callAI(payload) {
     });
   } catch (error) {
     if (error && typeof error === "object" && error.name === "AbortError") {
-      throw new Error("A geracao demorou demais e expirou. Tente novamente com menos secoes.");
+      throw new Error("A geracao demorou demais e foi interrompida antes de travar. Tente novamente com um tema mais especifico ou menos secoes.");
     }
     throw error;
   } finally {
