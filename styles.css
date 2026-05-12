@@ -280,6 +280,25 @@ a {
     url("https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1800&q=80") center/cover;
 }
 
+:root[data-theme="dark"] .hero {
+  background:
+    linear-gradient(90deg, rgba(9, 15, 24, 0.96), rgba(15, 23, 34, 0.88)),
+    url("https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1800&q=80") center/cover;
+}
+
+:root[data-theme="dark"] .hero h1,
+:root[data-theme="dark"] .hero .eyebrow {
+  color: #f4f6f8;
+}
+
+:root[data-theme="dark"] .hero h1 em {
+  color: #d2ae6d;
+}
+
+:root[data-theme="dark"] .hero-text {
+  color: #c7d0dc;
+}
+
 .hero::after {
   content: "";
   position: absolute;
@@ -712,6 +731,12 @@ h3 {
   border: 1px solid var(--line);
   border-radius: 6px;
   background: #fbf8f2;
+}
+
+:root[data-theme="dark"] .demo-content li {
+  border-color: var(--line);
+  background: #111b28;
+  color: #d7dee8;
 }
 
 .price-grid article {
@@ -3530,6 +3555,8 @@ h3 {
 
 :root[data-theme="dark"] .feature-card p,
 :root[data-theme="dark"] .tool-grid span,
+:root[data-theme="dark"] .demo-content p,
+:root[data-theme="dark"] .demo-content li,
 :root[data-theme="dark"] .recent-panel p,
 :root[data-theme="dark"] .result-content,
 :root[data-theme="dark"] .section-body p,
