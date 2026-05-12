@@ -1408,10 +1408,24 @@ async function startCheckout(button, plan) {
   }
 }
 
+function openPaymentPage(plan = "preceptor") {
+  const confirmButton = document.querySelector("[data-confirm-checkout]");
+  if (confirmButton) {
+    confirmButton.dataset.confirmCheckout = plan;
+  }
+  openApp("payment");
+}
+
 document.addEventListener("click", (event) => {
   const checkoutButton = event.target.closest("[data-checkout-plan]");
   if (checkoutButton) {
-    startCheckout(checkoutButton, checkoutButton.dataset.checkoutPlan);
+    openPaymentPage(checkoutButton.dataset.checkoutPlan || "preceptor");
+    return;
+  }
+
+  const confirmCheckoutButton = event.target.closest("[data-confirm-checkout]");
+  if (confirmCheckoutButton) {
+    startCheckout(confirmCheckoutButton, confirmCheckoutButton.dataset.confirmCheckout || "preceptor");
     return;
   }
 
