@@ -2814,29 +2814,27 @@ h3 {
 
 .loader-orbit span {
   position: absolute;
+  top: 50%;
+  left: 50%;
   width: 9px;
   height: 9px;
+  margin: -4.5px 0 0 -4.5px;
   border-radius: 50%;
   background: var(--gold);
   box-shadow: 0 0 22px rgba(185, 144, 77, 0.72);
-  animation: orbitDot 1.8s ease-in-out infinite;
+  animation: orbitAround 2.8s linear infinite;
 }
 
 .loader-orbit span:nth-child(1) {
-  top: 12px;
-  left: 50%;
+  --angle: -90deg;
 }
 
 .loader-orbit span:nth-child(2) {
-  right: 16px;
-  bottom: 24px;
-  animation-delay: 180ms;
+  --angle: 30deg;
 }
 
 .loader-orbit span:nth-child(3) {
-  bottom: 24px;
-  left: 16px;
-  animation-delay: 360ms;
+  --angle: 150deg;
 }
 
 .loader-copy {
@@ -3956,6 +3954,20 @@ h3 {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes orbitAround {
+  from {
+    opacity: 0.72;
+    transform: rotate(var(--angle)) translateX(54px) scale(0.82);
+  }
+  50% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.72;
+    transform: rotate(calc(var(--angle) + 360deg)) translateX(54px) scale(0.82);
   }
 }
 
