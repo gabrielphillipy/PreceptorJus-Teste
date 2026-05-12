@@ -84,6 +84,11 @@ a {
   animation: headerDrop 560ms ease both;
 }
 
+:root[data-theme="dark"] .site-header {
+  border-bottom-color: rgba(45, 56, 72, 0.92);
+  background: rgba(10, 15, 24, 0.94);
+}
+
 .header-line {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(185, 144, 77, 0.85), transparent);
@@ -149,6 +154,7 @@ a {
 .logo strong,
 .app-logo strong {
   display: block;
+  color: var(--primary-dark);
   font-family: var(--display);
   font-weight: 800;
 }
@@ -173,6 +179,11 @@ a {
   transition: color 180ms ease;
 }
 
+:root[data-theme="dark"] .nav-links a {
+  border-right-color: rgba(45, 56, 72, 0.92);
+  color: #c7d0dc;
+}
+
 .nav-links a::after {
   content: "";
   position: absolute;
@@ -193,6 +204,10 @@ a {
 
 .nav-links a:hover {
   color: var(--primary);
+}
+
+:root[data-theme="dark"] .nav-links a:hover {
+  color: #f4f6f8;
 }
 
 .nav-links a:hover::after {
