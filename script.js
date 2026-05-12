@@ -400,11 +400,12 @@ function renderFormalMindMapBranch(branch, index) {
 
 function renderFormalPdfSection(section, index) {
   const isQuestionSection = /quest|fixa|prova|simulado|treino|banca/i.test(section.title);
+  const isRecommendationSection = isDeepeningSection(section.title);
   const content = isQuestionSection ? renderFormalPdfQuestions(section.lines) : renderFormalPdfLines(section.lines);
   if (!content.trim()) return "";
 
   return `
-    <section class="formal-section">
+    <section class="formal-section ${isRecommendationSection ? "formal-recommendations" : ""}">
       <header>
         <span>${String(index + 1).padStart(2, "0")}</span>
         <h2>${escapeHtml(section.title)}</h2>
@@ -464,20 +465,25 @@ function renderFormalPdfQuestions(items) {
 
 function renderStudySection(section, index, total) {
   const isQuestionSection = /quest|fixa|prova|simulado|treino|banca/i.test(section.title);
+  const isRecommendationSection = isDeepeningSection(section.title);
   const content = isQuestionSection ? renderStudyQuestions(section.lines) : renderStudyLines(section.lines);
   if (!content.trim()) return "";
 
   const sectionNumber = String(index + 1).padStart(2, "0");
   return `
-    <section class="study-section">
+    <section class="study-section ${isRecommendationSection ? "recommendation-section" : ""}">
       <div class="section-heading">
-        <span>${section.intro ? "Abertura" : `Secao ${sectionNumber}`}</span>
+        <span>${isRecommendationSection ? "Bibliografia" : section.intro ? "Abertura" : `Secao ${sectionNumber}`}</span>
         <h2>${escapeHtml(section.title)}</h2>
         <small>${sectionNumber}/${String(total).padStart(2, "0")}</small>
       </div>
       <div class="section-body">${content}</div>
     </section>
   `;
+}
+
+function isDeepeningSection(title = "") {
+  return /aprofund|bibliograf|livros|leitura complementar|fontes recomendadas/i.test(String(title));
 }
 
 function renderStudyQuestions(items) {

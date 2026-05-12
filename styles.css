@@ -1626,6 +1626,47 @@ h3 {
   padding: 0;
 }
 
+.recommendation-section {
+  border-color: rgba(185, 144, 77, 0.42);
+  background:
+    linear-gradient(135deg, rgba(255, 252, 246, 0.98), rgba(246, 239, 226, 0.9)),
+    radial-gradient(circle at 100% 0%, rgba(185, 144, 77, 0.18), transparent 14rem);
+}
+
+.recommendation-section::before {
+  background: linear-gradient(180deg, var(--gold), rgba(27, 42, 65, 0.72));
+}
+
+.recommendation-section .section-heading {
+  background:
+    linear-gradient(90deg, rgba(27, 42, 65, 0.96), rgba(27, 42, 65, 0.86)),
+    radial-gradient(circle at right, rgba(185, 144, 77, 0.18), transparent 12rem);
+}
+
+.recommendation-section .section-heading h2 {
+  color: white;
+}
+
+.recommendation-section .section-heading small {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f4d89c;
+}
+
+.recommendation-section .study-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.recommendation-section .study-list li {
+  border-color: rgba(185, 144, 77, 0.28);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.recommendation-section .study-list li::before {
+  content: "§";
+  background: var(--gold);
+  color: var(--primary-deep);
+}
+
 .study-section::before {
   content: "";
   position: absolute;
@@ -2265,6 +2306,21 @@ h3 {
 .formal-section li {
   padding-left: 4px;
   page-break-inside: avoid;
+}
+
+.formal-recommendations {
+  padding: 18px;
+  border: 1px solid #d8d1c4;
+  background: #fbfaf7;
+  page-break-inside: avoid;
+}
+
+.formal-recommendations header {
+  margin-top: 0;
+}
+
+.formal-recommendations li {
+  break-inside: avoid;
 }
 
 .formal-section mark {
@@ -4255,6 +4311,10 @@ h3 {
   .section-body {
     padding-right: 18px;
     padding-left: 18px;
+  }
+
+  .recommendation-section .study-list {
+    grid-template-columns: 1fr;
   }
 
   .input-panel {

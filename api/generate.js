@@ -277,6 +277,7 @@ function buildPrompt(body) {
       "## Pedidos",
       "## Provas e cautelas",
       "## Checklist antes de protocolar",
+      "## Para se aprofundar",
     ],
     jurisprudencia: [
       "Estruture em Markdown com foco em jurisprudencia e teses:",
@@ -285,6 +286,7 @@ function buildPrompt(body) {
       "## Sumulas e temas para conferir",
       "## Divergencias e limites",
       "## Como usar em prova",
+      "## Para se aprofundar",
     ],
     questoes: [
       "Estruture em Markdown como questoes comentadas:",
@@ -293,6 +295,7 @@ function buildPrompt(body) {
       "## Questoes modelo",
       "## Comentarios e gabaritos",
       "## Revisao final",
+      "## Para se aprofundar",
     ],
   };
   const defaultFormat = [
@@ -302,6 +305,7 @@ function buildPrompt(body) {
     "## Requisitos e excecoes",
     "## Como cai em prova",
     "## Checklist de revisao",
+    "## Para se aprofundar",
   ];
   const formatLines = studyFormats[body.mode] || defaultFormat;
 
@@ -316,6 +320,8 @@ function buildPrompt(body) {
       "Seja completo, mas evite introducao longa. Va direto ao conteudo.",
       "Nao use linhas divisorias como '---'. Nao encerre com despedida, assinatura ou 'Atenciosamente'.",
       "Inclua alertas de prova e diferencie regra, excecao e controversia quando existir.",
+      "Na secao 'Para se aprofundar', inclua 4 blocos curtos: Doutrina recomendada, Leitura legislativa, Jurisprudencia para pesquisar e Artigos/material complementar.",
+      "Nao invente livro, autor, artigo academico, sumula, tema ou precedente. Recomende obras classicas apenas quando tiver alta seguranca; quando nao tiver, indique linhas de pesquisa, palavras-chave e fontes oficiais para conferir.",
       "Quando citar artigo, sumula, tema ou precedente, indique que o estudante deve conferir a fonte primaria oficial.",
     ].filter(Boolean).join("\n\n"),
     max_output_tokens: 2200,
