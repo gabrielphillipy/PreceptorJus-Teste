@@ -4,6 +4,16 @@ preceptorjus-screenshot.png
 .env.*
 
 .vercel
+.vite
+node_modules
+dist
+*.local
+.DS_Store
 
+# Dev tooling
 dev-server.js
 .claude/
+
+# TS build cache
+node_modules/.tmp
+*.tsbuildinfo

@@ -1,0 +1,595 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* PreceptorJus — Editorial Legal Design System
+   Philosophy: Slate neutrals. Navy jurídico (#1B2A41) + Ouro (#C9A84C) as editorial accents.
+   Light-only. Hierarchy through space, not heavy borders.
+   Mantém espírito do PJ original (eyebrow + ribbon + mesa de gabinete jurídico)
+   com a alma do PreceptorMED (tokens limpos, sombras tinted, sem dependências externas).
+*/
+
+@layer base {
+  :root {
+    /* ─── Brand primitives (rgb triplets — use via rgb(var(--x) / <alpha>)) ─────── */
+    --brand-primary: 27 42 65;          /* #1B2A41 navy jurídico */
+    --brand-primary-dark: 17 29 46;     /* #111D2E */
+    --brand-primary-darker: 11 19 32;   /* #0B1320 */
+    --brand-primary-fg: 255 255 255;
+    --brand-ink: 20 25 35;              /* #141923 */
+    --brand-ink-2: 61 70 84;            /* #3D4654 */
+    --brand-gold: 201 168 76;           /* #C9A84C — alinhado ao PMed */
+
+    /* ─── PJUS extended (match design system) ────────────────────────────────── */
+    --pjus-primary-darkest: #0b1320;
+    --pjus-primary-mist:    #111d2e;
+    --pjus-primary-soft:    rgba(27, 42, 65, 0.08);
+    --pjus-gold-deep:       #A8862E;
+    --pjus-gold-light:      #E0C068;
+    --pjus-gold-mist:       rgba(201, 168, 76, 0.15);
+    --pjus-paper:           #f8f9fa;
+    --pjus-canvas:          #f8f9fa;
+    --pjus-surface-2:       #fafbfa;
+    --pjus-surface-3:       #f3f4f5;
+    --pjus-hairline:        #e7e8e9;
+    --pjus-border:          #e2e6e5;
+    --pjus-ink-3:           #6e7376;
+    --pjus-ink-4:           #9aa0a3;
+
+    /* Gradients */
+    --pjus-gradient-primary: linear-gradient(160deg, #0B1320 0%, #111D2E 45%, #1B2A41 100%);
+    --pjus-gradient-sidebar: linear-gradient(160deg, #0B1320 0%, #111D2E 50%, #1B2A41 100%);
+    --pjus-gradient-gold:    linear-gradient(90deg, transparent, rgb(var(--brand-gold) / 0.85), transparent);
+
+    /* Elevation — navy-tinted shadows */
+    --pjus-shadow-xs: 0 1px 2px 0 rgba(20,25,35,0.04);
+    --pjus-shadow-sm: 0 2px 8px rgba(0,0,0,0.03);
+    --pjus-shadow:    0 4px 24px -8px rgba(27,42,65,0.08), 0 1px 2px 0 rgba(20,25,35,0.04);
+    --pjus-shadow-md: 0 8px 32px -12px rgba(27,42,65,0.15), 0 1px 3px 0 rgba(20,25,35,0.04);
+    --pjus-shadow-lg: 0 16px 48px -12px rgba(27,42,65,0.25), 0 4px 12px -4px rgba(27,42,65,0.10);
+    --pjus-shadow-cta:  0 8px 24px -8px rgba(27,42,65,0.45), 0 2px 4px -1px rgba(27,42,65,0.20);
+    --pjus-shadow-gold: 0 4px 24px -8px rgba(201,168,76,0.22);
+
+    /* Tracking */
+    --pjus-track-eyebrow: 0.2em;
+    --pjus-track-tight: -0.02em;
+
+    /* Font stacks — single source of truth */
+    --font-display: 'Manrope', system-ui, -apple-system, sans-serif;
+    --font-body:    'Inter', system-ui, -apple-system, sans-serif;
+    --font-serif:   'Source Serif 4', Georgia, 'Times New Roman', serif;
+    --font-mono:    ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    /* ─── shadcn semantic tokens (HSL) ──────────────────────────────────── */
+    --background: 0 0% 100%;
+    --foreground: 220 24% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 24% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 24% 11%;
+    --primary: 220 41% 18%;             /* #1B2A41 em HSL */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 24% 18%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 43 53% 54%;               /* #C9A84C em HSL */
+    --accent-foreground: 220 24% 11%;
+    --destructive: 0 64% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 220 41% 18%;
+    --radius: 0.625rem;
+
+    /* Sidebar */
+    --sidebar-background: 220 41% 8%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 43 53% 54%;
+    --sidebar-primary-foreground: 220 24% 11%;
+    --sidebar-accent: 220 30% 14%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 25% 18%;
+    --sidebar-ring: 43 53% 54%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-body);
+    font-feature-settings: 'rlig' 1, 'calt' 1, 'ss01' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+
+  /* ─── Typography scale — semantic + consistent ────────────────────── */
+  h1 { font-size: clamp(2rem, 4vw + 1rem, 3.5rem); line-height: 1.08; letter-spacing: -0.03em; font-weight: 800; }
+  h2 { font-size: clamp(1.5rem, 2.5vw + 0.5rem, 2.25rem); line-height: 1.15; letter-spacing: -0.025em; }
+  h3 { font-size: clamp(1.25rem, 1.5vw + 0.5rem, 1.5rem); line-height: 1.25; }
+  h4 { font-size: 1.125rem; line-height: 1.35; }
+  h5 { font-size: 1rem; line-height: 1.4; }
+  h6 { font-size: 0.875rem; line-height: 1.4; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+
+  ::selection {
+    background: rgb(var(--brand-gold) / 0.35);
+    color: rgb(var(--brand-ink));
+  }
+}
+
+/* ─── Material Symbols ──────────────────────────────────────────────── */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* ─── Glass nav (sticky header) ─────────────────────────────────────── */
+.glass-nav {
+  background-color: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  transition: box-shadow 0.3s ease, background-color 0.3s ease;
+}
+.glass-nav.scrolled {
+  background-color: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 4px 24px 0 rgba(27, 42, 65, 0.08);
+}
+
+/* ─── Stagger delays ────────────────────────────────────────────────── */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.10s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.20s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.30s; }
+
+/* ─── PJUS pattern: Eyebrow + Gold rule ─────────────────────────────── */
+.pjus-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--pjus-track-eyebrow);
+  color: rgb(var(--brand-primary-dark));
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+}
+.pjus-eyebrow::before {
+  content: "";
+  width: 28px;
+  height: 1px;
+  background: rgb(var(--brand-gold));
+}
+.pjus-eyebrow--gold { color: rgb(var(--brand-gold)); }
+.pjus-eyebrow--gold::before { background: rgb(var(--brand-gold)); }
+.pjus-eyebrow--center { justify-content: center; }
+.pjus-eyebrow--center::before { display: none; }
+.pjus-eyebrow--center::after,
+.pjus-eyebrow--center > span:first-of-type {
+  content: "";
+  width: 28px;
+  height: 1px;
+  background: rgb(var(--brand-gold));
+  margin: 0 10px;
+}
+
+.pjus-gold-rule {
+  height: 1px;
+  background: var(--pjus-gradient-gold);
+}
+
+/* ─── PJUS pattern: Summary card (fechamento / estudo gerado) ──────── */
+.pjus-summary {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--pjus-hairline);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--pjus-shadow);
+}
+.pjus-summary::before {
+  content: "";
+  display: block;
+  height: 3px;
+  background: linear-gradient(90deg, var(--pjus-primary-darkest), rgb(var(--brand-primary)), rgb(var(--brand-gold)));
+}
+.pjus-summary__head {
+  padding: 24px 28px 22px;
+  border-bottom: 1px solid var(--pjus-hairline);
+}
+.pjus-summary__meta {
+  display: flex;
+  gap: 14px;
+  font-size: 11.5px;
+  color: var(--pjus-ink-3);
+  flex-wrap: wrap;
+}
+.pjus-summary__meta > span { display: inline-flex; align-items: center; gap: 5px; }
+.pjus-summary__meta .material-symbols-outlined { font-size: 14px; }
+.pjus-summary__foot {
+  padding: 16px 28px;
+  background: var(--pjus-surface-2);
+  border-top: 1px solid var(--pjus-hairline);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  color: var(--pjus-ink-3);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.pjus-summary__body {
+  padding: 24px 28px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgb(var(--brand-ink));
+}
+.pjus-summary__body p {
+  margin: 0 0 12px;
+  color: rgb(var(--brand-ink-2));
+}
+.pjus-summary__body h2,
+.pjus-summary__body h3,
+.pjus-summary__body h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: rgb(var(--brand-ink));
+  margin: 22px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--pjus-hairline);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pjus-summary__body h2 { font-size: 18px; margin-top: 26px; }
+.pjus-summary__body h3 { font-size: 16px; }
+.pjus-summary__body h4 { font-size: 15px; }
+.pjus-summary__body h2::before,
+.pjus-summary__body h3::before,
+.pjus-summary__body h4::before {
+  content: "";
+  width: 4px;
+  height: 14px;
+  background: rgb(var(--brand-gold));
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.pjus-summary__body strong {
+  color: rgb(var(--brand-ink));
+  font-weight: 600;
+}
+/* Destaque dourado para termos técnicos jurídicos (Art., súmula, etc.) */
+.pjus-summary__body em,
+.pjus-summary__body .term {
+  font-style: normal;
+  background: rgba(201, 168, 76, 0.18);
+  padding: 0 3px;
+  border-radius: 2px;
+  color: rgb(var(--brand-ink));
+}
+.pjus-summary__body code {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  background: var(--pjus-primary-soft);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: rgb(var(--brand-primary-dark));
+}
+.pjus-summary__body ul,
+.pjus-summary__body ol {
+  margin: 0 0 14px;
+  padding-left: 22px;
+  color: rgb(var(--brand-ink-2));
+}
+.pjus-summary__body li { margin-bottom: 6px; line-height: 1.6; }
+
+/* Blockquote = "Tese de gabinete" aside (substitui o "Pérola clínica" do PMed) */
+.pjus-summary__body blockquote {
+  background: var(--pjus-surface-2);
+  border-left: 3px solid rgb(var(--brand-primary));
+  padding: 14px 18px;
+  margin: 14px 0;
+  font-size: 13px;
+  border-radius: 0 6px 6px 0;
+  position: relative;
+}
+.pjus-summary__body blockquote::before {
+  content: "Tese de gabinete";
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgb(var(--brand-primary-dark));
+  margin-bottom: 6px;
+}
+.pjus-summary__body blockquote p {
+  margin: 0;
+  font-size: 12.5px;
+  color: rgb(var(--brand-ink-2));
+  line-height: 1.55;
+}
+
+/* Editorial header */
+.pjus-editorial-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: rgb(var(--brand-ink));
+  margin: 12px 0 8px;
+}
+
+/* ─── PJUS pattern: Chat bubbles ─────────────────────────────────── */
+.pjus-chat {
+  background: linear-gradient(180deg, var(--pjus-surface-2), #fff);
+  border: 1px solid var(--pjus-hairline);
+  border-radius: 14px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pjus-bubble {
+  padding: 12px 16px;
+  border-radius: 14px;
+  max-width: 85%;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.pjus-bubble--user {
+  align-self: flex-end;
+  background: rgb(var(--brand-primary-dark));
+  color: #fff;
+  border-radius: 14px 14px 4px 14px;
+}
+.pjus-bubble--ai {
+  align-self: flex-start;
+  background: #fff;
+  border: 1px solid var(--pjus-hairline);
+  color: rgb(var(--brand-ink-2));
+  border-radius: 14px 14px 14px 4px;
+  box-shadow: var(--pjus-shadow-xs);
+}
+.pjus-bubble__time {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  opacity: 0.55;
+  margin-top: 6px;
+}
+
+/* ─── PJUS pattern: KPI strip ─────────────────────────────────────── */
+.pjus-kpi {
+  display: grid;
+  grid-template-columns: repeat(var(--kpi-cols, 3), 1fr);
+  gap: 1px;
+  background: var(--pjus-hairline);
+  border: 1px solid var(--pjus-hairline);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.pjus-kpi__item { background: #fff; padding: 16px 18px; }
+.pjus-kpi__lbl {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--pjus-ink-3);
+}
+.pjus-kpi__val {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  color: rgb(var(--brand-ink));
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+.pjus-kpi__val small {
+  font-size: 12px;
+  color: var(--pjus-ink-3);
+  font-weight: 500;
+  margin-left: 4px;
+}
+.pjus-kpi__delta { font-size: 11px; font-weight: 600; margin-top: 4px; }
+.pjus-kpi__delta--up   { color: rgb(var(--brand-primary)); }
+.pjus-kpi__delta--down { color: #b5574e; }
+.pjus-kpi__delta--flat { color: var(--pjus-ink-3); }
+
+/* ─── PJUS pattern: Alerts ────────────────────────────────────────── */
+.pjus-alert {
+  padding: 14px 18px;
+  border-radius: 10px;
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  border-left: 3px solid;
+}
+.pjus-alert strong {
+  display: block;
+  margin-bottom: 2px;
+  font-weight: 600;
+  color: rgb(var(--brand-ink));
+  font-size: 13px;
+}
+.pjus-alert .material-symbols-outlined { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+.pjus-alert--success { background: #f1faf5; border-color: rgb(var(--brand-primary)); color: #2b4b43; }
+.pjus-alert--success .material-symbols-outlined { color: rgb(var(--brand-primary)); }
+.pjus-alert--warning { background: #fdf7e8; border-color: rgb(var(--brand-gold)); color: #6e5a21; }
+.pjus-alert--warning .material-symbols-outlined { color: var(--pjus-gold-deep); }
+.pjus-alert--danger  { background: #fdf1ef; border-color: #b5574e; color: #7a3a32; }
+.pjus-alert--danger  .material-symbols-outlined { color: #b5574e; }
+.pjus-alert--info    { background: #f1f6fd; border-color: #3e6aad; color: #2b4078; }
+.pjus-alert--info    .material-symbols-outlined { color: #3e6aad; }
+
+/* ─── PJUS pattern: Legal highlight (substitui .law-box do legacy) ── */
+.pjus-legal {
+  padding: 14px 16px;
+  border: 1px solid rgba(201, 168, 76, 0.22);
+  border-left: 4px solid rgb(var(--brand-gold));
+  border-radius: 8px;
+  background: rgba(246, 239, 216, 0.42);
+  color: rgb(var(--brand-ink));
+}
+.pjus-legal strong { display: block; color: rgb(var(--brand-primary-dark)); margin-bottom: 4px; }
+.pjus-legal mark {
+  padding: 0 4px;
+  border-radius: 3px;
+  background: rgba(201, 168, 76, 0.28);
+  color: #6f4d18;
+  font-weight: 600;
+}
+
+/* ─── Textures: SVG inline, zero dependência externa ─────────────── */
+.texture-grain { position: relative; }
+.texture-grain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' seed='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.07;
+  mix-blend-mode: multiply;
+  z-index: 0;
+}
+.texture-dots-subtle {
+  background-image: radial-gradient(circle at 1.5px 1.5px, rgb(var(--brand-primary) / 0.22) 1.25px, transparent 0);
+  background-size: 22px 22px;
+}
+/* Linhas paralelas tipo "papel pautado de gabinete" — assinatura jurídica */
+.texture-ruled {
+  background-image: linear-gradient(rgb(var(--brand-primary) / 0.04) 1px, transparent 1px);
+  background-size: 100% 32px;
+}
+
+/* ─── Premium button shimmer on hover ─────────────────────────────── */
+.btn-shimmer { position: relative; overflow: hidden; }
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.18) 50%, transparent 60%);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+.btn-shimmer:hover::after { transform: translateX(100%); }
+
+/* ─── Interactive card glow ring ──────────────────────────────────── */
+.card-interactive {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px 0 rgba(27, 42, 65, 0.10), 0 2px 8px 0 rgba(20, 25, 35, 0.06);
+}
+.card-interactive:active {
+  transform: translateY(0) scale(0.99);
+  box-shadow: 0 2px 8px 0 rgba(20, 25, 35, 0.06);
+}
+
+/* ─── Sidebar link indicator ──────────────────────────────────────── */
+.sidebar-link-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: rgb(var(--brand-gold));
+  border-radius: 0 3px 3px 0;
+}
+
+/* ─── Focus ring refinement ───────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid rgb(var(--brand-primary) / 0.55);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+button:focus-visible,
+a:focus-visible { outline-offset: 3px; }
+
+/* ─── Scrollbar (sidebar — gold accent) ──────────────────────────── */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 168, 76, 0.25) transparent;
+}
+.sidebar-scroll::-webkit-scrollbar { width: 4px; }
+.sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+.sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(201, 168, 76, 0.25); border-radius: 4px; }
+.sidebar-scroll::-webkit-scrollbar-thumb:hover { background: rgba(201, 168, 76, 0.45); }
+
+@layer utilities {
+  /* Radial hero background — subtle */
+  .hero-radial {
+    background-image: radial-gradient(
+      ellipse 80% 60% at 50% -10%,
+      rgb(var(--brand-primary) / 0.06) 0%,
+      transparent 70%
+    );
+  }
+
+  /* Hover lift — Apple-like */
+  .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+  .hover-lift:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px -6px rgba(27, 42, 65, 0.10);
+  }
+
+  /* Safe area utilities (mobile) */
+  .safe-area-top { padding-top: env(safe-area-inset-top); }
+  .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .touch-highlight { -webkit-tap-highlight-color: transparent; }
+
+  /* Print: documentos jurídicos */
+  @media print {
+    body { background: white; }
+    .no-print { display: none !important; }
+  }
+}
+
+/* ─── Reduce motion: respeito ao usuário ─────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
+}
