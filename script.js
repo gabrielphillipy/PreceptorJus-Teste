@@ -6,8 +6,21 @@ const resultContent = document.querySelector("#resultContent");
 const libraryGrid = document.querySelector("#libraryGrid");
 const examResult = document.querySelector("#examResult");
 const flashcardResult = document.querySelector("#flashcardResult");
-const storageKey = "preceptorjus_workspace";
-const themeKey = "preceptorjus_theme";
+// Centralize product identity here. PreceptorMed forks this object and changes nothing else.
+const PRODUCT_CONFIG = {
+  name: "PreceptorJus",
+  shortName: "PJ",
+  storageKey: "preceptorjus_workspace",
+  themeKey: "preceptorjus_theme",
+  sibling: {
+    name: "PreceptorMed",
+    shortName: "PM",
+    tagline: "IA para Medicina e residência",
+    url: "https://preceptormed.com.br",
+  },
+};
+const storageKey = PRODUCT_CONFIG.storageKey;
+const themeKey = PRODUCT_CONFIG.themeKey;
 let lastSubmitter = null;
 let lastStudy = null;
 let currentExam = null;
@@ -744,7 +757,7 @@ function submitLibraryModal(form) {
 function saveFeedback(form) {
   const formData = new FormData(form);
   const message = String(formData.get("message") || "").trim();
-  if (!message) return false;
+  if (!message) return null;
 
   const feedback = {
     id: `feedback-${Date.now()}`,
@@ -755,10 +768,33 @@ function saveFeedback(form) {
     date: new Date().toLocaleString("pt-BR"),
   };
 
+  // Always persist locally as backup, then fire the API call.
   workspace.feedbacks = [feedback, ...(workspace.feedbacks || [])].slice(0, 50);
   saveWorkspace();
   form.reset();
-  return true;
+  return feedback;
+}
+
+async function sendFeedbackToWebhook(feedback) {
+  try {
+    const response = await fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: feedback.type,
+        message: feedback.message,
+        contact: feedback.contact,
+        page: feedback.page,
+      }),
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      return { ok: false, error: data.error || `HTTP ${response.status}` };
+    }
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error?.message || "rede" };
+  }
 }
 
 function renderWorkspace() {
@@ -1181,7 +1217,9 @@ function slugify(value) {
 
 async function callAI(payload) {
   const controller = new AbortController();
-  const timeoutMs = 45_000;
+  // Server-side OVERALL_TIMEOUT_MS = 55_000 + Vercel maxDuration = 60_000.
+  // Client waits a bit longer than the server so we get the server's error message instead of aborting prematurely.
+  const timeoutMs = 58_000;
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   let response;
@@ -2384,15 +2422,23 @@ document.querySelectorAll("[data-chat-form]").forEach((form) => {
   form.addEventListener("submit", handleChatSubmit);
 });
 
-document.querySelector("[data-feedback-form]")?.addEventListener("submit", (event) => {
+document.querySelector("[data-feedback-form]")?.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const button = event.currentTarget.querySelector("button[type='submit']");
-  if (!saveFeedback(event.currentTarget)) return;
-  button.textContent = "Feedback enviado";
+  const form = event.currentTarget;
+  const button = form.querySelector("button[type='submit']");
+  const feedback = saveFeedback(form);
+  if (!feedback) return;
+
+  button.disabled = true;
+  button.textContent = "Enviando...";
+
+  const result = await sendFeedbackToWebhook(feedback);
+  button.textContent = result.ok ? "Feedback enviado" : "Salvo localmente";
   setTimeout(() => {
     button.textContent = "Enviar feedback";
+    button.disabled = false;
     closeFeedbackModal();
-  }, 900);
+  }, 1100);
 });
 
 document.querySelector("[data-library-modal-form]")?.addEventListener("submit", (event) => {

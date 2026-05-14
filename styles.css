@@ -1,34 +1,75 @@
+/* ════════════════════════════════════════════════════════════════════
+   DESIGN SYSTEM — PreceptorJus
+   --------------------------------------------------------------------
+   Three layers of tokens:
+   1. Neutral palette (--bg, --paper, --ink, --line)         → shared with PreceptorMed
+   2. Primary palette (--primary, --gold)                    → product-specific
+   3. Semantic mappings (--product-accent, --product-sibling) → cross-product references
+
+   To create PreceptorMed:
+   - Override layer 2 (--primary, --gold) with teal/clinical palette
+   - Keep layers 1 and 3 untouched — they're already abstracted
+   ════════════════════════════════════════════════════════════════════ */
+
 :root {
-  --bg: #f4f1ec;
-  --paper: #ffffff;
-  --ink: #141923;
-  --ink-2: #3d4654;
-  --muted: #747b86;
-  --line: #ded6c8;
-  --primary: #1b2a41;
+  /* ── Layer 1: Neutral surface palette ───────────────────────── */
+  --bg: #f4f1ec;            /* page background (parchment) */
+  --paper: #ffffff;         /* card/panel surface */
+  --ink: #141923;           /* primary text */
+  --ink-2: #3d4654;         /* secondary text */
+  --muted: #747b86;         /* tertiary text / placeholders */
+  --line: #ded6c8;          /* borders & dividers */
+
+  /* ── Layer 2: Product palette (JUS = navy + gold) ───────────── */
+  --primary: #1b2a41;       /* main brand color (buttons, headings) */
   --primary-dark: #111d2e;
   --primary-deep: #0b1320;
-  --gold: #b9904d;
-  --gold-soft: #f2e7d2;
+  --gold: #b9904d;          /* accent (active states, badges) */
+  --gold-soft: #f2e7d2;     /* accent background */
+
+  /* ── Semantic tokens ────────────────────────────────────────── */
   --danger: #8f2e3b;
+  --success: #2e7a52;
+  --info: #1f5f8c;
+  --warning: #b07b2c;
+
+  /* ── Layer 3: Cross-product accent slots ────────────────────── */
+  --product-accent: var(--gold);
+  --product-accent-soft: var(--gold-soft);
+  --product-sibling: #2a7d6f;        /* PreceptorMed teal — used in ecosystem strip */
+  --product-sibling-soft: #e6f4f1;
+
+  /* ── Elevation & motion ─────────────────────────────────────── */
   --shadow: 0 24px 70px -28px rgba(17, 29, 46, 0.42);
+  --shadow-sm: 0 2px 8px -2px rgba(17, 29, 46, 0.12);
+
+  /* ── Typography ─────────────────────────────────────────────── */
   --display: "Manrope", "Inter", sans-serif;
   --body: "Inter", Arial, sans-serif;
 }
 
 :root[data-theme="dark"] {
+  /* Layer 1 — dark surfaces */
   --bg: #0f1722;
   --paper: #151f2c;
   --ink: #f4f6f8;
   --ink-2: #c7d0dc;
   --muted: #98a5b7;
   --line: #2d3848;
+
+  /* Layer 2 — dark product palette (gold inverts to warm cream) */
   --primary: #d2ae6d;
   --primary-dark: #f4f6f8;
   --primary-deep: #090f18;
   --gold: #d2ae6d;
   --gold-soft: #2a241b;
+
+  /* Layer 3 — sibling accent stays teal but shifted for dark bg */
+  --product-sibling: #3db8a2;
+  --product-sibling-soft: #0d2420;
+
   --shadow: 0 24px 70px -28px rgba(0, 0, 0, 0.72);
+  --shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.35);
 }
 
 * {
@@ -4354,5 +4395,184 @@ h3 {
     grid-column: 1;
     grid-row: auto;
     justify-self: start;
+  }
+}
+
+/* ── Ecosystem Strip ─────────────────────────────────────────────── */
+.ecosystem-strip {
+  padding: 56px 120px;
+  border-top: 1px solid var(--line);
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.ecosystem-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.ecosystem-products {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.ecosystem-product {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 24px;
+  border-radius: 14px;
+  border: 1.5px solid var(--line);
+  background: var(--bg);
+  text-decoration: none;
+  color: var(--ink);
+  transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
+  position: relative;
+}
+
+.ecosystem-product.active {
+  border-color: var(--product-accent);
+  background: var(--product-accent-soft);
+  cursor: default;
+}
+
+.ecosystem-product:not(.active):hover {
+  border-color: var(--product-sibling);
+  box-shadow: 0 8px 28px -8px rgba(42, 125, 111, 0.22);
+  transform: translateY(-2px);
+}
+
+.ecosystem-product .logo-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  color: #fff;
+  font-family: var(--display);
+  flex-shrink: 0;
+}
+
+.ecosystem-product .logo-mark.pm {
+  background: var(--product-sibling);
+}
+
+.ecosystem-product span:not(.logo-mark):not(.ecosystem-badge):not(.ecosystem-arrow) {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ecosystem-product strong {
+  font-size: 0.97rem;
+  font-weight: 700;
+}
+
+.ecosystem-product small {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.ecosystem-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: var(--gold-soft);
+  border-radius: 20px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+.ecosystem-arrow {
+  font-size: 1.1rem;
+  color: var(--product-sibling);
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.ecosystem-divider {
+  width: 1px;
+  height: 48px;
+  background: var(--line);
+  flex-shrink: 0;
+}
+
+/* ── Sidebar ecosystem link ──────────────────────────────────────── */
+.app-sibling-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 12px 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.app-sibling-link:hover {
+  background: var(--product-sibling-soft);
+  border-color: var(--product-sibling);
+  color: var(--product-sibling);
+}
+
+.app-sibling-link .logo-mark {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  font-family: var(--display);
+  background: var(--product-sibling);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.app-sibling-link span:not(.logo-mark) {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.2;
+}
+
+.app-sibling-link strong {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+@media (max-width: 720px) {
+  .ecosystem-strip {
+    padding: 40px 20px;
+  }
+
+  .ecosystem-divider {
+    width: 48px;
+    height: 1px;
+  }
+
+  .ecosystem-products {
+    flex-direction: column;
   }
 }
