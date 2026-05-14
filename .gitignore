@@ -4,3 +4,6 @@ preceptorjus-screenshot.png
 .env.*
 
 .vercel
+
+dev-server.js
+.claude/
