@@ -1,10 +1,9 @@
-const JSON_HEADERS = {
-  "Content-Type": "application/json; charset=utf-8",
-  "Cache-Control": "no-store",
-};
+const { send, readBody, checkRateLimit, getActiveDomain } = require("./_lib/utils");
 
-const DEFAULT_TIMEOUT_MS = 12_000;
-const OVERALL_TIMEOUT_MS = 40_000;
+// Timeouts increased to accommodate deeper outputs + thinking budget.
+// Vercel maxDuration is 60s (see vercel.json) — keep OVERALL below that minus buffer.
+const DEFAULT_TIMEOUT_MS = 28_000;
+const OVERALL_TIMEOUT_MS = 55_000;
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 const MAX_ATTEMPTS = 1;
 const BASE_BACKOFF_MS = 900;
@@ -14,7 +13,9 @@ function sleep(ms) {
 }
 
 function getModelCandidates() {
-  const primary = (process.env.GEMINI_MODEL || "gemini-2.0-flash-lite").trim();
+  // gemini-2.0-flash-lite was deprecated for new users in 2025.
+  // 2.5-flash-lite is the new cost-efficient default and supports thinking budgets.
+  const primary = (process.env.GEMINI_MODEL || "gemini-2.5-flash-lite").trim();
   const fallbacksRaw = String(process.env.GEMINI_MODEL_FALLBACKS || "")
     .split(",")
     .map((m) => m.trim())
@@ -23,11 +24,22 @@ function getModelCandidates() {
   const models = [
     primary,
     ...fallbacksRaw,
-    "gemini-2.0-flash-lite",
     "gemini-2.5-flash-lite",
     "gemini-2.5-flash",
+    "gemini-flash-latest",
   ];
   return [...new Set(models)].filter(Boolean);
+}
+
+function extractText(response) {
+  // Gemini 2.5 includes "thought" parts when thinkingBudget > 0; skip them so they don't
+  // appear in the final output (they're internal reasoning, not the answer).
+  return (response.candidates || [])
+    .flatMap((candidate) => candidate.content?.parts || [])
+    .filter((part) => !part.thought)
+    .map((part) => part.text || "")
+    .join("\n")
+    .trim();
 }
 
 async function callGeminiWithRetries({ models, prompt, apiKey }) {
@@ -61,20 +73,13 @@ async function callGeminiWithRetries({ models, prompt, apiKey }) {
               "x-goog-api-key": apiKey,
             },
             body: JSON.stringify({
-              systemInstruction: {
-                parts: [{ text: prompt.instructions }],
-              },
-              contents: [
-                {
-                  role: "user",
-                  parts: [{ text: prompt.input }],
-                },
-              ],
+              systemInstruction: { parts: [{ text: prompt.instructions }] },
+              contents: [{ role: "user", parts: [{ text: prompt.input }] }],
               generationConfig: {
                 maxOutputTokens: Math.min(Number(prompt.max_output_tokens) || 2048, 8192),
-                temperature: 0.45,
+                temperature: 0.55,
                 thinkingConfig: {
-                  thinkingBudget: 0,
+                  thinkingBudget: Number.isFinite(prompt.thinking_budget) ? prompt.thinking_budget : 0,
                 },
               },
             }),
@@ -87,6 +92,13 @@ async function callGeminiWithRetries({ models, prompt, apiKey }) {
         if (response.ok) {
           const text = extractText(data);
           const finishReason = data.candidates?.[0]?.finishReason;
+
+          // Gemini 2.5 routinely sets MAX_TOKENS even when the answer is well-formed —
+          // the budget is hit right as the model finishes. Accept the response if we
+          // have substantial content (>800 chars) regardless of finish reason.
+          if (text && text.length > 800) {
+            return { data, modelUsed: model };
+          }
           if (text && finishReason !== "MAX_TOKENS") {
             return { data, modelUsed: model };
           }
@@ -94,11 +106,10 @@ async function callGeminiWithRetries({ models, prompt, apiKey }) {
           lastStatus = 502;
           lastErrorMessage =
             finishReason === "MAX_TOKENS"
-              ? "A resposta ficou longa demais e foi interrompida. Tente reduzir secoes ou usar um tema mais especifico."
+              ? "A resposta foi cortada antes de iniciar conteudo util. Tente um tema mais especifico."
               : "Resposta vazia do Gemini.";
           if (attempt < MAX_ATTEMPTS) {
-            const waitMs = BASE_BACKOFF_MS * Math.pow(2, attempt - 1);
-            await sleep(waitMs);
+            await sleep(BASE_BACKOFF_MS * Math.pow(2, attempt - 1));
             continue;
           }
         }
@@ -106,10 +117,7 @@ async function callGeminiWithRetries({ models, prompt, apiKey }) {
         lastStatus = response.status;
         lastErrorMessage = data.error?.message || "Erro ao chamar o Gemini.";
 
-        const isRetryable = RETRYABLE_STATUS.has(response.status);
-        if (!isRetryable) {
-          break;
-        }
+        if (!RETRYABLE_STATUS.has(response.status)) break;
 
         const shouldTryNextModel =
           response.status === 429 ||
@@ -121,8 +129,7 @@ async function callGeminiWithRetries({ models, prompt, apiKey }) {
         }
 
         if (attempt < MAX_ATTEMPTS) {
-          const waitMs = BASE_BACKOFF_MS * Math.pow(2, attempt - 1);
-          await sleep(waitMs);
+          await sleep(BASE_BACKOFF_MS * Math.pow(2, attempt - 1));
           continue;
         }
       } catch (error) {
@@ -138,8 +145,7 @@ async function callGeminiWithRetries({ models, prompt, apiKey }) {
         }
 
         if (attempt < MAX_ATTEMPTS) {
-          const waitMs = BASE_BACKOFF_MS * Math.pow(2, attempt - 1);
-          await sleep(waitMs);
+          await sleep(BASE_BACKOFF_MS * Math.pow(2, attempt - 1));
           continue;
         }
       } finally {
@@ -156,218 +162,26 @@ async function callGeminiWithRetries({ models, prompt, apiKey }) {
   return { error: message, status: lastStatus };
 }
 
-function send(res, status, payload) {
-  res.statusCode = status;
-  Object.entries(JSON_HEADERS).forEach(([key, value]) => res.setHeader(key, value));
-  res.end(JSON.stringify(payload));
-}
-
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let raw = "";
-    req.on("data", (chunk) => {
-      raw += chunk;
-      if (raw.length > 1_000_000) {
-        reject(new Error("Payload muito grande."));
-        req.destroy();
-      }
-    });
-    req.on("end", () => {
-      try {
-        resolve(raw ? JSON.parse(raw) : {});
-      } catch {
-        reject(new Error("JSON invalido."));
-      }
-    });
-    req.on("error", reject);
-  });
-}
-
-function extractText(response) {
-  return (response.candidates || [])
-    .flatMap((candidate) => candidate.content?.parts || [])
-    .map((part) => part.text || "")
-    .join("\n")
-    .trim();
-}
-
-function buildPrompt(body) {
-  const topic = String(body.topic || "").trim().slice(0, 500);
-  const goals = Array.isArray(body.goals)
-    ? body.goals.map((goal) => String(goal).trim()).filter(Boolean).slice(0, 12)
-    : [];
-  const selectedSections = Array.isArray(body.sections)
-    ? body.sections.map((section) => String(section).trim()).filter(Boolean)
-    : [];
-  const context = String(body.context || "").trim().slice(0, 6000);
-  const questionCount = Math.min(Math.max(Number(body.questionCount) || 5, 5), 20);
-  const difficulty = String(body.difficulty || "OAB").trim().slice(0, 80);
-
-  const base = [
-    "Voce e o PreceptorJus, um assistente academico juridico para estudantes brasileiros de Direito, OAB e concursos.",
-    "Responda sempre em portugues do Brasil.",
-    "Use linguagem tecnica, organizada e didatica.",
-    "Nao invente artigos, sumulas ou precedentes. Quando nao tiver certeza, diga para conferir a fonte primaria.",
-    "Nao de aconselhamento juridico personalizado; trate como estudo academico.",
-  ].join(" ");
-
-  if (body.mode === "chat") {
-    return {
-      instructions: base,
-      input: [
-        "Responda como tira-duvidas juridico rapido e independente. A pergunta pode ser sobre qualquer area do Direito, OAB, faculdade, concursos ou conceitos gerais.",
-        "Nao assuma que a pergunta se refere ao ultimo estudo gerado. Use apenas o que o estudante escreveu nesta mensagem.",
-        "Se a pergunta estiver ambigua, responda com a interpretacao mais provavel e indique o ponto que pode precisar de esclarecimento.",
-        "Organize a resposta em topicos curtos quando ajudar.",
-        `Pergunta do estudante: ${String(body.message || "").slice(0, 1500)}`,
-      ].filter(Boolean).join("\n\n"),
-      max_output_tokens: 1200,
-    };
-  }
-
-  if (body.mode === "exam") {
-    return {
-      instructions: base,
-      input: [
-        `Crie um simulado juridico com ${questionCount} questoes sobre: ${topic}.`,
-        `Nivel/estilo da prova: ${difficulty}.`,
-        context ? `Use este estudo gerado como base principal para a prova:\n${context}` : "",
-        "Cada questao deve ter enunciado proprio, 4 alternativas (A, B, C, D), uma unica correta e justificativa para cada alternativa.",
-        "Nao revele gabarito ou justificativas no enunciado nem nas alternativas.",
-        "Responda APENAS JSON valido, sem Markdown, sem bloco de codigo e sem texto antes ou depois.",
-        'Use exatamente este formato: {"questions":[{"statement":"...","options":[{"letter":"A","text":"..."},{"letter":"B","text":"..."},{"letter":"C","text":"..."},{"letter":"D","text":"..."}],"answer":"A","justifications":{"A":"...","B":"...","C":"...","D":"..."}}]}',
-      ].filter(Boolean).join("\n"),
-      max_output_tokens: questionCount > 10 ? 7600 : 4200,
-    };
-  }
-
-  if (body.mode === "flashcards") {
-    return {
-      instructions: base,
-      input: [
-        `Crie 6 flashcards juridicos sobre: ${topic}.`,
-        "Responda somente os flashcards, sem introducao.",
-        "Formato obrigatorio para cada card:",
-        "### Frente",
-        "pergunta curta",
-        "### Verso",
-        "resposta objetiva, com fundamento juridico quando couber.",
-        "---",
-      ].join("\n"),
-      max_output_tokens: 1600,
-    };
-  }
-
-  const studyFormats = {
-    mapa: [
-      "Estruture em Markdown para um mapa mental visual, fluido e direto.",
-      "Use obrigatoriamente os titulos com ## abaixo. Nao use apenas texto solto.",
-      "## Nucleo central",
-      "Apenas 2 a 5 palavras com a ideia central.",
-      "## Ramo 1: Conceito",
-      "- no maximo 6 palavras",
-      "- no maximo 6 palavras",
-      "## Ramo 2: Base legal",
-      "- artigo essencial",
-      "- fundamento essencial",
-      "## Ramo 3: Requisitos",
-      "- requisito em ate 6 palavras",
-      "- excecao em ate 6 palavras",
-      "## Ramo 4: Como cai em prova",
-      "- pegadinha em ate 6 palavras",
-      "- distincao em ate 6 palavras",
-      "Cada ramo deve ter 2 a 3 bullets.",
-      "Nao escreva paragrafos. Nao explique longamente. Nao use frases com mais de 8 palavras.",
-    ],
-    peca: [
-      "Estruture em Markdown como roteiro de peca pratica:",
-      "## Cabimento",
-      "## Competencia e partes",
-      "## Fundamentos juridicos",
-      "## Pedidos",
-      "## Provas e cautelas",
-      "## Checklist antes de protocolar",
-      "## Para se aprofundar",
-    ],
-    jurisprudencia: [
-      "Estruture em Markdown com foco em jurisprudencia e teses:",
-      "## Tese central",
-      "## Entendimento dos tribunais",
-      "## Sumulas e temas para conferir",
-      "## Divergencias e limites",
-      "## Como usar em prova",
-      "## Para se aprofundar",
-    ],
-    questoes: [
-      "Estruture em Markdown como questoes comentadas:",
-      "## Pontos que mais caem",
-      "## Pegadinhas comuns",
-      "## Questoes modelo",
-      "## Comentarios e gabaritos",
-      "## Revisao final",
-      "## Para se aprofundar",
-    ],
-  };
-  const defaultFormat = [
-    "Estruture em Markdown com:",
-    "## Visao geral",
-    "## Fundamentos legais",
-    "## Requisitos e excecoes",
-    "## Como cai em prova",
-    "## Checklist de revisao",
-    "## Para se aprofundar",
-  ];
-  const formatLines = studyFormats[body.mode] || defaultFormat;
-
-  return {
-    instructions: base,
-    input: [
-      `Gere um material academico juridico sobre: ${topic}.`,
-      goals.length ? `Objetivos do estudante:\n- ${goals.join("\n- ")}` : "",
-      selectedSections.length ? `Secoes desejadas: ${selectedSections.join(", ")}.` : "",
-      ...formatLines,
-      "Limite cada secao a poucos paragrafos objetivos.",
-      "Seja completo, mas evite introducao longa. Va direto ao conteudo.",
-      "Nao use linhas divisorias como '---'. Nao encerre com despedida, assinatura ou 'Atenciosamente'.",
-      "Inclua alertas de prova e diferencie regra, excecao e controversia quando existir.",
-      "Na secao 'Para se aprofundar', inclua 4 blocos curtos: Doutrina recomendada, Leitura legislativa, Jurisprudencia para pesquisar e Artigos/material complementar.",
-      "Nao invente livro, autor, artigo academico, sumula, tema ou precedente. Recomende obras classicas apenas quando tiver alta seguranca; quando nao tiver, indique linhas de pesquisa, palavras-chave e fontes oficiais para conferir.",
-      "Quando citar artigo, sumula, tema ou precedente, indique que o estudante deve conferir a fonte primaria oficial.",
-    ].filter(Boolean).join("\n\n"),
-    max_output_tokens: 2200,
-  };
-}
-
-function validateRequest(body) {
-  const mode = String(body.mode || "fechamento");
-  const topic = String(body.topic || "").trim();
-
-  if (["fechamento", "mapa", "peca", "jurisprudencia", "questoes", "exam", "flashcards"].includes(mode) && !topic) {
-    return {
-      status: 400,
-      error: "O campo Tema e obrigatorio. Preencha o tema antes de gerar.",
-    };
-  }
-
-  if (mode === "chat" && !String(body.message || "").trim()) {
-    return {
-      status: 400,
-      error: "Digite uma pergunta antes de enviar ao chat.",
-    };
-  }
-
-  return null;
-}
-
 async function handler(req, res) {
-
   if (req.method !== "POST") {
     return send(res, 405, { error: "Use POST." });
   }
 
+  // Rate limit per IP (in-memory; resets on cold start)
+  const limit = checkRateLimit(req, { scope: "generate" });
+  if (limit.blocked) {
+    res.setHeader("Retry-After", String(limit.retryAfterSec));
+    const minutes = Math.max(1, Math.ceil(limit.retryAfterSec / 60));
+    return send(res, 429, {
+      error: `Voce atingiu o limite de ${limit.limit} geracoes por hora. Tente novamente em cerca de ${minutes} ${minutes === 1 ? "minuto" : "minutos"}.`,
+    });
+  }
+
   try {
     const body = await readBody(req);
-    const validationError = validateRequest(body);
+
+    const domain = getActiveDomain();
+    const validationError = domain.validate(body);
     if (validationError) {
       return send(res, validationError.status, { error: validationError.error });
     }
@@ -378,8 +192,7 @@ async function handler(req, res) {
       });
     }
 
-    const prompt = buildPrompt(body);
-
+    const prompt = domain.buildPrompt(body);
     const models = getModelCandidates();
     const result = await callGeminiWithRetries({
       models,
@@ -398,12 +211,13 @@ async function handler(req, res) {
       });
     }
 
+    res.setHeader("X-RateLimit-Limit", String(limit.limit));
+    res.setHeader("X-RateLimit-Remaining", String(limit.remaining));
     return send(res, 200, { text, id: result.data.id, model: result.modelUsed });
   } catch (error) {
     if (error && typeof error === "object" && error.name === "AbortError") {
       return send(res, 504, {
-        error:
-          "A geracao demorou demais e expirou. Tente novamente (ou gere um resumo menor / reduza secoes).",
+        error: "A geracao demorou demais e expirou. Tente novamente (ou gere um resumo menor / reduza secoes).",
       });
     }
     return send(res, 500, {
@@ -413,6 +227,4 @@ async function handler(req, res) {
 }
 
 module.exports = handler;
-module.exports.config = {
-  maxDuration: 60,
-};
+module.exports.config = { maxDuration: 60 };
