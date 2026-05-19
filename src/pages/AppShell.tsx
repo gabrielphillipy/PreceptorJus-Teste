@@ -10,6 +10,7 @@ import { PreceptorChatPanel } from "@/components/study/PreceptorChatPanel";
 import { cn } from "@/lib/utils";
 
 const Dashboard = lazy(() => import("./Dashboard"));
+const Exam = lazy(() => import("./Exam"));
 
 function PageFallback() {
   return (
@@ -256,15 +257,7 @@ export default function AppShell() {
         <Routes>
           <Route index element={<MenuPage />} />
           <Route path="study" element={<Dashboard />} />
-          <Route
-            path="exam"
-            element={
-              <ComingSoon
-                title="Simulados"
-                hint="Onda 3: simulado interativo com Tabs + Progress, mantendo o parser do legacy."
-              />
-            }
-          />
+          <Route path="exam" element={<Exam />} />
           <Route
             path="flashcards"
             element={
