@@ -1,12 +1,11 @@
-import { lazy, Suspense } from "react";
-import { Link, Route, Routes, useNavigate } from "react-router-dom";
+import { lazy, Suspense, useState, type FormEvent } from "react";
+import { Route, Routes, useNavigate } from "react-router-dom";
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { MI } from "@/components/brand/MaterialIcon";
 import { useStudyStats, useWorkspace } from "@/hooks/useWorkspace";
 import { PreceptorChatPanel } from "@/components/study/PreceptorChatPanel";
-import { cn } from "@/lib/utils";
 
 const Dashboard = lazy(() => import("./Dashboard"));
 const Exam = lazy(() => import("./Exam"));
@@ -25,199 +24,351 @@ function PageFallback() {
   );
 }
 
+const PT_WEEKDAYS_LONG = ["domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"];
+const PT_MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+
+function formatLongDate(d: Date) {
+  return `${PT_WEEKDAYS_LONG[d.getDay()]}, ${d.getDate()} de ${PT_MONTHS[d.getMonth()]} de ${d.getFullYear()}`;
+}
+function greeting(d: Date) {
+  const h = d.getHours();
+  return h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
+}
+
+// Pauta/Semana são conteúdo editorial estático (não há plano de estudo persistido
+// ainda) — espelham o handoff de design. KPIs, última minuta e navegação usam
+// dados reais (useStudyStats / useWorkspace / react-router).
+const PAUTA = [
+  { time: "08:00", title: "Revisão Civil — Súmulas STJ", meta: "12 flashcards · 8 minutos", area: "civil", state: "done", tag: "Civil" },
+  { time: "09:30", title: "Fechamento — Controle concentrado", meta: "ADI, ADC, ADPF · 18 min", area: "const", state: "done", tag: "Const." },
+  { time: "10:45", title: "Simulado OAB — Bloco 1ª fase", meta: "10 questões · 40 minutos", area: "oab", state: "now", tag: "OAB" },
+  { time: "14:00", title: "Estudo Penal — Insignificância", meta: "vetores do STF, doutrina", area: "penal", state: "next", tag: "Penal" },
+  { time: "16:30", title: "Peça — Petição inicial cível", meta: "Art. 319, CPC · roteiro", area: "proc", state: "next", tag: "Proc." },
+  { time: "19:00", title: "Conversa Preceptor — dúvidas livres", meta: "tira-teimas e fechamento", area: "civil", state: "next", tag: "Civil" },
+];
+
+const QUICK_PROMPTS = [
+  { icon: "auto_awesome", text: "Responsabilidade civil objetiva", area: "Civil" },
+  { icon: "auto_awesome", text: "Habeas corpus — cabimento", area: "Constitucional" },
+  { icon: "auto_awesome", text: "Vício vs defeito do produto", area: "CDC" },
+  { icon: "auto_awesome", text: "Justa causa — requisitos", area: "Trabalho" },
+];
+
+const ATALHOS = [
+  { icon: "gavel", title: "Simulados", sub: "OAB e concursos", count: "Gerar", route: "exam", hot: true },
+  { icon: "style", title: "Flashcards", sub: "Revisão por repetição", count: "Gerar", route: "flashcards", hot: true },
+  { icon: "library_books", title: "Biblioteca", sub: "Notas, peças e súmulas", count: null, route: "library" },
+  { icon: "chat_bubble", title: "Preceptor Chat", sub: "Tire dúvidas conjuntas", count: null, route: "chat" },
+];
+
+const SEMANA = [
+  { lbl: "SEG", num: "10", bars: [1, 2, 1, 2, 0], minutes: 84, today: false, empty: false },
+  { lbl: "TER", num: "11", bars: [1, 1, 2, 1, 1], minutes: 62, today: false, empty: false },
+  { lbl: "QUA", num: "12", bars: [2, 2, 1, 2, 2], minutes: 96, today: false, empty: false },
+  { lbl: "QUI", num: "13", bars: [0, 1, 0, 1, 0], minutes: 28, today: false, empty: false },
+  { lbl: "SEX", num: "14", bars: [2, 2, 2, 1, 2], minutes: 112, today: true, empty: false },
+  { lbl: "SÁB", num: "15", bars: [0, 0, 0, 0, 0], minutes: 0, today: false, empty: true },
+  { lbl: "DOM", num: "16", bars: [0, 0, 0, 0, 0], minutes: 0, today: false, empty: true },
+];
+
 function MenuPage() {
   const navigate = useNavigate();
   const stats = useStudyStats();
   const { studies } = useWorkspace();
+  const [quick, setQuick] = useState("");
+
+  const now = new Date();
+  const latest = studies[0];
+  const pautaDone = PAUTA.filter((p) => p.state === "done").length;
+  const protocolo = `PJUS/${now.getFullYear()}/${String(stats.studies + 1).padStart(4, "0")}`;
+
+  const goStudy = (topic?: string) =>
+    navigate(topic ? `/app/study?topic=${encodeURIComponent(topic)}` : "/app/study");
+
+  const submitQuick = (e: FormEvent) => {
+    e.preventDefault();
+    goStudy(quick.trim() || undefined);
+  };
 
   return (
-    <div className="space-y-8 animate-fade-up">
+    <div className="fade-up">
       <header>
-        <Eyebrow>Painel</Eyebrow>
-        <h1 className="font-display text-brand-ink">Sua mesa jurídica de estudo.</h1>
-        <p className="mt-2 max-w-2xl text-brand-ink-2 leading-relaxed">
-          Escolha uma ferramenta para construir tese, praticar prova ou revisar seus materiais salvos.
-        </p>
+        <div className="painel-masthead">
+          <span className="painel-masthead__edition">PreceptorJus</span>
+          <h1 className="painel-masthead__title">Pauta de hoje</h1>
+          <span className="painel-masthead__rule" />
+          <span className="painel-masthead__date">{formatLongDate(now)}</span>
+          <span className="painel-masthead__weather">
+            <span className="dot" />
+            Sessão ativa
+          </span>
+        </div>
+
+        <div className="painel-greet">
+          <div>
+            <h2 className="painel-greet__h1">
+              {greeting(now)}, <span className="serif">Estudante</span>.
+            </h2>
+            <p className="painel-greet__sub">
+              Comece pelo que estiver mais quente — o resto fica salvo na biblioteca. O Preceptor organiza
+              fundamento, jurisprudência e pontos de prova como uma minuta de parecer.
+            </p>
+          </div>
+          <div className="painel-greet__stamp">
+            <span className="day-pill">
+              <MI name="calendar_today" size={12} />
+              Dia {now.getDate()}/{now.getMonth() + 1}
+            </span>
+            <span>
+              Minuta protocolar <b>{protocolo}</b>
+            </span>
+          </div>
+        </div>
+
+        <div className="painel-hero">
+          <button className="painel-hero__featured" onClick={() => goStudy()}>
+            <span className="painel-hero__featured-eyebrow">Preceptoria · ferramenta principal</span>
+            <h2>
+              Gere uma <span className="serif">nota jurídica</span>
+              <br />
+              em segundos.
+            </h2>
+            <p>
+              Defina tema, modo e seções. O Preceptor IA organiza fundamento, jurisprudência, tese e pontos
+              de prova como uma minuta de parecer.
+            </p>
+            <div className="painel-hero__featured-row">
+              <span className="btn btn--gold btn--lg">
+                <MI name="auto_awesome" size={18} />
+                Começar fechamento
+              </span>
+            </div>
+            <span className="painel-hero__featured-corner" aria-hidden />
+          </button>
+
+          <aside className="painel-hero__quick">
+            <span className="painel-hero__quick-h">Continuar de onde parou</span>
+            <form className="painel-hero__quick-input" onSubmit={submitQuick}>
+              <input
+                value={quick}
+                onChange={(e) => setQuick(e.target.value)}
+                placeholder="Digite um tema rápido — ex.: Art. 927"
+                aria-label="Tema rápido"
+              />
+              <button type="submit" aria-label="Gerar estudo">
+                <MI name="arrow_upward" size={16} />
+              </button>
+            </form>
+            <div className="painel-hero__quick-suggest">
+              {QUICK_PROMPTS.map((p) => (
+                <button key={p.text} onClick={() => goStudy(p.text)}>
+                  <MI name={p.icon} />
+                  <span>{p.text}</span>
+                  <span className="area">{p.area}</span>
+                </button>
+              ))}
+            </div>
+          </aside>
+        </div>
       </header>
 
-      <div className="grid lg:grid-cols-[1.3fr_0.7fr] gap-4">
-        <FeatureMainCard onClick={() => navigate("/app/study")} />
-        <FeatureCard
-          icon="chat_bubble"
-          eyebrow="Chat"
-          title="Preceptor Chat"
-          description="Tire dúvidas sobre artigos, institutos, estratégia de prova e estrutura de peça."
-          cta="Abrir chat"
-          onClick={() => navigate("/app/chat")}
-        />
-      </div>
+      <section className="painel-cols" style={{ marginTop: 18 }}>
+        <div style={{ display: "grid", gap: 16 }}>
+          <div className="pauta">
+            <header className="pauta__head">
+              <h3 className="pauta__h">
+                Pauta de hoje
+                <span className="num">VI itens</span>
+              </h3>
+              <span className="pauta__progress">
+                <b>{pautaDone}</b> de {PAUTA.length} concluídos
+              </span>
+            </header>
+            <div className="timeline">
+              {PAUTA.map((row, i) => (
+                <div
+                  key={i}
+                  className={`t-row ${row.state === "now" ? "now" : ""} ${row.state === "done" ? "done" : ""}`}
+                >
+                  <span className="t-row__time">{row.time}</span>
+                  <div className="t-row__what">
+                    {row.title}
+                    <small>{row.meta}</small>
+                  </div>
+                  <span className={`t-row__tag ${row.area}`}>{row.tag}</span>
+                </div>
+              ))}
+            </div>
+            <footer className="pauta__foot">
+              <span>Encerramento previsto: 20:30 · 4h 12min de estudo</span>
+            </footer>
+          </div>
 
-      <StatsStrip studies={stats.studies} exams={stats.exams} accuracy={stats.accuracy} />
+          {latest ? (
+            <article className="minuta-feat" onClick={() => navigate(`/app/library?open=${latest.id}`)}>
+              <header className="minuta-feat__head">
+                <span className="minuta-feat__num">MINUTA Nº {protocolo}</span>
+                <span className="minuta-feat__sep">║</span>
+                <span className="minuta-feat__area">{latest.modeLabel || "Estudo jurídico"}</span>
+                <span className="minuta-feat__time">{latest.date}</span>
+              </header>
+              <div className="minuta-feat__body">
+                <h3 className="minuta-feat__topic">{latest.topic}</h3>
+                <p className="minuta-feat__excerpt">{latest.excerpt || "Material salvo na biblioteca."}</p>
+              </div>
+              <footer className="minuta-feat__foot">
+                <span>↳ Salvo automaticamente</span>
+                <span className="minuta-feat__continue">Continuar leitura</span>
+              </footer>
+            </article>
+          ) : (
+            <article className="minuta-feat" onClick={() => goStudy()}>
+              <header className="minuta-feat__head">
+                <span className="minuta-feat__num">MINUTA Nº {protocolo}</span>
+                <span className="minuta-feat__sep">║</span>
+                <span className="minuta-feat__area">Arquivo vazio</span>
+              </header>
+              <div className="minuta-feat__body">
+                <h3 className="minuta-feat__topic">Seu arquivo está pronto.</h3>
+                <p className="minuta-feat__excerpt">
+                  Gere um estudo e ele aparece aqui como sua última minuta, salvo automaticamente na
+                  biblioteca.
+                </p>
+              </div>
+              <footer className="minuta-feat__foot">
+                <span>↳ Nenhuma minuta ainda</span>
+                <span className="minuta-feat__continue">Gerar agora</span>
+              </footer>
+            </article>
+          )}
 
-      <div className="grid md:grid-cols-3 gap-3">
-        <ToolCard
-          icon="gavel"
-          title="Simulados"
-          description="Questões OAB, concursos e casos"
-          onClick={() => navigate("/app/exam")}
-        />
-        <ToolCard
-          icon="style"
-          title="Flashcards"
-          description="Repetição espaçada"
-          onClick={() => navigate("/app/flashcards")}
-        />
-        <ToolCard
-          icon="library_books"
-          title="Biblioteca"
-          description="Notas e estudos recentes"
-          onClick={() => navigate("/app/library")}
-        />
-      </div>
-
-      <RecentPanel latest={studies[0]} />
-    </div>
-  );
-}
-
-function FeatureMainCard({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="card-interactive relative overflow-hidden text-left p-8 rounded-xl border border-brand-gold/30 text-white min-h-[260px]"
-      style={{
-        background:
-          "linear-gradient(135deg, rgb(var(--brand-primary-darker) / 0.96), rgb(var(--brand-primary) / 0.94)), radial-gradient(circle at top right, rgb(var(--brand-gold) / 0.22), transparent 18rem)",
-      }}
-    >
-      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-gold mb-3">Preceptoria</p>
-      <h2 className="font-display text-white text-[1.75rem] leading-tight">Gerar estudo jurídico</h2>
-      <p className="mt-3 max-w-md text-[14.5px] text-white/85 leading-relaxed">
-        Transforme tema, aula ou caso em uma nota estruturada por fatos, lei, tese e prova.
-      </p>
-      <span className="inline-flex items-center gap-2 mt-6 text-brand-gold font-semibold text-sm">
-        Começar agora <MI name="arrow_forward" size={16} />
-      </span>
-    </button>
-  );
-}
-
-function FeatureCard({
-  icon,
-  eyebrow,
-  title,
-  description,
-  cta,
-  onClick,
-}: {
-  icon: string;
-  eyebrow: string;
-  title: string;
-  description: string;
-  cta: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="card-interactive relative overflow-hidden text-left p-7 rounded-xl border border-[var(--pjus-hairline)] bg-white min-h-[260px]"
-    >
-      <MI name={icon} size={28} className="text-brand-gold mb-4" />
-      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-primary mb-1">{eyebrow}</p>
-      <h2 className="font-display text-brand-ink text-[1.4rem] leading-tight">{title}</h2>
-      <p className="mt-3 text-[14px] text-brand-ink-2 leading-relaxed">{description}</p>
-      <span className="inline-flex items-center gap-1.5 mt-5 text-brand-primary-dark font-semibold text-sm">
-        {cta} <MI name="arrow_forward" size={14} />
-      </span>
-    </button>
-  );
-}
-
-function StatsStrip({ studies, exams, accuracy }: { studies: number; exams: number; accuracy: number }) {
-  return (
-    <div className="pjus-kpi" style={{ ["--kpi-cols" as any]: "3" }}>
-      <div className="pjus-kpi__item">
-        <div className="pjus-kpi__lbl">Estudos salvos</div>
-        <div className="pjus-kpi__val">{studies}</div>
-      </div>
-      <div className="pjus-kpi__item">
-        <div className="pjus-kpi__lbl">Simulados feitos</div>
-        <div className="pjus-kpi__val">{exams}</div>
-      </div>
-      <div className="pjus-kpi__item">
-        <div className="pjus-kpi__lbl">Aproveitamento</div>
-        <div className="pjus-kpi__val">
-          {accuracy}
-          <small>%</small>
+          <div className="kpi-strip">
+            <div>
+              <span className="kpi-strip__lbl">Estudos salvos</span>
+              <span className="kpi-strip__val">{stats.studies}</span>
+              <div className="kpi-strip__bars" aria-hidden>
+                <span /><span className="warm" /><span className="warm" /><span /><span className="hot" /><span className="warm" /><span className="hot" />
+              </div>
+              <span className="kpi-strip__delta">
+                <MI name="bookmark" size={12} /> arquivo jurídico
+              </span>
+            </div>
+            <div>
+              <span className="kpi-strip__lbl">Simulados</span>
+              <span className="kpi-strip__val">{stats.exams}</span>
+              <div className="kpi-strip__bars" aria-hidden>
+                <span /><span className="warm" /><span /><span className="warm" /><span className="hot" /><span /><span className="warm" />
+              </div>
+              <span className="kpi-strip__delta">
+                <MI name="gavel" size={12} /> provas feitas
+              </span>
+            </div>
+            <div>
+              <span className="kpi-strip__lbl">Aproveitamento</span>
+              <span className="kpi-strip__val gold">
+                {stats.accuracy}
+                <small>%</small>
+              </span>
+              <div className="kpi-strip__bars" aria-hidden>
+                <span className="warm" /><span /><span className="hot" /><span className="warm" /><span className="hot" /><span className="hot" /><span className="hot" />
+              </div>
+              <span className="kpi-strip__delta">
+                <MI name="fact_check" size={12} /> média nos simulados
+              </span>
+            </div>
+            <div>
+              <span className="kpi-strip__lbl">Ofensiva</span>
+              <span className="kpi-strip__val">
+                5<small>dias</small>
+              </span>
+              <div className="kpi-strip__bars" aria-hidden>
+                <span className="hot" /><span className="hot" /><span className="hot" /><span className="hot" /><span className="hot" /><span /><span />
+              </div>
+              <span className="kpi-strip__delta flat">
+                <MI name="local_fire_department" size={12} /> sequência de estudo
+              </span>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  );
-}
 
-function ToolCard({
-  icon,
-  title,
-  description,
-  onClick,
-}: {
-  icon: string;
-  title: string;
-  description: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="card-interactive group text-left p-5 rounded-xl border border-[var(--pjus-hairline)] bg-white min-h-[120px]"
-    >
-      <div className="flex items-start justify-between mb-3">
-        <MI name={icon} size={24} className="text-brand-primary group-hover:text-brand-gold transition-colors" />
-        <MI name="arrow_outward" size={16} className="text-brand-ink-2/40" />
-      </div>
-      <p className="font-display text-brand-ink text-base font-bold leading-tight">{title}</p>
-      <p className="mt-1 text-[13px] text-brand-ink-2 leading-snug">{description}</p>
-    </button>
-  );
-}
+        <aside className="painel-aside">
+          <div className="frase">
+            <span className="frase__lbl">Tese da semana</span>
+            <blockquote className="frase__body">
+              Quem cria o <span className="serif" style={{ color: "rgb(var(--brand-gold))" }}>risco</span>{" "}
+              responde pelo dano. A culpa, quando exigida, é desnecessária se a atividade for, em si, fonte
+              permanente de perigo.
+            </blockquote>
+            <footer className="frase__cite">
+              <span className="col-divider" />
+              <span>
+                Extraída de · <b>{latest ? latest.topic : "Resp. civil objetiva"}</b>
+              </span>
+            </footer>
+          </div>
 
-function RecentPanel({ latest }: { latest: ReturnType<typeof useWorkspace>["studies"][number] | undefined }) {
-  return (
-    <section className="grid lg:grid-cols-[0.6fr_1fr] gap-5 p-6 rounded-xl border border-[var(--pjus-hairline)] bg-white">
-      <div>
-        <h2 className="font-display text-brand-ink text-xl">Arquivo jurídico recente</h2>
-        <p className="mt-1 text-sm text-brand-ink-2 leading-relaxed">
-          Seus estudos aparecem aqui depois de gerar conteúdo.
-        </p>
-      </div>
-      <div
-        className={cn(
-          "grid place-content-center gap-1 min-h-[120px] p-4 rounded-xl text-center",
-          latest
-            ? "border border-[var(--pjus-hairline)] bg-[var(--pjus-surface-2)]"
-            : "border border-dashed border-brand-gold/30 bg-[var(--pjus-surface-2)]",
-        )}
-      >
-        {latest ? (
-          <>
-            <Link
-              to={`/app/library?open=${latest.id}`}
-              className="font-display text-brand-ink text-base hover:underline"
-            >
-              {latest.topic}
-            </Link>
-            <span className="text-[12px] text-brand-ink-2">
-              {latest.modeLabel} salvo em {latest.date}
+          <nav className="atalhos" aria-label="Atalhos">
+            <header className="atalhos__h">Atalhos do gabinete</header>
+            {ATALHOS.map((a) => (
+              <button key={a.title} className="atalho" onClick={() => navigate(`/app/${a.route}`)}>
+                <span className="atalho__icon">
+                  <MI name={a.icon} />
+                </span>
+                <span className="atalho__main">
+                  <span className="atalho__title">{a.title}</span>
+                  <span className="atalho__sub">{a.sub}</span>
+                </span>
+                {a.count && <span className={`atalho__count ${a.hot ? "hot" : ""}`}>{a.count}</span>}
+              </button>
+            ))}
+          </nav>
+        </aside>
+      </section>
+
+      <section className="semana">
+        <header className="semana__head">
+          <h3 className="semana__h">
+            Semana de estudo
+            <span className="num">10 — 16 · março</span>
+          </h3>
+          <span className="semana__legend">
+            <span>
+              <i className="lite" /> &lt; 30 min
             </span>
-          </>
-        ) : (
-          <>
-            <strong className="font-display text-brand-ink">Seu arquivo está pronto.</strong>
-            <span className="text-[12px] text-brand-ink-2">Gere um estudo para salvar automaticamente.</span>
-          </>
-        )}
-      </div>
-    </section>
+            <span>
+              <i className="warm" /> 30–60 min
+            </span>
+            <span>
+              <i className="hot" /> &gt; 60 min
+            </span>
+          </span>
+        </header>
+        <div className="semana__grid">
+          {SEMANA.map((day) => (
+            <div key={day.num} className={`day ${day.today ? "today" : ""} ${day.empty ? "empty" : ""}`}>
+              <span className="day__lbl">{day.lbl}</span>
+              <span className="day__num">{day.num}</span>
+              <div className="day__bars" aria-hidden>
+                {day.bars.map((w, i) => (
+                  <span
+                    key={i}
+                    className={w === 2 ? "hot" : w === 1 ? "warm" : ""}
+                    style={{ height: `${[4, 9, 16][w] || 4}px` }}
+                  />
+                ))}
+              </div>
+              <span className="day__minutes">
+                {day.empty ? "—" : (
+                  <>
+                    <b>{day.minutes}</b> min
+                  </>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }
 
