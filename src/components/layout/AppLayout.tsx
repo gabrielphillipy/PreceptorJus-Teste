@@ -7,6 +7,7 @@ import { BRAND } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import { MI } from "@/components/brand/MaterialIcon";
 import { LogoMark, Wordmark } from "@/components/brand/LogoMark";
+import { FeedbackDialog } from "@/components/feedback/FeedbackDialog";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -201,10 +202,7 @@ export function AppLayout({ children, hideTopbarActions = false }: AppLayoutProp
       <main className="lg:ml-64 min-h-screen flex flex-col">
         {!hideTopbarActions && (
           <header className="hidden lg:flex sticky top-0 z-20 items-center justify-end gap-2 px-8 h-16 bg-white/85 backdrop-blur border-b border-[var(--pjus-hairline)]">
-            <Button variant="outline" size="sm">
-              <MI name="feedback" className="text-[18px]" />
-              Feedback
-            </Button>
+            <FeedbackDialog />
             <Button variant="default" size="sm" onClick={() => navigate("/app/study")}>
               <MI name="auto_awesome" className="text-[18px]" />
               Novo fechamento
