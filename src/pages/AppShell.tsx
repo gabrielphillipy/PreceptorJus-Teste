@@ -4,7 +4,6 @@ import { Link, Route, Routes, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { MI } from "@/components/brand/MaterialIcon";
-import { Card, CardContent } from "@/components/ui/card";
 import { useStudyStats, useWorkspace } from "@/hooks/useWorkspace";
 import { PreceptorChatPanel } from "@/components/study/PreceptorChatPanel";
 import { cn } from "@/lib/utils";
@@ -12,6 +11,7 @@ import { cn } from "@/lib/utils";
 const Dashboard = lazy(() => import("./Dashboard"));
 const Exam = lazy(() => import("./Exam"));
 const Flashcards = lazy(() => import("./Flashcards"));
+const Library = lazy(() => import("./Library"));
 
 function PageFallback() {
   return (
@@ -21,24 +21,6 @@ function PageFallback() {
         aria-hidden
       />
       Carregando…
-    </div>
-  );
-}
-
-function ComingSoon({ title, hint }: { title: string; hint: string }) {
-  return (
-    <div className="space-y-6 animate-fade-up">
-      <header>
-        <Eyebrow>{title}</Eyebrow>
-        <h1 className="font-display text-brand-ink">{title}</h1>
-      </header>
-      <Card className="border-dashed">
-        <CardContent className="p-10 grid place-items-center text-center gap-3">
-          <MI name="construction" size={32} className="text-brand-gold" />
-          <p className="font-display text-lg font-bold text-brand-ink">Em construção</p>
-          <p className="text-sm text-brand-ink-2 max-w-md leading-relaxed">{hint}</p>
-        </CardContent>
-      </Card>
     </div>
   );
 }
@@ -260,15 +242,7 @@ export default function AppShell() {
           <Route path="study" element={<Dashboard />} />
           <Route path="exam" element={<Exam />} />
           <Route path="flashcards" element={<Flashcards />} />
-          <Route
-            path="library"
-            element={
-              <ComingSoon
-                title="Biblioteca"
-                hint="Onda 4: busca, filtros e ações de renomear/favoritar/apagar."
-              />
-            }
-          />
+          <Route path="library" element={<Library />} />
           <Route path="chat" element={<ChatPage />} />
         </Routes>
       </Suspense>
