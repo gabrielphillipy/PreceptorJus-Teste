@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 
 const Dashboard = lazy(() => import("./Dashboard"));
 const Exam = lazy(() => import("./Exam"));
+const Flashcards = lazy(() => import("./Flashcards"));
 
 function PageFallback() {
   return (
@@ -258,15 +259,7 @@ export default function AppShell() {
           <Route index element={<MenuPage />} />
           <Route path="study" element={<Dashboard />} />
           <Route path="exam" element={<Exam />} />
-          <Route
-            path="flashcards"
-            element={
-              <ComingSoon
-                title="Flashcards"
-                hint="Onda 3: deck com flip, exportação PDF e SM-2 (opcional)."
-              />
-            }
-          />
+          <Route path="flashcards" element={<Flashcards />} />
           <Route
             path="library"
             element={
