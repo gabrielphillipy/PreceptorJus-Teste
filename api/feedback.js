@@ -33,7 +33,7 @@ async function handler(req, res) {
       return send(res, 200, {
         ok: true,
         persisted: "local-only",
-        warn: "FEEDBACK_WEBHOOK_URL nao configurada — feedback ficou apenas no localStorage do navegador.",
+        warn: "FEEDBACK_WEBHOOK_URL não configurada — feedback ficou apenas no localStorage do navegador.",
       });
     }
 
@@ -69,7 +69,7 @@ async function handler(req, res) {
     return send(res, 200, { ok: true, persisted: "webhook" });
   } catch (error) {
     if (error && typeof error === "object" && error.name === "AbortError") {
-      return send(res, 504, { error: "Webhook nao respondeu a tempo." });
+      return send(res, 504, { error: "Webhook não respondeu a tempo." });
     }
     return send(res, 500, {
       error: error instanceof Error ? error.message : "Erro inesperado ao enviar feedback.",

@@ -32,13 +32,13 @@ function getOrigin(req) {
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return res.status(405).json({ error: "Metodo nao permitido." });
+    return res.status(405).json({ error: "Método não permitido." });
   }
 
   const secretKey = process.env.STRIPE_SECRET_KEY;
   if (!secretKey) {
     return res.status(500).json({
-      error: "Stripe nao configurado. Configure STRIPE_SECRET_KEY na Vercel.",
+      error: "Stripe não configurado. Configure STRIPE_SECRET_KEY na Vercel.",
     });
   }
 
@@ -46,19 +46,19 @@ module.exports = async function handler(req, res) {
   try {
     body = await readJsonBody(req);
   } catch {
-    return res.status(400).json({ error: "Corpo da requisicao invalido." });
+    return res.status(400).json({ error: "Corpo da requisição inválido." });
   }
 
   const planId = String(body.plan || "").trim();
   const plan = plans[planId];
   if (!plan) {
-    return res.status(400).json({ error: "Plano invalido." });
+    return res.status(400).json({ error: "Plano inválido." });
   }
 
   const priceId = process.env[plan.priceEnv];
   if (!priceId) {
     return res.status(500).json({
-      error: `Preco do plano ${plan.name} nao configurado. Configure ${plan.priceEnv} na Vercel.`,
+      error: `Preço do plano ${plan.name} não configurado. Configure ${plan.priceEnv} na Vercel.`,
     });
   }
 
@@ -85,7 +85,7 @@ module.exports = async function handler(req, res) {
   const data = await stripeResponse.json().catch(() => ({}));
   if (!stripeResponse.ok) {
     return res.status(500).json({
-      error: data.error?.message || "Nao foi possivel iniciar o checkout.",
+      error: data.error?.message || "Não foi possível iniciar o checkout.",
     });
   }
 

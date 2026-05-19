@@ -26,7 +26,7 @@ function readBody(req, limitBytes = 1_000_000) {
       try {
         resolve(raw ? JSON.parse(raw) : {});
       } catch {
-        reject(new Error("JSON invalido."));
+        reject(new Error("JSON inválido."));
       }
     });
     req.on("error", reject);

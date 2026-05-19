@@ -54,7 +54,7 @@ async function callGeminiWithRetries({ models, prompt, apiKey }) {
       const remainingMs = OVERALL_TIMEOUT_MS - (Date.now() - startedAt);
       if (remainingMs <= 1500) {
         return {
-          error: "A geracao demorou demais e foi interrompida antes de travar. Tente novamente com um tema mais especifico.",
+          error: "A geração demorou demais e foi interrompida antes de travar. Tente novamente com um tema mais específico.",
           status: 504,
         };
       }
@@ -106,7 +106,7 @@ async function callGeminiWithRetries({ models, prompt, apiKey }) {
           lastStatus = 502;
           lastErrorMessage =
             finishReason === "MAX_TOKENS"
-              ? "A resposta foi cortada antes de iniciar conteudo util. Tente um tema mais especifico."
+              ? "A resposta foi cortada antes de iniciar conteúdo útil. Tente um tema mais específico."
               : "Resposta vazia do Gemini.";
           if (attempt < MAX_ATTEMPTS) {
             await sleep(BASE_BACKOFF_MS * Math.pow(2, attempt - 1));
@@ -156,7 +156,7 @@ async function callGeminiWithRetries({ models, prompt, apiKey }) {
 
   const message =
     lastStatus === 503 && /high demand|overloaded|temporar/i.test(lastErrorMessage)
-      ? "A IA esta em alta demanda no momento. Tentamos modelos alternativos, mas o provedor ainda recusou a geracao. Tente novamente em alguns segundos."
+      ? "A IA está em alta demanda no momento. Tentamos modelos alternativos, mas o provedor ainda recusou a geração. Tente novamente em alguns segundos."
       : lastErrorMessage || "Erro ao chamar o Gemini.";
 
   return { error: message, status: lastStatus };
@@ -173,7 +173,7 @@ async function handler(req, res) {
     res.setHeader("Retry-After", String(limit.retryAfterSec));
     const minutes = Math.max(1, Math.ceil(limit.retryAfterSec / 60));
     return send(res, 429, {
-      error: `Voce atingiu o limite de ${limit.limit} geracoes por hora. Tente novamente em cerca de ${minutes} ${minutes === 1 ? "minuto" : "minutos"}.`,
+      error: `Você atingiu o limite de ${limit.limit} gerações por hora. Tente novamente em cerca de ${minutes} ${minutes === 1 ? "minuto" : "minutos"}.`,
     });
   }
 
@@ -188,7 +188,7 @@ async function handler(req, res) {
 
     if (!process.env.GOOGLE_API_KEY) {
       return send(res, 500, {
-        error: "GOOGLE_API_KEY nao configurada no ambiente da Vercel.",
+        error: "GOOGLE_API_KEY não configurada no ambiente da Vercel.",
       });
     }
 
@@ -217,7 +217,7 @@ async function handler(req, res) {
   } catch (error) {
     if (error && typeof error === "object" && error.name === "AbortError") {
       return send(res, 504, {
-        error: "A geracao demorou demais e expirou. Tente novamente (ou gere um resumo menor / reduza secoes).",
+        error: "A geração demorou demais e expirou. Tente novamente (ou gere um resumo menor / reduza seções).",
       });
     }
     return send(res, 500, {
