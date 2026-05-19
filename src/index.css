@@ -54,11 +54,31 @@
     --pjus-track-eyebrow: 0.2em;
     --pjus-track-tight: -0.02em;
 
+    /* Spacing scale (4px base) — design system canonical */
+    --pjus-space-1:  4px;
+    --pjus-space-2:  8px;
+    --pjus-space-3:  12px;
+    --pjus-space-4:  16px;
+    --pjus-space-5:  20px;
+    --pjus-space-6:  24px;
+    --pjus-space-8:  32px;
+    --pjus-space-10: 40px;
+    --pjus-space-12: 48px;
+    --pjus-space-16: 64px;
+
+    /* Radii — design system canonical */
+    --pjus-radius-sm:   6px;
+    --pjus-radius:      10px;
+    --pjus-radius-md:   12px;
+    --pjus-radius-lg:   14px;
+    --pjus-radius-xl:   16px;
+    --pjus-radius-pill: 999px;
+
     /* Font stacks — single source of truth */
     --font-display: 'Manrope', system-ui, -apple-system, sans-serif;
     --font-body:    'Inter', system-ui, -apple-system, sans-serif;
     --font-serif:   'Source Serif 4', Georgia, 'Times New Roman', serif;
-    --font-mono:    ui-monospace, SFMono-Regular, Menlo, monospace;
+    --font-mono:    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
     /* ─── shadcn semantic tokens (HSL) ──────────────────────────────────── */
     --background: 0 0% 100%;
