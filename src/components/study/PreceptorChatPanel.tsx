@@ -1,56 +1,61 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 
 import { callAI } from "@/lib/api";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { InlineText } from "@/components/study/InlineText";
 import { MI } from "@/components/brand/MaterialIcon";
 
-type Message = { role: "user" | "assistant"; content: string };
+type Message = { role: "user" | "assistant"; content: string; time: string };
 
 interface PreceptorChatPanelProps {
-  /** Estilo "side panel" no Dashboard (sticky) vs full ("/app/chat") */
+  /** "side" — sticky on Dashboard right rail · "full" — /app/chat */
   variant?: "side" | "full";
-  initialMessages?: Message[];
 }
 
-export function PreceptorChatPanel({
-  variant = "side",
-  initialMessages,
-}: PreceptorChatPanelProps) {
-  const [messages, setMessages] = useState<Message[]>(
-    initialMessages || [
-      {
-        role: "assistant",
-        content:
-          "Olá! Posso explicar artigos, comparar institutos, montar tese de prova ou organizar um roteiro de peça.",
-      },
-    ],
-  );
-  const [input, setInput] = useState("");
+const SUGGESTED = [
+  "Diferença entre responsabilidade objetiva e subjetiva",
+  "Quando cabe agravo de instrumento?",
+  "Súmulas vinculantes sobre saúde",
+];
+
+function nowHHmm(): string {
+  return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+export function PreceptorChatPanel({ variant = "side" }: PreceptorChatPanelProps) {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      content:
+        "Olá. Sou o Preceptor. Posso ajudar com artigos, súmulas e estrutura de peça. Como posso colaborar?",
+      time: nowHHmm(),
+    },
+  ]);
+  const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    }
   }, [messages, loading]);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    const value = input.trim();
+  const send = async (override?: string) => {
+    const value = (override ?? draft).trim();
     if (!value || loading) return;
-    setInput("");
-    setMessages((m) => [...m, { role: "user", content: value }]);
+    setMessages((m) => [...m, { role: "user", content: value, time: nowHHmm() }]);
+    setDraft("");
     setLoading(true);
     try {
       const reply = await callAI({ mode: "chat", message: value });
-      setMessages((m) => [...m, { role: "assistant", content: reply }]);
+      setMessages((m) => [...m, { role: "assistant", content: reply, time: nowHHmm() }]);
     } catch (error: any) {
       setMessages((m) => [
         ...m,
         {
           role: "assistant",
           content: `Não consegui responder agora. ${error?.message || ""}`.trim(),
+          time: nowHHmm(),
         },
       ]);
     } finally {
@@ -58,73 +63,119 @@ export function PreceptorChatPanel({
     }
   };
 
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    send();
+  };
+
+  const isFull = variant === "full";
+  const showSuggested = messages.length <= 1 && !loading;
+
   return (
-    <div
-      className={
-        variant === "side"
-          ? "pjus-chat sticky top-24 min-h-[480px] max-h-[calc(100vh-7rem)] !p-4 grid grid-rows-[auto_1fr_auto]"
-          : "pjus-chat min-h-[640px] grid grid-rows-[auto_1fr_auto]"
+    <aside
+      className="chat"
+      style={
+        isFull
+          ? { maxWidth: 760, margin: "0 auto", width: "100%" }
+          : { position: "sticky", top: 84 }
       }
     >
-      <header className="px-1 pb-2">
-        <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-brand-gold">Preceptor Chat</p>
-        <h2 className="font-display text-brand-ink text-base mt-1 leading-tight">
-          {variant === "side" ? "Tire dúvidas sem sair do estudo" : "Pergunte sobre o tema"}
-        </h2>
-      </header>
+      <p className="chat__title">Preceptor Chat</p>
 
-      <div ref={scrollRef} className="overflow-y-auto -mx-1 px-1 sidebar-scroll space-y-3 pb-3">
+      <div
+        ref={scrollRef}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+          maxHeight: isFull ? 520 : 360,
+          overflowY: "auto",
+          paddingRight: 4,
+        }}
+      >
         {messages.map((m, i) => (
-          <ChatBubble key={i} message={m} />
+          <Bubble key={i} message={m} />
         ))}
         {loading && (
-          <div className="pjus-bubble pjus-bubble--ai flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-gold animate-pulse" />
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-gold animate-pulse [animation-delay:150ms]" />
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-gold animate-pulse [animation-delay:300ms]" />
-            <span className="ml-2 text-[12px] font-semibold text-brand-ink-2">Analisando juridicamente…</span>
+          <div className="bubble bubble--ai" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <span style={dotStyle(0)} />
+            <span style={dotStyle(150)} />
+            <span style={dotStyle(300)} />
+            <span style={{ marginLeft: 6, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--pjus-ink-3)" }}>
+              Analisando juridicamente…
+            </span>
           </div>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-[1fr_auto] gap-2 pt-2 border-t border-[var(--pjus-hairline)]">
-        <Input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Pergunte ao Preceptor Chat…"
-          aria-label="Pergunta ao Preceptor Chat"
+      {showSuggested && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {SUGGESTED.map((s) => (
+            <button
+              key={s}
+              type="button"
+              className="chip"
+              onClick={() => send(s)}
+              style={{ fontWeight: 500 }}
+            >
+              <span style={{ color: "rgba(201,168,76,0.9)", marginRight: 4 }}>
+                <MI name="auto_awesome" size={14} />
+              </span>
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <form className="composer" onSubmit={handleSubmit}>
+        <input
+          className="field"
+          placeholder="Pergunte ao Preceptor…"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          aria-label="Mensagem para o Preceptor"
+          disabled={loading}
         />
-        <Button type="submit" disabled={loading || !input.trim()}>
-          <MI name="send" size={18} />
-          <span className="sr-only">Enviar</span>
-        </Button>
+        <button type="submit" className="send" aria-label="Enviar" disabled={loading || !draft.trim()}>
+          <MI name="arrow_upward" size={18} />
+        </button>
       </form>
-    </div>
+    </aside>
   );
 }
 
-function ChatBubble({ message }: { message: Message }) {
+function Bubble({ message }: { message: Message }) {
   if (message.role === "user") {
     return (
-      <div className="pjus-bubble pjus-bubble--user">
-        <p className="m-0">{message.content}</p>
+      <div className="bubble bubble--user">
+        <p style={{ margin: 0 }}>{message.content}</p>
+        <span className="bubble__time">{message.time}</span>
       </div>
     );
   }
-  // Assistant: parse simples por linha (sem markdown completo aqui — só negrito e tokens)
-  const paragraphs = message.content
+  // Assistant: split markdown lines into headings/bullets/paragraphs
+  const lines = message.content
     .split("\n")
-    .map((p) => p.trim())
-    .filter((p) => p && !/^-{3,}$/.test(p));
+    .map((l) => l.trim())
+    .filter((l) => l && !/^-{3,}$/.test(l));
 
   return (
-    <div className="pjus-bubble pjus-bubble--ai">
-      <div className="grid gap-2">
-        {paragraphs.map((line, i) => {
+    <div className="bubble bubble--ai">
+      <div style={{ display: "grid", gap: 6 }}>
+        {lines.map((line, i) => {
           const h = line.match(/^#{2,3}\s+(.+)$/);
           if (h) {
             return (
-              <h4 key={i} className="font-display text-brand-ink text-[13.5px] font-bold m-0">
+              <h4
+                key={i}
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: 13.5,
+                  fontWeight: 700,
+                  color: "rgb(var(--brand-ink))",
+                  margin: 0,
+                }}
+              >
                 <InlineText text={h[1]} />
               </h4>
             );
@@ -132,19 +183,42 @@ function ChatBubble({ message }: { message: Message }) {
           const bullet = line.match(/^[-*•]\s+(.+)$/);
           if (bullet) {
             return (
-              <p key={i} className="m-0 pl-4 relative">
-                <span className="absolute left-0 top-[0.55em] w-1.5 h-1.5 rounded-full bg-brand-gold" />
+              <p key={i} style={{ margin: 0, paddingLeft: 16, position: "relative" }}>
+                <span
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: "0.55em",
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: "rgb(var(--brand-gold))",
+                  }}
+                />
                 <InlineText text={bullet[1]} />
               </p>
             );
           }
           return (
-            <p key={i} className="m-0">
+            <p key={i} style={{ margin: 0 }}>
               <InlineText text={line.replace(/^\d+\.\s+/, "")} />
             </p>
           );
         })}
       </div>
+      <span className="bubble__time">{message.time}</span>
     </div>
   );
+}
+
+function dotStyle(delay: number): React.CSSProperties {
+  return {
+    width: 6,
+    height: 6,
+    borderRadius: "50%",
+    background: "rgb(var(--brand-gold))",
+    animation: "pulse 1.4s ease-in-out infinite",
+    animationDelay: `${delay}ms`,
+    display: "inline-block",
+  };
 }

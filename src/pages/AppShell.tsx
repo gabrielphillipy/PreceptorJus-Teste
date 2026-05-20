@@ -374,10 +374,14 @@ function MenuPage() {
 
 function ChatPage() {
   return (
-    <div className="space-y-5 animate-fade-up">
-      <header>
+    <div className="stack fade-up">
+      <header className="page-header">
         <Eyebrow>Preceptor Chat</Eyebrow>
-        <h1 className="font-display text-brand-ink">Pergunte sobre o tema.</h1>
+        <h1>Pergunte sobre o tema.</h1>
+        <p>
+          Use o chat como uma sessão de orientação rápida. Confira sempre fontes oficiais —
+          legislação, jurisprudência e súmulas atualizadas.
+        </p>
       </header>
       <PreceptorChatPanel variant="full" />
     </div>
