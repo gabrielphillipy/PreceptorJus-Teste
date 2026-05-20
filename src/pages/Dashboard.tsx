@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { callAI } from "@/lib/api";
 import { isMindMapMode } from "@/lib/study-parser";
+import { exportStudyElementPdf } from "@/lib/pdf-export";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { MI } from "@/components/brand/MaterialIcon";
@@ -66,6 +67,21 @@ export default function Dashboard() {
     }
   };
 
+  const resultRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const onExportPdf = async () => {
+    if (view.kind !== "result" || !resultRef.current || exporting) return;
+    setExporting(true);
+    try {
+      await exportStudyElementPdf(resultRef.current, { topic: view.study.topic });
+    } catch (err: any) {
+      toast.error("Não foi possível gerar o PDF.", { description: err?.message });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="stack fade-up">
       <header className="page-header">
@@ -86,7 +102,14 @@ export default function Dashboard() {
             loading={view.kind === "loading"}
             onSubmit={handleGenerate}
           />
-          <ResultZone view={view} onRetry={handleRetry} onGenerateExam={onGenerateExam} />
+          <ResultZone
+            view={view}
+            resultRef={resultRef}
+            exporting={exporting}
+            onRetry={handleRetry}
+            onGenerateExam={onGenerateExam}
+            onExportPdf={onExportPdf}
+          />
         </div>
         <div>
           <PreceptorChatPanel variant="side" />
@@ -98,12 +121,18 @@ export default function Dashboard() {
 
 function ResultZone({
   view,
+  resultRef,
+  exporting,
   onRetry,
   onGenerateExam,
+  onExportPdf,
 }: {
   view: ViewState;
+  resultRef: React.RefObject<HTMLDivElement>;
+  exporting: boolean;
   onRetry: () => void;
   onGenerateExam: () => void;
+  onExportPdf: () => void;
 }) {
   if (view.kind === "empty") return <EmptyState />;
   if (view.kind === "loading") return <LoaderShimmer />;
@@ -114,18 +143,20 @@ function ResultZone({
 
   return (
     <div className="stack" style={{ gap: 10 }}>
-      <ResultToolbar study={study} onGenerateExam={onGenerateExam} />
-      {useMindMap ? (
-        <StudyMindMap
-          markdown={study.text}
-          meta={{ topic: study.topic, mode: study.mode, modeLabel: study.modeLabel }}
-        />
-      ) : (
-        <StudyDocument
-          markdown={study.text}
-          meta={{ topic: study.topic, mode: study.mode, modeLabel: study.modeLabel }}
-        />
-      )}
+      <ResultToolbar study={study} exporting={exporting} onGenerateExam={onGenerateExam} onExportPdf={onExportPdf} />
+      <div ref={resultRef}>
+        {useMindMap ? (
+          <StudyMindMap
+            markdown={study.text}
+            meta={{ topic: study.topic, mode: study.mode, modeLabel: study.modeLabel }}
+          />
+        ) : (
+          <StudyDocument
+            markdown={study.text}
+            meta={{ topic: study.topic, mode: study.mode, modeLabel: study.modeLabel }}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -171,7 +202,17 @@ function LoaderShimmer() {
   );
 }
 
-function ResultToolbar({ study, onGenerateExam }: { study: LastStudy; onGenerateExam: () => void }) {
+function ResultToolbar({
+  study,
+  exporting,
+  onGenerateExam,
+  onExportPdf,
+}: {
+  study: LastStudy;
+  exporting: boolean;
+  onGenerateExam: () => void;
+  onExportPdf: () => void;
+}) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -185,10 +226,6 @@ function ResultToolbar({ study, onGenerateExam }: { study: LastStudy; onGenerate
     }
   };
 
-  const handleExport = () => {
-    toast("Exportação PDF chega na próxima onda.", { description: "Estamos portando o renderer." });
-  };
-
   return (
     <div className="toolbar">
       <span className="toolbar__label">Resultado</span>
@@ -196,9 +233,9 @@ function ResultToolbar({ study, onGenerateExam }: { study: LastStudy; onGenerate
         <MI name={copied ? "check" : "content_copy"} size={16} />
         {copied ? "Copiado" : "Copiar"}
       </button>
-      <button type="button" className="btn btn--outline btn--sm" onClick={handleExport}>
+      <button type="button" className="btn btn--outline btn--sm" onClick={onExportPdf} disabled={exporting}>
         <MI name="picture_as_pdf" size={16} />
-        Exportar PDF
+        {exporting ? "Gerando PDF…" : "Exportar PDF"}
       </button>
       <button type="button" className="btn btn--default btn--sm" onClick={onGenerateExam}>
         <MI name="quiz" size={16} />

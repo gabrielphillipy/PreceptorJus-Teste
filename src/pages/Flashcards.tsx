@@ -1,8 +1,11 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
+import { toast } from "sonner";
+
 import { callAI } from "@/lib/api";
 import { parseFlashcards, type Flashcard } from "@/lib/flashcard-parser";
+import { exportFlashcardsPdf } from "@/lib/pdf-export";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { MI } from "@/components/brand/MaterialIcon";
 import { InlineText } from "@/components/study/InlineText";
@@ -182,8 +185,21 @@ function Deck({ topic, cards, onReset }: { topic: string; cards: Flashcard[]; on
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [grades, setGrades] = useState<Record<number, number>>({}); // card index → 0..3
+  const [exporting, setExporting] = useState(false);
   const total = cards.length;
   const card = cards[idx];
+
+  const onExportPdf = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      await exportFlashcardsPdf(cards, topic);
+    } catch (err: any) {
+      toast.error("Não foi possível gerar o PDF.", { description: err?.message });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const reviewed = Object.keys(grades).length;
   const mastered = Object.values(grades).filter((g) => g >= 2).length;
@@ -229,10 +245,21 @@ function Deck({ topic, cards, onReset }: { topic: string; cards: Flashcard[]; on
               <code>1</code>–<code>4</code> ao revelar a resposta.
             </p>
           </div>
-          <button className="btn btn--ghost btn--sm" onClick={onReset}>
-            <MI name="refresh" size={14} />
-            Novo baralho
-          </button>
+          <div style={{ display: "inline-flex", gap: 8 }}>
+            <button
+              className="btn btn--outline btn--sm"
+              onClick={onExportPdf}
+              disabled={exporting}
+              type="button"
+            >
+              <MI name="picture_as_pdf" size={14} />
+              {exporting ? "Gerando PDF…" : "Exportar PDF"}
+            </button>
+            <button className="btn btn--ghost btn--sm" onClick={onReset} type="button">
+              <MI name="refresh" size={14} />
+              Novo baralho
+            </button>
+          </div>
         </div>
       </header>
 
