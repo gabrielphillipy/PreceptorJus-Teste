@@ -5,36 +5,30 @@ import { toast } from "sonner";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import type { SavedStudy } from "@/lib/workspace";
 import { isMindMapMode } from "@/lib/study-parser";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { MI } from "@/components/brand/MaterialIcon";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StudyDocument } from "@/components/study/StudyDocument";
 import { StudyMindMap } from "@/components/study/StudyMindMap";
-import { cn } from "@/lib/utils";
+import { InlineText } from "@/components/study/InlineText";
 
-const FILTERS = [
-  { value: "all", label: "Todos os materiais" },
-  { value: "favorites", label: "Favoritos" },
-  { value: "fechamento", label: "Resumos" },
-  { value: "mapa", label: "Mapas mentais" },
-  { value: "peca", label: "Peças práticas" },
+// Editorial mode labels (kit calls these "Fechamento / Peça / etc.")
+const MODE_LABELS: Record<string, string> = {
+  fechamento: "Fechamento",
+  mapa: "Mapa mental",
+  peca: "Peça",
+  jurisprudencia: "Jurisprudência",
+  questoes: "Questões",
+  "": "Estudo jurídico",
+};
+
+const MODE_FILTERS: { value: string; label: string }[] = [
+  { value: "all", label: "Todos" },
+  { value: "fechamento", label: "Fechamento" },
+  { value: "peca", label: "Peça" },
   { value: "jurisprudencia", label: "Jurisprudência" },
   { value: "questoes", label: "Questões" },
+  { value: "mapa", label: "Mapa mental" },
 ];
 
 export default function Library() {
@@ -42,15 +36,31 @@ export default function Library() {
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
+  const [onlyFav, setOnlyFav] = useState(false);
 
   const openId = params.get("open");
   const openStudy = openId ? studies.find((s) => s.id === openId) : undefined;
 
-  const visible = useMemo(() => {
+  // Counts per filter for the chip badges
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: studies.length };
+    for (const f of MODE_FILTERS) {
+      if (f.value === "all") continue;
+      c[f.value] = studies.filter((s) => s.mode === f.value).length;
+    }
+    return c;
+  }, [studies]);
+  const favCount = useMemo(() => studies.filter((s) => s.favorite).length, [studies]);
+  const areaCount = useMemo(
+    () => new Set(studies.map((s) => MODE_LABELS[s.mode] || "Estudo")).size,
+    [studies],
+  );
+
+  const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return studies.filter((s) => {
-      if (filter === "favorites" && !s.favorite) return false;
-      if (filter !== "all" && filter !== "favorites" && s.mode !== filter) return false;
+      if (onlyFav && !s.favorite) return false;
+      if (filter !== "all" && s.mode !== filter) return false;
       if (!q) return true;
       return (
         s.topic.toLowerCase().includes(q) ||
@@ -58,9 +68,9 @@ export default function Library() {
         (s.modeLabel || "").toLowerCase().includes(q)
       );
     });
-  }, [studies, query, filter]);
+  }, [studies, query, filter, onlyFav]);
 
-  const open = (id: string) => {
+  const openView = (id: string) => {
     const next = new URLSearchParams(params);
     next.set("open", id);
     setParams(next, { replace: true });
@@ -89,112 +99,147 @@ export default function Library() {
     toast("Material apagado.");
   };
 
+  const clearFilters = () => {
+    setQuery("");
+    setFilter("all");
+    setOnlyFav(false);
+  };
+
+  const hasActiveFilter = !!query || filter !== "all" || onlyFav;
+
   return (
-    <div className="space-y-5 animate-fade-up">
-      <header>
-        <Eyebrow>Biblioteca</Eyebrow>
-        <h1 className="font-display text-brand-ink">Seus materiais jurídicos.</h1>
-        <p className="mt-2 max-w-2xl text-brand-ink-2 leading-relaxed">
-          Tudo que você gerou fica salvo aqui. Busque, filtre, favorite ou apague.
-        </p>
+    <div className="stack fade-up">
+      <header className="page-header">
+        <div className="between" style={{ flexWrap: "wrap", gap: 18 }}>
+          <div>
+            <Eyebrow>Biblioteca</Eyebrow>
+            <h1>
+              Arquivo <span className="serif">jurídico</span> pessoal.
+            </h1>
+            <p>
+              Seus fechamentos, peças, mapas e súmulas — buscáveis por tema, área ou modo. Tudo salvo
+              localmente.
+            </p>
+          </div>
+          <div
+            className="row"
+            style={{ display: "inline-flex", gap: 24, fontFamily: "var(--font-mono)" }}
+          >
+            <LibStat val={studies.length} lbl="itens" />
+            <LibStat val={favCount} lbl="favoritos" gold />
+            <LibStat val={areaCount} lbl="modos" />
+          </div>
+        </div>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-        <div className="grid gap-2">
-          <Label htmlFor="lib-search">Buscar</Label>
-          <Input
-            id="lib-search"
+      <div className="lib-toolbar">
+        <div className="lib-search">
+          <MI name="search" />
+          <input
+            type="search"
+            placeholder="Buscar tema, trecho ou modo — ex.: 'responsabilidade', 'Art. 927'…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Por tema, trecho ou matéria…"
           />
         </div>
-        <div className="grid gap-2">
-          <Label htmlFor="lib-filter">Filtro</Label>
-          <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger id="lib-filter" className="w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {FILTERS.map((f) => (
-                <SelectItem key={f.value} value={f.value}>
-                  {f.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+        <div className="lib-filters">
+          {MODE_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              className={`lib-filter ${filter === f.value ? "on" : ""}`}
+              onClick={() => setFilter(f.value)}
+            >
+              <span>{f.label}</span>
+              <span className="count">{counts[f.value] ?? 0}</span>
+            </button>
+          ))}
         </div>
+
+        <button
+          type="button"
+          className={`btn ${onlyFav ? "btn--default" : "btn--outline"} btn--sm`}
+          onClick={() => setOnlyFav((v) => !v)}
+        >
+          <MI name={onlyFav ? "bookmark" : "bookmark_border"} size={16} />
+          Favoritos
+        </button>
       </div>
 
-      {visible.length === 0 ? (
-        <div className="grid place-items-center gap-2 min-h-[200px] p-8 rounded-2xl border border-dashed border-brand-gold/30 bg-[var(--pjus-surface-2)] text-center">
-          <MI name="library_books" size={32} className="text-brand-gold" />
-          <p className="font-display text-brand-ink">
-            {studies.length === 0 ? "Nenhum material salvo ainda." : "Nada encontrado com esse filtro."}
-          </p>
-          <p className="text-sm text-brand-ink-2">
+      {filtered.length === 0 ? (
+        <div className="lib-empty">
+          <span style={{ color: "rgba(201,168,76,0.7)" }}>
+            <MI name="folder_open" size={32} />
+          </span>
+          <strong>
+            {studies.length === 0 ? "Arquivo ainda vazio." : "Nada encontrado."}
+          </strong>
+          <p>
             {studies.length === 0
-              ? "Gere um estudo para salvar automaticamente aqui."
-              : "Tente outro termo ou filtro."}
+              ? "Gere um estudo e ele aparece aqui automaticamente."
+              : "Tente outra busca, troque o filtro ou limpe tudo."}
           </p>
+          {hasActiveFilter && (
+            <button className="btn btn--outline btn--sm" onClick={clearFilters}>
+              <MI name="restart_alt" size={14} />
+              Limpar filtros
+            </button>
+          )}
         </div>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {visible.map((s) => (
-            <article
-              key={s.id}
-              className="group flex flex-col gap-2 p-5 rounded-xl border border-[var(--pjus-hairline)] bg-white"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-brand-gold">
-                  {s.modeLabel || "Estudo jurídico"}
-                </span>
+        <div className="lib-shelf">
+          <header className="lib-shelf__head">
+            <span>Modo</span>
+            <span>Tema</span>
+            <span>Área</span>
+            <span>Data</span>
+            <span className="right">Ações</span>
+          </header>
+          {filtered.map((s) => (
+            <article key={s.id} className="lib-row" onClick={() => openView(s.id)}>
+              <span className="lib-row__mode">
+                <span className="col-divider" />
+                {MODE_LABELS[s.mode] || s.modeLabel || "Estudo"}
+              </span>
+              <div className="lib-row__main">
+                <h3 className="lib-row__topic">{s.topic}</h3>
+                <p className="lib-row__excerpt">
+                  <InlineText text={s.excerpt || "Material salvo na biblioteca."} />
+                </p>
+              </div>
+              <span className="lib-row__area">{s.modeLabel || "Estudo jurídico"}</span>
+              <span className="lib-row__date">{s.date}</span>
+              <span className="lib-row__actions" onClick={(e) => e.stopPropagation()}>
                 <button
                   type="button"
+                  className={`lib-row__fav ${s.favorite ? "on" : ""}`}
                   onClick={() => toggleFav(s)}
-                  title={s.favorite ? "Desfavoritar" : "Favoritar"}
-                  className={cn(
-                    "shrink-0 transition-colors",
-                    s.favorite ? "text-brand-gold" : "text-brand-ink-2/40 hover:text-brand-gold",
-                  )}
+                  aria-label={s.favorite ? "Remover dos favoritos" : "Favoritar"}
+                  title={s.favorite ? "Remover dos favoritos" : "Favoritar"}
                 >
-                  <MI name={s.favorite ? "star" : "star_border"} size={20} />
+                  <MI name={s.favorite ? "bookmark" : "bookmark_border"} />
                 </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => open(s.id)}
-                className="text-left font-display text-brand-ink text-lg leading-tight hover:underline"
-              >
-                {s.topic}
-              </button>
-
-              <p className="text-[13px] text-brand-ink-2 leading-relaxed line-clamp-3 flex-1">
-                {s.excerpt || "Material salvo na biblioteca."}
-              </p>
-
-              <div className="flex items-center justify-between pt-2 border-t border-[var(--pjus-hairline)]">
-                <span className="text-[11px] text-brand-ink-2">{s.date}</span>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => open(s.id)}>
-                    <MI name="visibility" size={15} />
-                    Abrir
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => rename(s)} title="Renomear">
-                    <MI name="edit" size={15} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => remove(s)}
-                    title="Apagar"
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <MI name="delete" size={15} />
-                  </Button>
-                </div>
-              </div>
+                <button
+                  type="button"
+                  className="lib-row__more"
+                  onClick={() => rename(s)}
+                  aria-label="Renomear"
+                  title="Renomear"
+                >
+                  <MI name="edit" />
+                </button>
+                <button
+                  type="button"
+                  className="lib-row__more"
+                  onClick={() => remove(s)}
+                  aria-label="Apagar"
+                  title="Apagar"
+                  style={{ color: "#B5574E" }}
+                >
+                  <MI name="delete" />
+                </button>
+              </span>
             </article>
           ))}
         </div>
@@ -224,5 +269,36 @@ export default function Library() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function LibStat({ val, lbl, gold }: { val: number; lbl: string; gold?: boolean }) {
+  return (
+    <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
+      <span
+        style={{
+          fontFamily: "var(--font-serif)",
+          fontStyle: "italic",
+          fontWeight: 700,
+          fontSize: 26,
+          letterSpacing: "-0.03em",
+          lineHeight: 1,
+          color: gold ? "rgb(var(--brand-gold))" : "rgb(var(--brand-ink))",
+        }}
+      >
+        {val}
+      </span>
+      <span
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          color: "var(--pjus-ink-3)",
+        }}
+      >
+        {lbl}
+      </span>
+    </span>
   );
 }
