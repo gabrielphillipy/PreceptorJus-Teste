@@ -1,21 +1,8 @@
 import { FormEvent, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { MI } from "@/components/brand/MaterialIcon";
 import { DEFAULT_SECTIONS, STUDY_MODES, type StudyMode } from "@/lib/api";
-import { cn } from "@/lib/utils";
 
 export interface StudyFormValues {
   topic: string;
@@ -39,120 +26,125 @@ export function StudyForm({ initialTopic = "", loading, onSubmit }: StudyFormPro
   const [touched, setTouched] = useState(false);
 
   const hasError = touched && !topic.trim();
+  const currentMode = STUDY_MODES.find((m) => m.value === mode);
 
-  const handleSubmit = (e: FormEvent) => {
+  const toggleSection = (s: string) =>
+    setSections((cur) => (cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]));
+
+  const submit = (e: FormEvent) => {
     e.preventDefault();
     setTouched(true);
     if (!topic.trim()) return;
-    const modeLabel = STUDY_MODES.find((m) => m.value === mode)?.label || "Estudo jurídico";
     onSubmit({
       topic: topic.trim(),
       goals: goals.split("\n").map((g) => g.trim()).filter(Boolean),
       sections,
       mode,
-      modeLabel,
+      modeLabel: currentMode?.label || "Estudo jurídico",
     });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="pjus-summary relative animate-fade-up">
-      <div className="pjus-summary__head">
+    <form className="summary" onSubmit={submit}>
+      <div className="summary__head">
         <Eyebrow>Nova nota jurídica</Eyebrow>
-        <h1 className="font-display text-brand-ink text-[1.85rem] leading-tight">
-          Componha seu estudo como uma minuta de parecer.
-        </h1>
-        <p className="mt-2 text-sm text-brand-ink-2 leading-relaxed max-w-2xl">
-          Informe tema, objetivos e seções. A IA organiza fundamentos, artigos e pontos de prova.
-        </p>
+        <h1 style={{ fontSize: 24 }}>Componha seu estudo como uma minuta de parecer.</h1>
+        <p>Informe tema, objetivos e seções. A IA organiza fundamentos, artigos e pontos de prova.</p>
       </div>
 
-      <div className="p-7 grid gap-5">
-        <div className="grid gap-2">
-          <Label htmlFor="study-topic">Tema</Label>
-          <Input
+      <div className="summary__body" style={{ display: "grid", gap: 18 }}>
+        <div>
+          <label className="label" htmlFor="study-topic">Tema</label>
+          <input
             id="study-topic"
+            className="field"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder="Ex.: Responsabilidade civil objetiva"
             maxLength={500}
-            className={cn(hasError && "border-destructive focus-visible:ring-destructive/30")}
+            style={hasError ? { borderColor: "#B5574E", boxShadow: "0 0 0 3px rgba(181,87,78,0.15)" } : undefined}
             aria-invalid={hasError}
-            aria-describedby={hasError ? "study-topic-error" : undefined}
           />
           {hasError && (
-            <p id="study-topic-error" className="text-[12px] font-medium text-destructive">
+            <p style={{ fontSize: 12, fontWeight: 500, color: "#B5574E", margin: "6px 0 0" }}>
               Preencha o tema antes de gerar o estudo.
             </p>
           )}
         </div>
 
-        <div className="grid gap-2">
-          <Label htmlFor="study-goals" className="flex items-center gap-2">
-            Objetivos
-            <span className="text-[10px] font-medium text-muted-foreground normal-case tracking-normal">
-              opcional · 1 por linha
-            </span>
-          </Label>
-          <Textarea
+        <div>
+          <label className="label" htmlFor="study-goals">
+            Objetivos <span className="label__opt">opcional · 1 por linha</span>
+          </label>
+          <textarea
             id="study-goals"
+            className="field"
+            rows={3}
             value={goals}
             onChange={(e) => setGoals(e.target.value)}
-            rows={4}
-            placeholder={`Ex.: comparar regra e exceção\nmapear artigos importantes\ntreinar pontos de prova`}
+            placeholder={"Ex.: comparar regra e exceção\nmapear artigos importantes\ntreinar pontos de prova"}
           />
         </div>
 
-        <div className="grid gap-2">
-          <Label htmlFor="study-mode">Modo de estudo</Label>
-          <Select value={mode} onValueChange={(v) => setMode(v as StudyMode)}>
-            <SelectTrigger id="study-mode">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
+        <div>
+          <label className="label" htmlFor="study-mode">Modo de estudo</label>
+          <div className="select__wrap">
+            <select
+              id="study-mode"
+              className="field select"
+              value={mode}
+              onChange={(e) => setMode(e.target.value as StudyMode)}
+            >
               {STUDY_MODES.map((m) => (
-                <SelectItem key={m.value} value={m.value}>
-                  {m.label}
-                </SelectItem>
+                <option key={m.value} value={m.value}>{m.label}</option>
               ))}
-            </SelectContent>
-          </Select>
-          <p className="text-[12px] text-muted-foreground">
-            {STUDY_MODES.find((m) => m.value === mode)?.description}
-          </p>
+            </select>
+          </div>
+          {currentMode && (
+            <p style={{ fontSize: 12, color: "var(--pjus-ink-3)", margin: "6px 0 0" }}>
+              {currentMode.description}
+            </p>
+          )}
         </div>
 
-        <div className="grid gap-2">
-          <Label>
-            Seções
-            <span className="ml-2 text-[10px] font-medium text-muted-foreground normal-case tracking-normal">
+        <div>
+          <label className="label">
+            Seções{" "}
+            <span className="label__opt">
               {sections.length} selecionada{sections.length === 1 ? "" : "s"}
             </span>
-          </Label>
-          <ToggleGroup
-            type="multiple"
-            value={sections}
-            onValueChange={(v) => setSections(v)}
-            className="justify-start"
-          >
+          </label>
+          <div className="chips">
             {DEFAULT_SECTIONS.map((s) => (
-              <ToggleGroupItem key={s} value={s} className="text-[12px]">
+              <button
+                key={s}
+                type="button"
+                className={`chip ${sections.includes(s) ? "on" : ""}`}
+                onClick={() => toggleSection(s)}
+              >
                 {s}
-              </ToggleGroupItem>
+              </button>
             ))}
-          </ToggleGroup>
+          </div>
         </div>
 
-        <Button
+        <button
           type="submit"
-          size="xl"
+          className="btn btn--default btn--xl btn-shimmer"
           disabled={loading}
-          className="w-full mt-2 btn-shimmer"
         >
           {loading ? (
             <>
               <span
-                className="inline-block h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin"
-                aria-hidden
+                style={{
+                  display: "inline-block",
+                  height: 14,
+                  width: 14,
+                  borderRadius: 999,
+                  border: "2px solid rgba(255,255,255,0.3)",
+                  borderTopColor: "#fff",
+                  animation: "spin 0.8s linear infinite",
+                }}
               />
               Gerando…
             </>
@@ -162,7 +154,7 @@ export function StudyForm({ initialTopic = "", loading, onSubmit }: StudyFormPro
               Gerar estudo jurídico
             </>
           )}
-        </Button>
+        </button>
       </div>
     </form>
   );
