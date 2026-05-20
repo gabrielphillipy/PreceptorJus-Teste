@@ -1,436 +1,591 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Menu, X } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
-import { BRAND, PLANS } from "@/lib/brand";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Eyebrow, GoldRule } from "@/components/brand/Eyebrow";
-import { LogoMark, Wordmark } from "@/components/brand/LogoMark";
-import { MI } from "@/components/brand/MaterialIcon";
-
-const NAV_LINKS = [
-  { href: "#como-funciona", label: "Como funciona" },
-  { href: "#recursos", label: "Recursos" },
-  { href: "#planos", label: "Planos" },
-];
+import { startCheckout } from "@/lib/api";
+import { LogoMark } from "@/components/brand/LogoMark";
+import { FeedbackDialog } from "@/components/feedback/FeedbackDialog";
 
 export default function Landing() {
   const navigate = useNavigate();
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileMenu, setMobileMenu] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  const [checkingOut, setCheckingOut] = useState(false);
 
   const openApp = () => navigate("/app");
 
+  const goCheckout = async () => {
+    if (checkingOut) return;
+    setCheckingOut(true);
+    try {
+      const r = await startCheckout("preceptor");
+      if (r.url) {
+        window.location.href = r.url;
+        return;
+      }
+      toast("Checkout indisponível", {
+        description: r.error || "Tente novamente em instantes.",
+      });
+    } catch (e: any) {
+      toast("Checkout indisponível", { description: e?.message || "Erro de rede." });
+    } finally {
+      setCheckingOut(false);
+    }
+  };
+
   return (
-    <div
-      className="min-h-screen flex flex-col bg-[var(--pjus-canvas)] texture-grain"
-      style={{ fontFamily: "var(--font-body)" }}
-    >
-      {/* ─── Header ─────────────────────────────────────────────────── */}
-      <header className={cn("glass-nav sticky top-0 z-50 border-b border-slate-200/60", scrolled && "scrolled")}>
-        <GoldRule />
+    <>
+      {/* Masthead — newspaper banner */}
+      <div className="masthead">
+        <div className="masthead__inner">
+          <span className="masthead__edition">EDIÇÃO III</span>
+          <span className="masthead__dot">●</span>
+          <span className="masthead__date">Março · 2025</span>
+          <span className="masthead__rule" />
+          <span className="masthead__motto">
+            <span className="serif italic">Recta ratio</span> · Estudo jurídico orientado a fundamento.
+          </span>
+        </div>
+      </div>
 
-        <nav className="flex justify-between items-center w-full px-4 sm:px-6 md:px-10 py-3 sm:py-4 max-w-7xl mx-auto">
-          <Link to="/" className="flex items-center gap-3 group">
-            <LogoMark size={36} className="transition-transform group-hover:scale-105" />
-            <Wordmark showTagline />
-          </Link>
-
-          <div className="hidden md:flex items-center divide-x divide-slate-200/60">
-            {NAV_LINKS.map((l) => (
-              <a
-                key={l.href}
-                href={l.href}
-                className="px-5 text-[13px] font-medium text-brand-ink-2 hover:text-brand-primary-dark transition-colors"
-              >
-                {l.label}
-              </a>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              onClick={openApp}
-              className="hidden sm:block px-3 py-2 text-[13px] font-semibold text-brand-ink-2 hover:text-brand-primary-dark transition-colors"
-            >
-              Entrar
-            </button>
-            <Button onClick={openApp} className="hidden sm:inline-flex" size="sm">
+      {/* Sticky nav */}
+      <header className="nav">
+        <div className="nav__inner">
+          <a className="nav__brand" href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+            <LogoMark size={38} />
+            <span className="nav__wordmark">
+              <span className="nav__name">PreceptorJus</span>
+              <span className="nav__tag">Advocacia & estudo jurídico</span>
+            </span>
+          </a>
+          <nav className="nav__links" aria-label="Seções">
+            <a href="#rito">Rito do estudo</a>
+            <a href="#minuta">Anatomia da minuta</a>
+            <a href="#planos">Planos</a>
+            <a href="#cabinete">No gabinete</a>
+          </nav>
+          <div className="nav__actions">
+            <button type="button" className="link-quiet" onClick={openApp}>Entrar</button>
+            <button type="button" className="btn btn--default" onClick={openApp}>
               Começar
-              <span className="text-brand-gold">→</span>
-            </Button>
-            <button
-              onClick={() => setMobileMenu(!mobileMenu)}
-              className="md:hidden p-2 text-brand-ink-2 hover:text-brand-primary-dark transition-colors -mr-2"
-              aria-label={mobileMenu ? "Fechar menu" : "Abrir menu"}
-            >
-              {mobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              <span className="arrow">→</span>
             </button>
           </div>
-        </nav>
-
-        {mobileMenu && (
-          <div className="md:hidden border-t border-slate-200/60 bg-white px-4 py-4 space-y-1 animate-fade-in">
-            {NAV_LINKS.map((l) => (
-              <a
-                key={l.href}
-                href={l.href}
-                onClick={() => setMobileMenu(false)}
-                className="block py-2.5 text-sm font-medium text-brand-ink-2 hover:text-brand-primary-dark"
-              >
-                {l.label}
-              </a>
-            ))}
-            <div className="pt-3 mt-2 border-t border-slate-200/60 flex gap-2">
-              <button
-                onClick={openApp}
-                className="flex-1 py-2.5 text-sm font-semibold text-brand-primary-dark hover:bg-brand-primary/5 rounded-md transition-colors"
-              >
-                Entrar
-              </button>
-              <Button onClick={openApp} className="flex-1" size="sm">
-                Começar
-                <span className="text-brand-gold">→</span>
-              </Button>
-            </div>
-          </div>
-        )}
+        </div>
+        <div className="gold-rule" />
       </header>
 
-      <main className="flex-1">
-        {/* ─── Hero ─────────────────────────────────────────────────── */}
-        <section
-          id="inicio"
-          className="relative overflow-hidden py-16 sm:py-24 px-4 sm:px-6 lg:px-10 hero-radial"
-        >
-          {/* Decorativos: dots no canto + glow gold */}
-          <div
-            className="absolute -top-10 right-0 w-[28rem] h-[28rem] pointer-events-none texture-dots-subtle"
-            style={{
-              maskImage: "radial-gradient(ellipse at top right, black 20%, transparent 75%)",
-              WebkitMaskImage: "radial-gradient(ellipse at top right, black 20%, transparent 75%)",
-            }}
-            aria-hidden
-          />
-          <div
-            className="absolute -bottom-32 -left-32 w-[32rem] h-[32rem] rounded-full bg-brand-gold/[0.08] blur-3xl pointer-events-none"
-            aria-hidden
-          />
+      <main>
+        {/* HERO */}
+        <section className="hero">
+          <div className="hero__inner">
+            <div className="hero__copy">
+              <p className="eyebrow">Inteligência de estudo para a prática jurídica</p>
 
-          <div className="relative max-w-7xl mx-auto grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-16 items-center">
-            <div className="animate-fade-up">
-              <Eyebrow>{BRAND.hero.eyebrow}</Eyebrow>
-              <h1 className="font-display text-brand-ink max-w-[18ch]">
-                Estude Direito com a precisão de um{" "}
-                <em className="not-italic text-[#8a672d]">escritório jurídico</em>.
+              <h1 className="hero__headline">
+                <span className="serif italic">Estude Direito</span> com a{" "}
+                <span className="hero__headline-em">precisão</span>
+                <br />
+                de um escritório jurídico.
               </h1>
-              <p className="mt-7 max-w-xl text-[1.0625rem] leading-relaxed text-brand-ink-2">
-                {BRAND.hero.body}
+
+              <p className="hero__lede">
+                Fechamentos por matéria, simulados <em className="term">OAB</em>, peças práticas,
+                flashcards e chat de apoio — com foco em <em className="term">lei</em>,{" "}
+                <em className="term">doutrina</em>, <em className="term">jurisprudência</em> e
+                raciocínio argumentativo.
               </p>
 
-              <div className="mt-9 flex flex-wrap gap-3 animate-fade-up-delay-2">
-                <Button size="lg" onClick={openApp} className="btn-shimmer">
+              <div className="hero__ctas">
+                <button type="button" className="btn btn--default btn--lg btn-shimmer" onClick={openApp}>
                   Entrar na plataforma
-                  <ArrowRight className="ml-0.5 w-4 h-4" />
-                </Button>
-                <Button size="lg" variant="outline" asChild>
-                  <a href="#como-funciona">Ver como funciona</a>
-                </Button>
+                  <span className="arrow">→</span>
+                </button>
+                <a href="#rito" className="btn btn--outline btn--lg">Ver como funciona</a>
               </div>
 
-              <ul className="mt-10 flex flex-wrap gap-2 animate-fade-up-delay-3" aria-label="Módulos principais">
-                {BRAND.trustRow.map((tag) => (
-                  <li
-                    key={tag}
-                    className="px-3 py-1.5 rounded-full border border-[var(--pjus-hairline)] bg-white/70 text-xs font-bold text-brand-ink-2 uppercase tracking-[0.1em] hover:border-brand-gold/40 hover:bg-white transition-colors"
-                  >
-                    {tag}
-                  </li>
-                ))}
+              <ul className="hero__trust" aria-label="Módulos principais">
+                <li>OAB</li>
+                <li>Concursos</li>
+                <li>Graduação</li>
+                <li>Peças e teses</li>
               </ul>
             </div>
 
-            {/* Mock window — gabinete jurídico */}
-            <HeroMock />
-          </div>
-        </section>
+            {/* Parecer mock */}
+            <aside className="hero__mock">
+              <div className="mock-shadow" aria-hidden />
+              <article className="mock-paper">
+                <header className="mock-paper__head">
+                  <span className="mock-paper__num">MINUTA Nº PJUS/2025/0042</span>
+                  <span className="mock-paper__sep">║</span>
+                  <span className="mock-paper__sub">Responsabilidade civil objetiva</span>
+                  <span className="mock-paper__time">Gerado em 14s</span>
+                </header>
 
-        {/* ─── Como funciona ──────────────────────────────────────── */}
-        <section id="como-funciona" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-10 bg-white">
-          <div className="max-w-7xl mx-auto">
-            <div className="max-w-2xl mx-auto text-center mb-14">
-              <Eyebrow variant="center">Como funciona</Eyebrow>
-              <h2 className="font-display text-brand-ink mt-3">
-                Do tema ao argumento, com método de gabinete.
-              </h2>
-              <p className="mt-4 text-brand-ink-2 leading-relaxed">
-                O PreceptorJus organiza estudo jurídico como uma rotina de escritório: problema, fundamento, tese e treino.
-              </p>
-            </div>
+                <div className="mock-paper__body ruled">
+                  <h2 className="mock-paper__h">
+                    <span className="bar" />
+                    Conduta, dano e nexo causal
+                  </h2>
+                  <p className="mock-paper__lead dropcap-line">
+                    <span className="dropcap-letter">A</span> responsabilidade civil objetiva, fundada
+                    no <em className="term">Art. 927, par. único, CC</em>, dispensa a investigação de
+                    culpa quando a atividade desenvolvida implicar, por sua natureza, risco para os
+                    direitos de outrem.
+                  </p>
 
-            <div className="grid md:grid-cols-3 gap-5">
-              {[
-                {
-                  step: "01",
-                  title: "Delimite o caso",
-                  body: "Informe a matéria, os fatos relevantes ou os objetivos de estudo.",
-                  icon: "edit_note",
-                },
-                {
-                  step: "02",
-                  title: "Monte a tese",
-                  body: "Receba estrutura por fundamentos, artigos, teses, exceções e riscos argumentativos.",
-                  icon: "psychology",
-                },
-                {
-                  step: "03",
-                  title: "Treine a defesa",
-                  body: "Transforme o estudo em simulado, flashcards, roteiro de peça ou conversa com o Preceptor Chat.",
-                  icon: "gavel",
-                },
-              ].map((s, i) => (
-                <Card key={s.step} className={cn("card-interactive relative overflow-hidden", `animate-fade-up stagger-${i + 1}`)}>
-                  <span
-                    className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-brand-gold via-brand-gold/50 to-transparent"
-                    aria-hidden
-                  />
-                  <CardContent className="pt-7 pb-7 pl-8 pr-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <span className="font-display text-[2rem] font-extrabold text-brand-gold leading-none">{s.step}</span>
-                      <MI name={s.icon} size={28} className="text-brand-primary/60" />
-                    </div>
-                    <h3 className="font-display text-brand-ink text-xl">{s.title}</h3>
-                    <p className="mt-2 text-[14px] text-brand-ink-2 leading-relaxed">{s.body}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ─── Recursos ───────────────────────────────────────────── */}
-        <section id="recursos" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-10 bg-[var(--pjus-surface-2)]">
-          <div className="max-w-7xl mx-auto grid lg:grid-cols-[0.95fr_1.05fr] gap-12 lg:gap-16 items-center">
-            <div>
-              <Eyebrow>Recursos</Eyebrow>
-              <h2 className="font-display text-brand-ink">Uma mesa de trabalho para raciocínio jurídico.</h2>
-              <p className="mt-5 text-brand-ink-2 leading-relaxed">
-                A experiência inclui menu lateral, gerador de fechamento, biblioteca, simulados e chat jurídico com IA.
-                O visual foi pensado como ambiente de estudo de um escritório: limpo, sério e voltado a documentos.
-              </p>
-
-              <ul className="mt-7 grid gap-3">
-                {[
-                  { icon: "verified", text: "Citações com artigo, súmula e tema vinculado" },
-                  { icon: "fact_check", text: "Diferencia regra, exceção e controvérsia" },
-                  { icon: "menu_book", text: "Sugere bibliografia para se aprofundar" },
-                ].map((f) => (
-                  <li key={f.text} className="flex items-start gap-3 text-[14.5px] text-brand-ink-2 leading-relaxed">
-                    <MI name={f.icon} size={20} className="text-brand-primary mt-0.5" />
-                    <span>{f.text}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Feature demo — controle concentrado */}
-            <FeatureDemo />
-          </div>
-        </section>
-
-        {/* ─── Planos ─────────────────────────────────────────────── */}
-        <section id="planos" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-10 bg-white">
-          <div className="max-w-7xl mx-auto">
-            <div className="max-w-2xl mx-auto text-center mb-14">
-              <Eyebrow variant="center">Planos</Eyebrow>
-              <h2 className="font-display text-brand-ink mt-3">
-                Comece grátis. Assine quando fizer sentido.
-              </h2>
-              <p className="mt-4 text-brand-ink-2 leading-relaxed">
-                Pagamento processado de forma segura. Cancele a hora que quiser.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-5">
-              {PLANS.map((plan, i) => (
-                <Card
-                  key={plan.id}
-                  className={cn(
-                    "card-interactive relative flex flex-col",
-                    plan.featured && "border-brand-gold/50 shadow-lg",
-                    `animate-fade-up stagger-${i + 1}`,
-                  )}
-                >
-                  {plan.featured && (
-                    <span className="absolute -top-3 left-6 inline-flex items-center px-3 py-1 rounded-full bg-brand-gold text-brand-primary-darker text-[11px] font-bold uppercase tracking-[0.12em]">
-                      {plan.badge}
-                    </span>
-                  )}
-                  <CardContent className="pt-8 pb-7 px-7 flex flex-col flex-1 gap-4">
-                    <h3 className="font-display text-brand-ink text-xl">{plan.name}</h3>
-                    <p className="text-[14px] text-brand-ink-2 leading-relaxed min-h-[42px]">
-                      {plan.description}
+                  <div className="legal">
+                    <strong>Art. 927, parágrafo único · CC</strong>
+                    <p>
+                      Haverá obrigação de reparar o dano, independentemente de culpa, quando a
+                      atividade normalmente desenvolvida implicar, por sua natureza, risco para os
+                      direitos de outrem.
                     </p>
-                    <div className="mt-2 mb-3">
-                      <span className="font-display font-extrabold text-brand-ink text-[2rem] leading-none">{plan.price}</span>
-                      {"period" in plan && plan.period && (
-                        <span className="text-brand-ink-2 text-sm font-medium ml-1">{plan.period}</span>
-                      )}
-                    </div>
-                    <Button
-                      variant={plan.featured ? "default" : "outline"}
-                      onClick={openApp}
-                      className="mt-auto w-full"
-                      size="lg"
-                    >
-                      {plan.cta}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+                  </div>
+                </div>
+
+                <footer className="mock-paper__foot">
+                  <span>
+                    ↳ <em className="term">STJ</em>, Súmula 145 &nbsp;·&nbsp;{" "}
+                    <em className="term">STF</em>, Tema 932
+                  </span>
+                  <span className="mock-paper__sig">— Preceptor IA</span>
+                </footer>
+
+                <div className="carimbo carimbo--mock">
+                  <span className="carimbo__top">Preceptoria</span>
+                  <span className="carimbo__mid">Rubricado</span>
+                  <span className="carimbo__bot">PJUS · 2025</span>
+                </div>
+              </article>
+            </aside>
+          </div>
+        </section>
+
+        {/* RITO DO ESTUDO */}
+        <section className="rito" id="rito">
+          <div className="rito__inner">
+            <header className="section-head">
+              <p className="eyebrow center">Rito do estudo</p>
+              <h2 className="section-h">
+                Do <span className="serif italic">caso</span> ao{" "}
+                <span className="serif italic">argumento</span>, com método de gabinete.
+              </h2>
+              <p className="section-sub">
+                PreceptorJus organiza o estudo como uma rotina de escritório: problema, fundamento,
+                tese, treino.
+              </p>
+            </header>
+
+            <ol className="rito__list">
+              <li className="rito__step">
+                <span className="rito__numeral">I</span>
+                <div className="rito__content">
+                  <h3>Delimite o caso</h3>
+                  <p>
+                    Informe matéria, fatos relevantes e objetivos. O Preceptor recebe o tema como uma
+                    consulta de balcão.
+                  </p>
+                  <ul className="rito__detail">
+                    <li><span className="col-divider" /> Tema & objetivos</li>
+                    <li><span className="col-divider" /> Seções: conceito, base legal, jurisprudência</li>
+                    <li><span className="col-divider" /> Modo: fechamento, peça, mapa, discursiva</li>
+                  </ul>
+                </div>
+              </li>
+
+              <li className="rito__step">
+                <span className="rito__numeral">II</span>
+                <div className="rito__content">
+                  <h3>Monte a tese</h3>
+                  <p>
+                    Receba estrutura por fundamentos, artigos citados, teses dominantes, exceções e
+                    riscos argumentativos.
+                  </p>
+                  <ul className="rito__detail">
+                    <li><span className="col-divider" /> Citações com <em className="term">Art.</em>, súmula e tema vinculado</li>
+                    <li><span className="col-divider" /> Diferencia regra, exceção e controvérsia</li>
+                    <li><span className="col-divider" /> Sugere bibliografia para se aprofundar</li>
+                  </ul>
+                </div>
+              </li>
+
+              <li className="rito__step">
+                <span className="rito__numeral">III</span>
+                <div className="rito__content">
+                  <h3>Treine a defesa</h3>
+                  <p>
+                    Transforme o estudo em simulado, flashcards SM-2, roteiro de peça ou conversa com
+                    o Preceptor Chat.
+                  </p>
+                  <ul className="rito__detail">
+                    <li><span className="col-divider" /> Simulados <em className="term">OAB</em> e concursos</li>
+                    <li><span className="col-divider" /> Repetição espaçada para institutos</li>
+                    <li><span className="col-divider" /> Chat com remissão ao parecer original</li>
+                  </ul>
+                </div>
+              </li>
+            </ol>
+          </div>
+        </section>
+
+        {/* ANATOMIA DA MINUTA */}
+        <section className="anatomy" id="minuta">
+          <div className="anatomy__inner">
+            <header className="section-head left">
+              <p className="eyebrow">Anatomia da minuta</p>
+              <h2 className="section-h">
+                A nota jurídica gerada como um{" "}
+                <span className="serif italic">parecer de gabinete</span>.
+              </h2>
+              <p className="section-sub">
+                Cada estudo segue a estrutura editorial do escritório:{" "}
+                <em className="term">cabeçalho</em>, <em className="term">fundamento</em>,{" "}
+                <em className="term">tese</em>, <em className="term">prova</em>. Tudo com remissão
+                direta à fonte legal.
+              </p>
+            </header>
+
+            <div className="anatomy__board">
+              <div className="anatomy__notes left">
+                <div className="anatomy__note">
+                  <span className="anatomy__note-mark">A</span>
+                  <div>
+                    <strong>Cabeçalho protocolar.</strong>
+                    <p>Número de minuta, matéria e tempo de geração.</p>
+                  </div>
+                </div>
+                <div className="anatomy__note">
+                  <span className="anatomy__note-mark">B</span>
+                  <div>
+                    <strong>Drop cap editorial.</strong>
+                    <p>Primeira letra em Source Serif itálico, sinalizando o início da minuta.</p>
+                  </div>
+                </div>
+                <div className="anatomy__note">
+                  <span className="anatomy__note-mark">C</span>
+                  <div>
+                    <strong>Termos jurídicos em destaque.</strong>
+                    <p>
+                      Citações como <em className="term">Art. 927</em>, <em className="term">STJ</em>,{" "}
+                      <em className="term">CC</em> recebem realce ouro automaticamente.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <article className="anatomy__doc">
+                <header className="anatomy__doc-head">
+                  <span className="anatomy__doc-stamp">MINUTA Nº PJUS/2025/0042</span>
+                  <span className="anatomy__doc-rule" />
+                  <span className="anatomy__doc-area">Direito Civil · Responsabilidade</span>
+                </header>
+
+                <h2 className="anatomy__doc-h">
+                  <span className="bar" />
+                  Responsabilidade civil objetiva
+                </h2>
+
+                <div className="anatomy__doc-body ruled">
+                  <p className="dropcap-line">
+                    <span className="dropcap-letter">D</span>ispõe o{" "}
+                    <em className="term">Art. 927, par. único, CC</em> que a obrigação de reparar o
+                    dano independe de culpa quando a atividade desenvolvida implicar, por sua natureza,
+                    risco para os direitos de outrem.
+                  </p>
+                  <p>
+                    A doutrina contemporânea, em diálogo com <em className="term">STJ</em> Súmula 145,
+                    sustenta a chamada <strong>teoria do risco-proveito</strong> como fundamento
+                    legitimador.
+                  </p>
+
+                  <h3 className="anatomy__doc-sub">
+                    <span className="bar gold" /> Pontos de prova
+                  </h3>
+                  <ul className="anatomy__doc-list">
+                    <li>Distinguir <em className="term">objetiva</em> e <em className="term">subjetiva</em></li>
+                    <li>Identificar excludentes: caso fortuito, força maior, culpa exclusiva da vítima</li>
+                    <li>Aplicabilidade do <em className="term">CDC</em> em relações de consumo</li>
+                  </ul>
+
+                  <blockquote className="anatomy__doc-tese">
+                    <span className="tese-label">Tese de gabinete</span>
+                    Quem cria o risco responde pelo dano. A culpa, quando exigida, é desnecessária se
+                    a atividade for, em si, fonte permanente de perigo.
+                  </blockquote>
+                </div>
+
+                <footer className="anatomy__doc-foot">
+                  <span>
+                    ↳ Confira sempre fontes oficiais — legislação, jurisprudência e súmulas
+                    atualizadas.
+                  </span>
+                  <span className="anatomy__doc-sig">— Preceptor IA</span>
+                </footer>
+              </article>
+
+              <div className="anatomy__notes right">
+                <div className="anatomy__note">
+                  <span className="anatomy__note-mark">D</span>
+                  <div>
+                    <strong>Hierarquia visual.</strong>
+                    <p>
+                      Cada seção tem barra ouro à esquerda, hairline abaixo — leitura como sumário de
+                      processo.
+                    </p>
+                  </div>
+                </div>
+                <div className="anatomy__note">
+                  <span className="anatomy__note-mark">E</span>
+                  <div>
+                    <strong>Pontos de prova.</strong>
+                    <p>Lista enxuta de itens que costumam aparecer em prova ou audiência.</p>
+                  </div>
+                </div>
+                <div className="anatomy__note">
+                  <span className="anatomy__note-mark">F</span>
+                  <div>
+                    <strong>Tese de gabinete.</strong>
+                    <p>O fechamento argumentativo — formato de aside, prontas para citação.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* PULL QUOTE */}
+        <section className="quote" id="cabinete">
+          <div className="quote__inner">
+            <span className="quote__mark" aria-hidden>“</span>
+            <blockquote className="quote__body">
+              <p>
+                O <span className="serif italic">PreceptorJus</span> me deu estrutura. Eu chegava na
+                questão da OAB com a tese pronta — não com um <em className="term">resumo</em>{" "}
+                genérico, mas com <em className="term">fundamento</em>,{" "}
+                <em className="term">súmula</em>, exceção e contrapeso. Senti que estudei como
+                advogada, não como aluna.
+              </p>
+            </blockquote>
+            <footer className="quote__cite">
+              <span className="quote__name">— Mariana Saldanha</span>
+              <span className="quote__divider col-divider" />
+              <span className="quote__role">Aprovada · OAB XLI · 1ª chamada</span>
+            </footer>
+          </div>
+        </section>
+
+        {/* PLANOS */}
+        <section className="plans" id="planos">
+          <div className="plans__inner">
+            <header className="section-head center">
+              <p className="eyebrow center">Planos</p>
+              <h2 className="section-h">
+                Comece <span className="serif italic">grátis</span>. Assine quando fizer sentido.
+              </h2>
+              <p className="section-sub">Pagamento seguro. Cancele a qualquer momento.</p>
+            </header>
+
+            <div className="plans__grid">
+              <article className="plan">
+                <header className="plan__head">
+                  <span className="plan__num">I</span>
+                  <h3>Essencial</h3>
+                </header>
+                <div className="plan__price">
+                  <span className="plan__amount">Grátis</span>
+                </div>
+                <p className="plan__desc">Para testar fechamentos, flashcards e simulados curtos.</p>
+                <ul className="plan__features">
+                  <li><span className="check">✓</span> Até 5 fechamentos / semana</li>
+                  <li><span className="check">✓</span> Simulados básicos</li>
+                  <li><span className="check">✓</span> Biblioteca pessoal local</li>
+                </ul>
+                <button type="button" className="btn btn--outline btn--block" onClick={openApp}>
+                  Criar conta
+                </button>
+              </article>
+
+              <article className="plan plan--featured">
+                <span className="plan__badge">Mais escolhido</span>
+                <header className="plan__head">
+                  <span className="plan__num">II</span>
+                  <h3>Preceptor</h3>
+                </header>
+                <div className="plan__price">
+                  <span className="plan__amount">R$&nbsp;29</span>
+                  <span className="plan__period">/mês</span>
+                </div>
+                <p className="plan__desc">Para OAB, faculdade e rotina intensa de revisão.</p>
+                <ul className="plan__features">
+                  <li><span className="check">✓</span> Fechamentos & simulados ilimitados</li>
+                  <li><span className="check">✓</span> Repetição espaçada SM-2</li>
+                  <li><span className="check">✓</span> Peças práticas e mapas mentais</li>
+                  <li><span className="check">✓</span> Exportação PDF jurídico</li>
+                </ul>
+                <button
+                  type="button"
+                  className="btn btn--default btn--block btn-shimmer"
+                  onClick={goCheckout}
+                  disabled={checkingOut}
+                >
+                  {checkingOut ? "Abrindo checkout…" : "Assinar agora"}
+                </button>
+              </article>
+
+              <article className="plan">
+                <header className="plan__head">
+                  <span className="plan__num">III</span>
+                  <h3>Turmas</h3>
+                </header>
+                <div className="plan__price">
+                  <span className="plan__amount">Sob consulta</span>
+                </div>
+                <p className="plan__desc">
+                  Para grupos de estudo, mentores e cursinhos preparatórios.
+                </p>
+                <ul className="plan__features">
+                  <li><span className="check">✓</span> Painel de mentor</li>
+                  <li><span className="check">✓</span> Decks compartilhados</li>
+                  <li><span className="check">✓</span> Métricas por aluno</li>
+                </ul>
+                <FeedbackDialog />
+              </article>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section className="faq">
+          <div className="faq__inner">
+            <header className="section-head left">
+              <p className="eyebrow">Quesitos frequentes</p>
+              <h2 className="section-h">Antes de assinar.</h2>
+            </header>
+
+            <div className="faq__list">
+              <details className="faq__item" open>
+                <summary>
+                  <span className="faq__q-num">01</span>
+                  <span className="faq__q-text">
+                    A IA é confiável para citar artigos e súmulas?
+                  </span>
+                  <span className="faq__chev">+</span>
+                </summary>
+                <p>
+                  O Preceptor IA cita artigos, súmulas e temas vinculados, mas tratamos cada minuta
+                  como <strong>material acadêmico</strong> — o usuário deve confirmar a vigência em
+                  fontes oficiais antes de levar a juízo. Para peças reais, mantenha o duplo-cheque
+                  com legislação atualizada.
+                </p>
+              </details>
+
+              <details className="faq__item">
+                <summary>
+                  <span className="faq__q-num">02</span>
+                  <span className="faq__q-text">
+                    Posso usar para estudar fora de OAB e Direito?
+                  </span>
+                  <span className="faq__chev">+</span>
+                </summary>
+                <p>
+                  O foco é jurídico, mas estudantes de concursos públicos com conteúdo de Direito
+                  (administrativo, constitucional, tributário) usam os mesmos modos. Para outras
+                  carreiras, recomendamos o <em>PreceptorMED</em> ou módulos correlatos.
+                </p>
+              </details>
+
+              <details className="faq__item">
+                <summary>
+                  <span className="faq__q-num">03</span>
+                  <span className="faq__q-text">Os fechamentos ficam salvos onde?</span>
+                  <span className="faq__chev">+</span>
+                </summary>
+                <p>
+                  Tudo na sua <em className="term">Biblioteca</em>, dentro do aplicativo. Você pode
+                  favoritar, renomear, exportar PDF ou apagar a qualquer momento. Sem login
+                  obrigatório no plano Essencial.
+                </p>
+              </details>
+
+              <details className="faq__item">
+                <summary>
+                  <span className="faq__q-num">04</span>
+                  <span className="faq__q-text">Cancelo quando?</span>
+                  <span className="faq__chev">+</span>
+                </summary>
+                <p>
+                  Plano Preceptor é mensal, sem fidelidade — cancelamento no painel de assinatura, em
+                  qualquer momento, com acesso até o fim do ciclo pago.
+                </p>
+              </details>
+            </div>
+          </div>
+        </section>
+
+        {/* FINAL CTA */}
+        <section className="final-cta">
+          <div className="final-cta__inner">
+            <p className="eyebrow center gold">Gabinete aberto</p>
+            <h2 className="final-cta__h">
+              Sua próxima <span className="serif italic">tese</span> começa
+              <br />
+              com uma boa pergunta.
+            </h2>
+            <div className="final-cta__row">
+              <button
+                type="button"
+                className="btn btn--gold btn--lg btn-shimmer"
+                onClick={openApp}
+              >
+                Abrir a plataforma
+                <span className="arrow">→</span>
+              </button>
+              <a href="#planos" className="link-quiet final-cta__link">ou conheça os planos</a>
             </div>
           </div>
         </section>
       </main>
 
-      {/* ─── Footer ───────────────────────────────────────────────── */}
-      <footer className="border-t border-[var(--pjus-hairline)] bg-[var(--pjus-surface-2)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <LogoMark size={32} />
+      {/* FOOTER */}
+      <footer className="footer">
+        <div className="gold-rule" />
+        <div className="footer__inner">
+          <div className="footer__brand">
+            <LogoMark size={36} />
             <div>
-              <p className="font-display font-bold text-brand-ink text-sm">{BRAND.name}</p>
-              <p className="text-[11px] text-brand-ink-2">© {new Date().getFullYear()} — material acadêmico jurídico.</p>
+              <p className="footer__name">PreceptorJus</p>
+              <p className="footer__tag">Advocacia & estudo jurídico</p>
             </div>
           </div>
-          <div className="flex items-center gap-1 text-[12px] text-brand-ink-2">
-            <span className="w-1 h-1 rounded-full bg-brand-gold" aria-hidden />
-            <span className="ml-1.5">Confira sempre fontes oficiais — legislação, jurisprudência e súmulas atualizadas.</span>
-          </div>
+          <nav className="footer__nav" aria-label="Mapa do site">
+            <div>
+              <h4>Plataforma</h4>
+              <button type="button" onClick={openApp}>Painel</button>
+              <button type="button" onClick={() => navigate("/app/study")}>Estudo com IA</button>
+              <button type="button" onClick={() => navigate("/app/chat")}>Preceptor Chat</button>
+            </div>
+            <div>
+              <h4>Prática</h4>
+              <button type="button" onClick={() => navigate("/app/exam")}>Simulados OAB</button>
+              <button type="button" onClick={() => navigate("/app/flashcards")}>Flashcards</button>
+              <button type="button" onClick={() => navigate("/app/library")}>Biblioteca</button>
+            </div>
+            <div>
+              <h4>Gabinete</h4>
+              <a href="#rito">Como funciona</a>
+              <a href="#planos">Planos</a>
+              <FeedbackDialog />
+            </div>
+          </nav>
+        </div>
+        <div className="footer__bottom">
+          <span>© 2025 PreceptorJus · Material acadêmico jurídico.</span>
+          <span className="footer__dot">●</span>
+          <span>
+            Confira sempre fontes oficiais — legislação, jurisprudência e súmulas atualizadas.
+          </span>
         </div>
       </footer>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────── *
- *  Mock window — gabinete jurídico (substitui o mock vanilla)
- * ─────────────────────────────────────────────────────────────── */
-function HeroMock() {
-  return (
-    <div className="relative animate-fade-up-delay-1" style={{ perspective: "1400px" }}>
-      <div
-        className="absolute -inset-x-4 -bottom-8 top-8 rounded-3xl bg-gradient-to-br from-brand-primary/15 to-brand-gold/20 blur-xl"
-        aria-hidden
-      />
-      <div className="pjus-summary relative">
-        <div className="pjus-summary__head !pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-1.5" aria-hidden>
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
-            </div>
-            <span className="ml-auto text-[11px] font-semibold text-brand-ink-2 tracking-wide">
-              Parecer · Responsabilidade civil
-            </span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-[140px_1fr] min-h-[360px]">
-          <aside className="bg-[var(--pjus-surface-2)] border-r border-[var(--pjus-hairline)] p-4 space-y-1 text-[12.5px] font-semibold">
-            {[
-              { label: "Fechamento", active: true },
-              { label: "Simulado" },
-              { label: "Chat" },
-              { label: "Biblioteca" },
-            ].map((it) => (
-              <div
-                key={it.label}
-                className={cn(
-                  "px-3 py-2 rounded-md transition-colors",
-                  it.active
-                    ? "bg-brand-gold/15 text-brand-primary-darker"
-                    : "text-brand-ink-2/80 hover:bg-white",
-                )}
-              >
-                {it.label}
-              </div>
-            ))}
-          </aside>
-
-          <article className="p-6 lg:p-7">
-            <span className="inline-block mb-4 px-2.5 py-1 rounded-md bg-brand-primary-darker text-white text-[10px] font-bold uppercase tracking-[0.12em]">
-              Gerado em 14s
-            </span>
-            <h2 className="font-display text-brand-ink text-[1.45rem] leading-tight">
-              Minuta de estudo para tese jurídica
-            </h2>
-            <p className="mt-3 text-[13.5px] leading-relaxed text-brand-ink-2">
-              Conduta, dano, nexo causal e regime de imputação. O sistema organiza fundamentos, artigos e pontos de
-              contradita para sustentar uma boa argumentação.
-            </p>
-            <div className="pjus-legal mt-5">
-              <strong>Art. 927, CC</strong>
-              <p className="text-[13px] text-brand-ink-2 m-0">
-                Identifique o dever de reparar e a incidência de responsabilidade objetiva.
-              </p>
-            </div>
-          </article>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────── *
- *  Feature demo card — controle concentrado
- * ─────────────────────────────────────────────────────────────── */
-function FeatureDemo() {
-  return (
-    <div className="pjus-summary card-interactive">
-      <div className="pjus-summary__head !py-4 !pb-4 flex items-center justify-between gap-3">
-        <span className="text-[12px] font-semibold text-brand-ink-2 tracking-wide">
-          Constitucional · Nota técnica
-        </span>
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-brand-gold/15 text-[#7A5923] text-[10.5px] font-bold uppercase tracking-[0.12em]">
-          <MI name="bookmark" size={14} />
-          Pronto para revisar
-        </span>
-      </div>
-      <div className="p-7">
-        <h3 className="font-display text-brand-ink text-[1.45rem] leading-tight">
-          Controle concentrado em peça objetiva
-        </h3>
-        <p className="mt-3 text-[14px] leading-relaxed text-brand-ink-2">
-          Compare legitimidade, objeto, efeitos da decisão e cautelar. Foque nas diferenças que costumam derrubar
-          alternativas em questões objetivas e fundamentar respostas discursivas.
-        </p>
-        <ul className="mt-5 grid gap-2.5">
-          {[
-            "Legitimados universais e especiais",
-            "Efeito vinculante e eficácia contra todos",
-            "Parâmetro constitucional e subsidiariedade",
-          ].map((item) => (
-            <li
-              key={item}
-              className="flex items-start gap-3 px-3.5 py-2.5 rounded-md border border-[var(--pjus-hairline)] bg-[var(--pjus-surface-2)] text-[13.5px] text-brand-ink-2"
-            >
-              <MI name="check_circle" size={18} className="text-brand-primary mt-px" />
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
+    </>
   );
 }
