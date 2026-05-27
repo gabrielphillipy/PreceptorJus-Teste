@@ -2335,7 +2335,7 @@ textarea.field { height: auto; padding: 12px 14px; min-height: 92px; resize: ver
 /* ─── Study result: page wrapper ────────────────────────────────── */
 .study-result-page {
   min-width: 0;
-  overflow-x: hidden;
+  overflow-x: clip; /* clip fixed/absolute bleed without creating a scroll container */
 }
 
 /* ─── Study result: content layout (below tabbar) ───────────────── */
@@ -2350,8 +2350,12 @@ textarea.field { height: auto; padding: 12px 14px; min-height: 92px; resize: ver
   align-items: start;
   max-width: 1100px;
 }
+.study-result-layout--mapa {
+  max-width: 100%;
+}
 .study-result-body {
   min-width: 0;
+  overflow-x: auto; /* allows mind map horizontal scroll when needed */
 }
 .study-result-sidebar {
   position: sticky;

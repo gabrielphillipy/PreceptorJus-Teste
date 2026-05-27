@@ -151,7 +151,7 @@ export default function StudyResult() {
       </div>
 
       {/* Content layout — duas colunas no Estudo Interativo */}
-      <div className={`study-result-layout${showSidebar ? " study-result-layout--split" : ""}`}>
+      <div className={`study-result-layout${showSidebar ? " study-result-layout--split" : ""}${tab === "mapa" ? " study-result-layout--mapa" : ""}`}>
         {/* Corpo principal */}
         <div ref={resultRef} className="study-result-body">
           <header className="study-page-header">
