@@ -83,8 +83,20 @@ function normalizeExamQuestion(question: any, index: number): ExamQuestion {
 /** Retorna as questões válidas (>=2 alternativas e gabarito definido). */
 export function parseExamPayload(markdown: string): ExamQuestion[] {
   const json = extractExamJson(markdown);
-  if (!json?.questions?.length) return [];
-  return json.questions
+  if (!json) return [];
+
+  // Aceita {"questions":[...]} ou diretamente um array de questões
+  const raw: any[] = Array.isArray(json)
+    ? json
+    : Array.isArray(json.questions)
+      ? json.questions
+      : Array.isArray(json.questoes)
+        ? json.questoes
+        : [];
+
+  if (!raw.length) return [];
+
+  return raw
     .map((q: any, i: number) => normalizeExamQuestion(q, i))
     .filter((q: ExamQuestion) => q.options.length >= 2 && q.correctLetter);
 }

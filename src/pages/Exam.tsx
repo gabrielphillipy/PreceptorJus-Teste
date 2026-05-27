@@ -155,7 +155,8 @@ export default function Exam() {
       const questions = parseExamPayload(text);
       clearInterval(tick);
       if (!questions.length) {
-        setError("A IA não retornou um simulado válido. Tente um tema mais específico ou gere novamente.");
+        const preview = text ? ` (resposta recebida: "${text.slice(0, 120)}…")` : " (resposta vazia)";
+        setError(`A IA não retornou um simulado válido. Tente um tema mais específico ou gere novamente.${preview}`);
         setPhase({ kind: "setup" });
         return;
       }

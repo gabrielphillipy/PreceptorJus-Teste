@@ -214,7 +214,14 @@ async function handler(req, res) {
 
     res.setHeader("X-RateLimit-Limit", String(limit.limit));
     res.setHeader("X-RateLimit-Remaining", String(limit.remaining));
-    return send(res, 200, { text, id: result.data.id, model: result.modelUsed });
+    const responseBody = { text, id: result.data.id, model: result.modelUsed };
+    if (body.mode === "exam") {
+      console.log("[exam] model=%s len=%d finish=%s preview=%s",
+        result.modelUsed, text.length,
+        result.data.candidates?.[0]?.finishReason,
+        text.slice(0, 200).replace(/\n/g, " "));
+    }
+    return send(res, 200, responseBody);
   } catch (error) {
     if (error && typeof error === "object" && error.name === "AbortError") {
       return send(res, 504, {
