@@ -46,6 +46,67 @@ function getBranchIcon(title: string, i: number): string {
   return ["lightbulb", "gavel", "checklist", "quiz", "warning", "description"][i % 6];
 }
 
+/** Divide um bloco de texto em tópicos curtos para virar lista de bullets. */
+function splitIntoTopics(text: string): string[] {
+  const clean = String(text || "").trim();
+  if (!clean) return [];
+
+  // 1) Quebra em sentenças: ponto/ponto-vírgula/dois-pontos seguido de espaço + maiúscula ou dígito
+  const initial = clean
+    .replace(/([.;:])\s+(?=[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ\d])/g, "$1\n")
+    .split("\n")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 4);
+
+  // 2) Sentenças longas: subdivide por vírgula + conectivo
+  const out: string[] = [];
+  initial.forEach((line) => {
+    if (line.length <= 140) {
+      out.push(line);
+      return;
+    }
+    const parts = line.split(
+      /,\s+(?=(?:que|onde|cuja|cujo|condicionad[oa]|ressalvad[oa]|salvo|exceto|al[eé]m|tamb[eé]m|por[eé]m|pois|portanto|enquanto|sendo|ou seja|isto [eé])\b)/i,
+    );
+    parts.forEach((p) => {
+      const t = p.trim().replace(/^[,;]\s*/, "");
+      if (t.length > 4) out.push(t);
+    });
+  });
+
+  return out;
+}
+
+/** Extrai termos jurídicos relevantes (artigos, leis, súmulas, termos em negrito). */
+function extractKeywords(text: string): string[] {
+  const set = new Set<string>();
+  const t = String(text || "");
+
+  // Artigos
+  (t.match(/\bArt\.\s*\d+[º°]?(?:\s*,?\s*[IVX]+)?(?:\s*da\s+CF(?:\/88)?|\s*CF(?:\/88)?)?/gi) || [])
+    .forEach((m) => set.add(m.trim()));
+
+  // Leis numeradas
+  (t.match(/\bLei\s+(?:Complementar\s+)?(?:n[º°]?\.?\s*)?[\d.]+\/\d{2,4}/gi) || [])
+    .forEach((m) => set.add(m.trim()));
+
+  // Leis nomeadas comuns
+  (t.match(/\b(?:LGPD|CF\/88|CDC|CLT|CPC|CPP|CTN|ECA|Marco Civil(?:\s+da\s+Internet)?)\b/g) || [])
+    .forEach((m) => set.add(m.trim()));
+
+  // Súmulas
+  (t.match(/\bS[úu]mula(?:\s+Vinculante)?\s+\d+/gi) || [])
+    .forEach((m) => set.add(m.trim()));
+
+  // Termos em negrito (markdown **xxx**)
+  (t.match(/\*\*([^*]+)\*\*/g) || []).forEach((b) => {
+    const clean = b.replace(/\*\*/g, "").trim();
+    if (clean.length > 2 && clean.length < 36) set.add(clean);
+  });
+
+  return Array.from(set).slice(0, 8);
+}
+
 export function StudyMindMap({ markdown, meta }: StudyMindMapProps) {
   const sections = parseStudySections(markdown, meta);
   const model = buildMindMapModel(sections, meta);
@@ -54,30 +115,7 @@ export function StudyMindMap({ markdown, meta }: StudyMindMapProps) {
   const toggle = (key: string) => setExpanded((prev) => (prev === key ? null : key));
 
   return (
-    <article className="animate-fade-up space-y-5">
-      {/* Cabeçalho */}
-      <header className="pjus-summary relative overflow-hidden">
-        <div
-          className="absolute right-6 -bottom-6 w-32 h-32 rounded-full pointer-events-none"
-          style={{
-            border: "1px solid rgba(201,168,76,0.28)",
-            background: "radial-gradient(circle, rgba(201,168,76,0.15), transparent 70%)",
-          }}
-          aria-hidden
-        />
-        <div className="pjus-summary__head">
-          <p className="text-[11px] font-bold uppercase tracking-[0.13em] text-brand-gold">
-            Mapa mental
-          </p>
-          <h2 className="font-display text-brand-ink text-[1.65rem] mt-2 leading-tight max-w-[42ch]">
-            {model.topic}
-          </h2>
-          <p className="mt-2 max-w-[60ch] text-[13.5px] text-brand-ink-2 leading-relaxed">
-            Clique nos cards para expandir cada ponto.
-          </p>
-        </div>
-      </header>
-
+    <article className="animate-fade-up">
       {/* Árvore */}
       <div
         className="rounded-2xl overflow-x-auto border border-brand-gold/20"
@@ -224,6 +262,9 @@ interface PointCardProps {
 
 function PointCard({ point, index, isOpen, palette, branchTitle, onClick }: PointCardProps) {
   const hasMore = point.full && point.full.length > point.short.length;
+  const topics = isOpen ? splitIntoTopics(point.full) : [];
+  const keywords = isOpen ? extractKeywords(point.full) : [];
+
   return (
     <button
       type="button"
@@ -259,48 +300,113 @@ function PointCard({ point, index, isOpen, palette, branchTitle, onClick }: Poin
 
         {/* Conteúdo */}
         <div className="flex-1 min-w-0">
-          {/* Quando aberto: mostra o texto COMPLETO. Quando fechado: a versão curta. */}
-          <p
-            className="m-0 leading-snug break-words"
-            style={{
-              fontSize: 12.5,
-              color: isOpen ? palette.text : "rgb(var(--brand-ink-2))",
-              fontWeight: isOpen ? 600 : 500,
-              transition: "color 0.18s ease",
-            }}
-          >
-            <InlineText text={isOpen ? point.full : point.short} />
-          </p>
-
-          {/* Tag do ramo na expansão */}
-          {isOpen && (
-            <div
-              className="mt-2.5 pt-2.5 flex flex-wrap items-center gap-1.5"
-              style={{ borderTop: `1px solid ${palette.border}40` }}
-            >
-              <span
-                className="rounded-full px-2 py-0.5 text-white font-bold uppercase"
-                style={{ fontSize: 9, letterSpacing: "0.10em", background: palette.bg }}
+          {/* Fechado: short text. Aberto: short como título + bullets de tópicos */}
+          {!isOpen ? (
+            <>
+              <p
+                className="m-0 leading-snug break-words"
+                style={{ fontSize: 12.5, color: "rgb(var(--brand-ink-2))", fontWeight: 500 }}
               >
-                {branchTitle}
-              </span>
-              <span
-                className="font-medium"
-                style={{ fontSize: 10, color: palette.text, opacity: 0.65 }}
+                <InlineText text={point.short} />
+              </p>
+              {hasMore && (
+                <p
+                  className="m-0 mt-1 font-medium"
+                  style={{ fontSize: 10, color: palette.border, opacity: 0.85 }}
+                >
+                  ver detalhe →
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <p
+                className="m-0 mb-2.5 leading-snug break-words font-display"
+                style={{ fontSize: 13, color: palette.text, fontWeight: 700 }}
               >
-                Ponto {String(index + 1).padStart(2, "0")}
-              </span>
-            </div>
-          )}
+                <InlineText text={point.short} />
+              </p>
 
-          {/* Hint "ver mais" quando há conteúdo escondido */}
-          {!isOpen && hasMore && (
-            <p
-              className="m-0 mt-1 font-medium"
-              style={{ fontSize: 10, color: palette.border, opacity: 0.85 }}
-            >
-              ver detalhe →
-            </p>
+              {/* Bullets de tópicos */}
+              {topics.length > 0 && (
+                <ul className="grid gap-1.5 m-0 p-0 list-none">
+                  {topics.map((t, i) => (
+                    <li
+                      key={i}
+                      className="flex items-start gap-2 leading-snug break-words"
+                      style={{ fontSize: 11.5, color: "rgb(var(--brand-ink-2))" }}
+                    >
+                      <span
+                        className="shrink-0 rounded-full"
+                        style={{
+                          width: 4,
+                          height: 4,
+                          marginTop: 7,
+                          background: palette.accent,
+                        }}
+                        aria-hidden
+                      />
+                      <span style={{ flex: 1 }}>
+                        <InlineText text={t} />
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {/* Termos-chave */}
+              {keywords.length > 0 && (
+                <div className="mt-3 pt-2.5" style={{ borderTop: `1px solid ${palette.border}40` }}>
+                  <p
+                    className="font-bold uppercase m-0 mb-1.5"
+                    style={{
+                      fontSize: 9,
+                      letterSpacing: "0.14em",
+                      color: palette.text,
+                      opacity: 0.7,
+                    }}
+                  >
+                    Termos-chave
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {keywords.map((k, i) => (
+                      <span
+                        key={i}
+                        className="rounded-md px-2 py-0.5 font-medium break-words"
+                        style={{
+                          fontSize: 10,
+                          background: "#ffffff",
+                          border: `1px solid ${palette.border}60`,
+                          color: palette.text,
+                          maxWidth: "100%",
+                        }}
+                      >
+                        {k}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Rodapé com tag do ramo */}
+              <div
+                className="mt-2.5 pt-2.5 flex flex-wrap items-center gap-1.5"
+                style={{ borderTop: `1px solid ${palette.border}40` }}
+              >
+                <span
+                  className="rounded-full px-2 py-0.5 text-white font-bold uppercase"
+                  style={{ fontSize: 9, letterSpacing: "0.10em", background: palette.bg }}
+                >
+                  {branchTitle}
+                </span>
+                <span
+                  className="font-medium"
+                  style={{ fontSize: 10, color: palette.text, opacity: 0.65 }}
+                >
+                  Ponto {String(index + 1).padStart(2, "0")}
+                </span>
+              </div>
+            </>
           )}
         </div>
 
