@@ -130,7 +130,7 @@ function buildExamPrompt(body, base) {
       "Responda APENAS JSON válido, sem Markdown nem texto antes/depois.",
       'Formato: {"questions":[{"statement":"...","options":[{"letter":"A","text":"..."},{"letter":"B","text":"..."},{"letter":"C","text":"..."},{"letter":"D","text":"..."}],"answer":"A","justifications":{"A":"...","B":"...","C":"...","D":"..."}}]}',
     ].filter(Boolean).join("\n"),
-    max_output_tokens: questionCount > 10 ? 8192 : 6000,
+    max_output_tokens: questionCount > 10 ? 6000 : 4200,
     thinking_budget: 0,
     response_mime_type: "application/json",
   };

@@ -2,7 +2,7 @@ const { send, readBody, checkRateLimit, getActiveDomain } = require("./_lib/util
 
 // Timeouts increased to accommodate deeper outputs + thinking budget.
 // Vercel maxDuration is 60s (see vercel.json) — keep OVERALL below that minus buffer.
-const DEFAULT_TIMEOUT_MS = 28_000;
+const DEFAULT_TIMEOUT_MS = 50_000;
 const OVERALL_TIMEOUT_MS = 55_000;
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 const MAX_ATTEMPTS = 1;
