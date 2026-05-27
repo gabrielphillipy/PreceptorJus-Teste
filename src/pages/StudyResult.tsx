@@ -46,17 +46,17 @@ export default function StudyResult() {
   const [copied, setCopied] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
 
-  // Persiste sempre que chegar um estudo novo via rota
   useEffect(() => {
     if (routeStudy) {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(routeStudy)); } catch {}
     }
   }, [routeStudy]);
 
-  if (!study) {
-    navigate("/app/study", { replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (!study) navigate("/app/study", { replace: true });
+  }, [study, navigate]);
+
+  if (!study) return null;
 
   const useMindMap = isMindMapMode({ mode: study.mode, topic: study.topic, modeLabel: study.modeLabel });
 
@@ -88,8 +88,8 @@ export default function StudyResult() {
   };
 
   return (
-    <div className="stack fade-up">
-      {/* Cabeçalho aberto — fora de qualquer card */}
+    <div className="study-result-page fade-up">
+      {/* Cabeçalho aberto */}
       <header className="study-page-header">
         <p className="study-page-eyebrow">
           <MI name="auto_awesome" size={13} />
@@ -111,17 +111,17 @@ export default function StudyResult() {
             onClick={() => navigate("/app/study")}
           >
             <MI name="arrow_back" size={15} />
-            Novo estudo
+            <span className="study-tab__label">Novo estudo</span>
           </button>
           <button type="button" className="study-tab study-tab--active">
             <MI name="description" size={15} />
-            Documento
+            <span className="study-tab__label">Documento</span>
           </button>
         </div>
         <div className="study-tabbar__actions">
           <button type="button" className="btn btn--ghost btn--sm" onClick={handleCopy}>
             <MI name={copied ? "check" : "content_copy"} size={15} />
-            {copied ? "Copiado" : "Copiar"}
+            <span className="study-tab__label">{copied ? "Copiado" : "Copiar"}</span>
           </button>
           <button
             type="button"
@@ -130,25 +130,17 @@ export default function StudyResult() {
             disabled={exporting}
           >
             <MI name="picture_as_pdf" size={15} />
-            {exporting ? "Gerando…" : "PDF"}
+            <span className="study-tab__label">{exporting ? "Gerando…" : "PDF"}</span>
           </button>
           <button type="button" className="btn btn--default btn--sm" onClick={handleGenerateExam}>
             <MI name="quiz" size={15} />
-            Gerar prova
-          </button>
-          <button
-            type="button"
-            className="btn btn--outline btn--sm"
-            onClick={() => setChatOpen((v) => !v)}
-          >
-            <MI name={chatOpen ? "close" : "chat"} size={15} />
-            {chatOpen ? "Fechar" : "Tire dúvidas"}
+            <span className="study-tab__label">Gerar prova</span>
           </button>
         </div>
       </div>
 
       {/* Documento */}
-      <div ref={resultRef}>
+      <div ref={resultRef} className="study-result-body">
         {useMindMap ? (
           <StudyMindMap
             markdown={study.text}
@@ -162,7 +154,16 @@ export default function StudyResult() {
         )}
       </div>
 
-      {/* Drawer: Pérolas + Chat */}
+      {/* FAB flutuante + Drawer */}
+      <button
+        type="button"
+        className="study-chat-fab"
+        onClick={() => setChatOpen((v) => !v)}
+        aria-label={chatOpen ? "Fechar chat" : "Tire dúvidas"}
+      >
+        <MI name={chatOpen ? "close" : "chat"} size={22} />
+      </button>
+
       <StudyChatDrawer open={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   );
