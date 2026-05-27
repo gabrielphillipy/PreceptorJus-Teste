@@ -9,6 +9,7 @@ import { StudyDocument } from "@/components/study/StudyDocument";
 import { StudyInteractive } from "@/components/study/StudyInteractive";
 import { StudyMindMap } from "@/components/study/StudyMindMap";
 import { StudyChatDrawer } from "@/components/study/StudyChatDrawer";
+import { StudyPearlsCard } from "@/components/study/StudyPearlsCard";
 
 interface StudyData {
   topic: string;
@@ -61,6 +62,7 @@ export default function StudyResult() {
   if (!study) return null;
 
   const useMindMap = isMindMapMode({ mode: study.mode, topic: study.topic, modeLabel: study.modeLabel });
+  const showSidebar = tab === "interativo" && !useMindMap;
 
   const handleCopy = async () => {
     try {
@@ -91,19 +93,6 @@ export default function StudyResult() {
 
   return (
     <div className="study-result-page fade-up">
-      {/* Cabeçalho aberto */}
-      <header className="study-page-header">
-        <p className="study-page-eyebrow">
-          <MI name="auto_awesome" size={13} />
-          AI Study Insight
-        </p>
-        <h1 className="study-page-title">{study.topic}</h1>
-        <div className="study-page-tags">
-          <span className="study-page-tag">{study.modeLabel || "Nota jurídica"}</span>
-          <span className="study-page-tag study-page-tag--muted">{estimateReadTime(study.text)}</span>
-        </div>
-      </header>
-
       {/* Tab bar sticky */}
       <div className="study-tabbar">
         <div className="study-tabbar__tabs">
@@ -121,7 +110,7 @@ export default function StudyResult() {
             onClick={() => setTab("interativo")}
           >
             <MI name="auto_awesome" size={15} />
-            <span className="study-tab__label">Estudo Interativo</span>
+            <span>Estudo Interativo</span>
           </button>
           <button
             type="button"
@@ -129,7 +118,7 @@ export default function StudyResult() {
             onClick={() => setTab("documento")}
           >
             <MI name="description" size={15} />
-            <span className="study-tab__label">Documento</span>
+            <span>Documento</span>
           </button>
         </div>
         <div className="study-tabbar__actions">
@@ -153,23 +142,45 @@ export default function StudyResult() {
         </div>
       </div>
 
-      {/* Conteúdo da aba ativa */}
-      <div ref={resultRef} className="study-result-body">
-        {useMindMap ? (
-          <StudyMindMap
-            markdown={study.text}
-            meta={{ topic: study.topic, mode: study.mode, modeLabel: study.modeLabel }}
-          />
-        ) : tab === "interativo" ? (
-          <StudyInteractive
-            markdown={study.text}
-            meta={{ topic: study.topic }}
-          />
-        ) : (
-          <StudyDocument
-            markdown={study.text}
-            meta={{ topic: study.topic, mode: study.mode, modeLabel: study.modeLabel }}
-          />
+      {/* Content layout — duas colunas no Estudo Interativo */}
+      <div className={`study-result-layout${showSidebar ? " study-result-layout--split" : ""}`}>
+        {/* Corpo principal */}
+        <div ref={resultRef} className="study-result-body">
+          <header className="study-page-header">
+            <p className="study-page-eyebrow">
+              <MI name="auto_awesome" size={13} />
+              AI Study Insight
+            </p>
+            <h1 className="study-page-title">{study.topic}</h1>
+            <div className="study-page-tags">
+              <span className="study-page-tag">{study.modeLabel || "Nota jurídica"}</span>
+              <span className="study-page-tag study-page-tag--muted">{estimateReadTime(study.text)}</span>
+            </div>
+          </header>
+
+          {useMindMap ? (
+            <StudyMindMap
+              markdown={study.text}
+              meta={{ topic: study.topic, mode: study.mode, modeLabel: study.modeLabel }}
+            />
+          ) : tab === "interativo" ? (
+            <StudyInteractive
+              markdown={study.text}
+              meta={{ topic: study.topic }}
+            />
+          ) : (
+            <StudyDocument
+              markdown={study.text}
+              meta={{ topic: study.topic, mode: study.mode, modeLabel: study.modeLabel }}
+            />
+          )}
+        </div>
+
+        {/* Pérolas sidebar — visível na aba Estudo Interativo */}
+        {showSidebar && (
+          <aside className="study-result-sidebar">
+            <StudyPearlsCard />
+          </aside>
         )}
       </div>
 

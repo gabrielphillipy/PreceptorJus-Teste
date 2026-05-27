@@ -2334,15 +2334,26 @@ textarea.field { height: auto; padding: 12px 14px; min-height: 92px; resize: ver
 
 /* ─── Study result: page wrapper ────────────────────────────────── */
 .study-result-page {
-  display: grid;
-  gap: 20px;
   min-width: 0;
-  max-width: 100%;
   overflow-x: hidden;
+}
+
+/* ─── Study result: content layout (below tabbar) ───────────────── */
+.study-result-layout {
+  padding: 28px 0 60px;
+}
+.study-result-layout--split {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 28px;
+  align-items: start;
 }
 .study-result-body {
   min-width: 0;
-  max-width: 100%;
+}
+.study-result-sidebar {
+  position: sticky;
+  top: 52px;
 }
 
 /* ─── Study result: "Tire dúvidas" vertical tab ─────────────────── */
@@ -2378,9 +2389,11 @@ textarea.field { height: auto; padding: 12px 14px; min-height: 92px; resize: ver
   box-shadow: -3px 0 18px rgba(0,0,0,0.30);
 }
 
-/* ─── Study result: page header (open, sem card) ────────────────── */
+/* ─── Study result: page header ─────────────────────────────────── */
 .study-page-header {
-  padding: 4px 0 0;
+  padding: 0 0 24px;
+  border-bottom: 1px solid var(--pjus-hairline);
+  margin-bottom: 28px;
 }
 .study-page-eyebrow {
   display: inline-flex;
@@ -2433,8 +2446,8 @@ textarea.field { height: auto; padding: 12px 14px; min-height: 92px; resize: ver
   display: flex;
   align-items: stretch;
   justify-content: space-between;
-  gap: 8px;
-  border-bottom: 1px solid var(--pjus-hairline);
+  gap: 0;
+  border-bottom: 1.5px solid var(--pjus-hairline);
   background: var(--pjus-bg, #f6f4ef);
   position: sticky;
   top: 0;
@@ -2455,11 +2468,12 @@ textarea.field { height: auto; padding: 12px 14px; min-height: 92px; resize: ver
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
+  margin-bottom: -1.5px;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
   white-space: nowrap;
 }
+.study-tab:hover { color: rgb(var(--brand-ink-2)); }
 .study-tab--active {
   color: rgb(var(--brand-ink));
   font-weight: 600;
@@ -2468,19 +2482,26 @@ textarea.field { height: auto; padding: 12px 14px; min-height: 92px; resize: ver
 .study-tab--back {
   color: var(--pjus-ink-3);
   font-size: 13px;
+  padding-right: 18px;
+  border-right: 1px solid var(--pjus-hairline);
+  margin-right: 6px;
 }
 .study-tab--back:hover { color: rgb(var(--brand-ink-2)); }
 .study-tabbar__actions {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 4px;
+  padding: 5px 6px;
   flex-shrink: 0;
 }
 
 /* Em telas estreitas, oculta os labels de texto nos botões da tab bar */
-@media (max-width: 600px) {
+@media (max-width: 680px) {
   .study-tab__label { display: none; }
+  .study-result-layout--split {
+    grid-template-columns: 1fr;
+  }
+  .study-result-sidebar { display: none; }
 }
 
 /* ─── Study: Estudo Interativo ───────────────────────────────────── */
