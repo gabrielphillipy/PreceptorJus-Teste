@@ -2341,12 +2341,14 @@ textarea.field { height: auto; padding: 12px 14px; min-height: 92px; resize: ver
 /* ─── Study result: content layout (below tabbar) ───────────────── */
 .study-result-layout {
   padding: 28px 0 60px;
+  max-width: 860px;
 }
 .study-result-layout--split {
   display: grid;
   grid-template-columns: 1fr 252px;
   gap: 24px;
   align-items: start;
+  max-width: 1100px;
 }
 .study-result-body {
   min-width: 0;
