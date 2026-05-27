@@ -205,21 +205,33 @@ function inferBranchTitle(index: number): string {
   return BRANCH_FALLBACK_TITLES[index] || `Ramo ${index + 1}`;
 }
 
+/** Lista de abreviações jurídicas comuns que terminam em "." mas NÃO indicam fim de sentença. */
+const LEGAL_ABBREV = /\b(?:art|arts|lei|leis|dec|decr|cf|cc|cp|cpc|cpp|clt|cdc|ctn|lc|lcp|s[uú]m|inc|incs|par|paragr|caput|n[ºo°]?|[ºª°]|min|sr|sra|dr|dra|prof|exmo|exa)$/i;
+
+/** Extrai a primeira sentença sem quebrar em abreviações como "Art." ou "Lei.". */
+function extractFirstSentence(text: string): string {
+  const matches = Array.from(text.matchAll(/[.!?;]\s+(?=[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ\d])/g));
+  for (const m of matches) {
+    const before = text.slice(0, m.index!);
+    const lastWord = (before.match(/(\S+)$/) || ["", ""])[1].replace(/[.!?;]+$/, "");
+    if (!LEGAL_ABBREV.test(lastWord)) {
+      return text.slice(0, m.index! + 1).trim();
+    }
+  }
+  return text.trim();
+}
+
 function compactMindMapText(value: string, maxLength = 48): string {
   let clean = String(value || "")
     .replace(/\*\*/g, "")
+    .replace(/\*/g, "")
     .replace(/^[-*•]\s*/, "")
     .replace(/\s+/g, " ")
     .trim();
 
-  const colon = clean.indexOf(":");
-  if (colon > -1 && colon < 34) {
-    const label = clean.slice(0, colon + 1);
-    const rest = clean.slice(colon + 1).trim();
-    clean = `${label} ${rest.split(/[.;]/)[0] || rest}`;
-  } else {
-    clean = clean.split(/[.;]/)[0] || clean;
-  }
+  // Tenta usar a primeira sentença "real" (sem quebrar em Art. / Lei. / Súm.)
+  const firstSentence = extractFirstSentence(clean);
+  if (firstSentence && firstSentence.length >= 10) clean = firstSentence;
 
   if (clean.length <= maxLength) return clean;
   const clipped = clean.slice(0, maxLength + 1);
@@ -247,6 +259,7 @@ function cleanFullText(value: string): string {
   return String(value || "")
     .replace(/^[-*•]\s*/, "")
     .replace(/\*\*/g, "")
+    .replace(/\*/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -255,7 +268,7 @@ function cleanFullText(value: string): string {
 function extractPointsFromRawLines(rawLines: string[], title: string): MindMapPoint[] {
   const seen = new Set<string>();
   return plainLinesFromRaw(rawLines)
-    .map((line) => ({ short: compactMindMapText(line, 64), full: cleanFullText(line) }))
+    .map((line) => ({ short: compactMindMapText(line, 140), full: cleanFullText(line) }))
     .filter((p) => {
       const key = p.short.toLowerCase();
       if (!key || seen.has(key) || key === title.toLowerCase()) return false;
