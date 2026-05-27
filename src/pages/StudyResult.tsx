@@ -173,14 +173,15 @@ export default function StudyResult() {
         )}
       </div>
 
-      {/* FAB flutuante + Drawer */}
+      {/* Aba vertical "Tire dúvidas" */}
       <button
         type="button"
         className="study-chat-fab"
         onClick={() => setChatOpen((v) => !v)}
         aria-label={chatOpen ? "Fechar chat" : "Tire dúvidas"}
       >
-        <MI name={chatOpen ? "close" : "chat"} size={22} />
+        <MI name={chatOpen ? "close" : "chat"} size={14} />
+        {chatOpen ? "Fechar" : "Tire dúvidas"}
       </button>
 
       <StudyChatDrawer open={chatOpen} onClose={() => setChatOpen(false)} />
