@@ -207,11 +207,10 @@ export function StudyMindMap({ markdown, meta }: StudyMindMapProps) {
                         <MI name={icon} size={20} />
                       </span>
                       <p
-                        className="font-display font-bold uppercase m-0"
-                        style={{ fontSize: 11, letterSpacing: "0.09em", color: "#fff" }}
-                        title={branch.fullTitle}
+                        className="font-display font-bold uppercase m-0 break-words leading-tight"
+                        style={{ fontSize: 11, letterSpacing: "0.06em", color: "#fff" }}
                       >
-                        <InlineText text={branch.title} />
+                        <InlineText text={branch.fullTitle} />
                       </p>
                       <p
                         className="m-0 mt-1"
