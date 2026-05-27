@@ -155,7 +155,9 @@ export default function Exam() {
       const questions = parseExamPayload(text);
       clearInterval(tick);
       if (!questions.length) {
-        const preview = text ? ` (resposta recebida: "${text.slice(0, 120)}…")` : " (resposta vazia)";
+        const preview = text
+          ? ` (len=${text.length} | início: "${text.slice(0, 60)}" | fim: "${text.slice(-60)}")`
+          : " (resposta vazia)";
         setError(`A IA não retornou um simulado válido. Tente um tema mais específico ou gere novamente.${preview}`);
         setPhase({ kind: "setup" });
         return;
