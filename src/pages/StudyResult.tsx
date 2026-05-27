@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+import { isMindMapMode } from "@/lib/study-parser";
 import { exportStudyElementPdf } from "@/lib/pdf-export";
 import { MI } from "@/components/brand/MaterialIcon";
 import { StudyDocument } from "@/components/study/StudyDocument";

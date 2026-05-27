@@ -133,6 +133,8 @@ export function StudyInteractive({ markdown, meta }: Props) {
         ref={contentRef}
         className="pjus-summary study-interactive__content"
         onMouseUp={handleMouseUp}
+        contentEditable
+        suppressContentEditableWarning
       />
 
       {/* Highlight color picker */}

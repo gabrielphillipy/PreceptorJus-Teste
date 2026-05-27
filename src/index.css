@@ -2344,8 +2344,8 @@ textarea.field { height: auto; padding: 12px 14px; min-height: 92px; resize: ver
 }
 .study-result-layout--split {
   display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 28px;
+  grid-template-columns: 1fr 252px;
+  gap: 24px;
   align-items: start;
 }
 .study-result-body {
@@ -2525,6 +2525,8 @@ textarea.field { height: auto; padding: 12px 14px; min-height: 92px; resize: ver
   cursor: text;
   user-select: text;
   line-height: 1.7;
+  outline: none;
+  caret-color: transparent;
 }
 .study-interactive__content .si-heading {
   font-family: var(--font-display);
