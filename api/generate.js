@@ -78,6 +78,7 @@ async function callGeminiWithRetries({ models, prompt, apiKey }) {
               generationConfig: {
                 maxOutputTokens: Math.min(Number(prompt.max_output_tokens) || 2048, 8192),
                 temperature: 0.55,
+                ...(prompt.response_mime_type ? { responseMimeType: prompt.response_mime_type } : {}),
                 thinkingConfig: {
                   thinkingBudget: Number.isFinite(prompt.thinking_budget) ? prompt.thinking_budget : 0,
                 },
