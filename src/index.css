@@ -2361,32 +2361,28 @@ textarea.field { height: auto; padding: 12px 14px; min-height: 92px; resize: ver
   position: fixed;
   top: 50%;
   right: 0;
-  transform: translateY(-50%) rotate(90deg);
-  transform-origin: right center;
-  width: auto;
-  height: auto;
-  border-radius: 8px 8px 0 0;
+  transform: translateY(-50%);
+  writing-mode: vertical-lr;
+  border-radius: 8px 0 0 8px;
   background: rgb(var(--brand-primary-dark));
   color: rgb(var(--brand-gold));
   border: none;
-  border-bottom: none;
   cursor: pointer;
-  box-shadow: -2px 0 12px rgba(0,0,0,0.22);
+  box-shadow: -3px 0 14px rgba(0,0,0,0.22);
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 10px 16px;
-  font-size: 12px;
+  gap: 8px;
+  padding: 18px 9px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
   z-index: 100;
-  transition: background 0.15s, box-shadow 0.15s;
+  transition: background 0.15s;
 }
 .study-chat-fab:hover {
   background: rgb(var(--brand-primary));
-  box-shadow: -3px 0 18px rgba(0,0,0,0.30);
 }
 
 /* ─── Study result: page header ─────────────────────────────────── */
