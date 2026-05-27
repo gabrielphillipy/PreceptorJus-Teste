@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { useWorkspace } from "@/hooks/useWorkspace";
@@ -7,7 +7,7 @@ import type { SavedStudy } from "@/lib/workspace";
 import { isMindMapMode } from "@/lib/study-parser";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { MI } from "@/components/brand/MaterialIcon";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StudyDocument } from "@/components/study/StudyDocument";
 import { StudyMindMap } from "@/components/study/StudyMindMap";
 import { InlineText } from "@/components/study/InlineText";
@@ -32,6 +32,7 @@ const MODE_FILTERS: { value: string; label: string }[] = [
 ];
 
 export default function Library() {
+  const navigate = useNavigate();
   const { studies, editStudy, deleteStudy } = useWorkspace();
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState("");
@@ -103,6 +104,22 @@ export default function Library() {
     setQuery("");
     setFilter("all");
     setOnlyFav(false);
+  };
+
+  const openFull = (s: SavedStudy) => {
+    closeView();
+    navigate("/app/study/result", {
+      state: { study: { topic: s.topic, mode: s.mode, modeLabel: s.modeLabel, text: s.text } },
+    });
+  };
+
+  const openAsMindMap = (s: SavedStudy) => {
+    closeView();
+    navigate("/app/study/result", {
+      state: {
+        study: { topic: s.topic, mode: "mapa", modeLabel: "Mapa Mental", text: s.text },
+      },
+    });
   };
 
   const hasActiveFilter = !!query || filter !== "all" || onlyFav;
@@ -250,6 +267,7 @@ export default function Library() {
           <DialogHeader>
             <DialogTitle className="font-display">{openStudy?.topic}</DialogTitle>
           </DialogHeader>
+
           {openStudy &&
             (isMindMapMode({
               mode: openStudy.mode,
@@ -266,6 +284,27 @@ export default function Library() {
                 meta={{ topic: openStudy.topic, mode: openStudy.mode, modeLabel: openStudy.modeLabel }}
               />
             ))}
+
+          {openStudy && (
+            <DialogFooter className="gap-2 flex-wrap">
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                onClick={() => openAsMindMap(openStudy)}
+              >
+                <MI name="account_tree" size={15} />
+                Ver como mapa mental
+              </button>
+              <button
+                type="button"
+                className="btn btn--default btn--sm"
+                onClick={() => openFull(openStudy)}
+              >
+                <MI name="open_in_full" size={15} />
+                Abrir estudo completo
+              </button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </div>
