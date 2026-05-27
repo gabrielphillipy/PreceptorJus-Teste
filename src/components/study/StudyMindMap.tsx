@@ -259,8 +259,7 @@ interface PointCardProps {
   onClick: () => void;
 }
 
-function PointCard({ point, index, isOpen, palette, branchTitle, onClick }: PointCardProps) {
-  const hasMore = point.full && point.full.length > point.short.length;
+function PointCard({ point, index, isOpen, palette, onClick }: PointCardProps) {
   const topics = isOpen ? splitIntoTopics(point.full) : [];
   const keywords = isOpen ? extractKeywords(point.full) : [];
 
@@ -299,33 +298,24 @@ function PointCard({ point, index, isOpen, palette, branchTitle, onClick }: Poin
 
         {/* Conteúdo */}
         <div className="flex-1 min-w-0">
-          {/* Fechado: short text. Aberto: short como título + bullets de tópicos */}
+          {/* Fechado: texto completo como parágrafo. Aberto: bullets de tópicos + termos-chave */}
           {!isOpen ? (
             <>
               <p
                 className="m-0 leading-snug break-words"
                 style={{ fontSize: 12.5, color: "rgb(var(--brand-ink-2))", fontWeight: 500 }}
               >
-                <InlineText text={point.short} />
+                <InlineText text={point.full} />
               </p>
-              {hasMore && (
-                <p
-                  className="m-0 mt-1 font-medium"
-                  style={{ fontSize: 10, color: palette.border, opacity: 0.85 }}
-                >
-                  ver detalhe →
-                </p>
-              )}
+              <p
+                className="m-0 mt-2 font-medium"
+                style={{ fontSize: 10, color: palette.border, opacity: 0.85 }}
+              >
+                ver em tópicos →
+              </p>
             </>
           ) : (
             <>
-              <p
-                className="m-0 mb-2.5 leading-snug break-words font-display"
-                style={{ fontSize: 13, color: palette.text, fontWeight: 700 }}
-              >
-                <InlineText text={point.short} />
-              </p>
-
               {/* Bullets de tópicos */}
               {topics.length > 0 && (
                 <ul className="grid gap-1.5 m-0 p-0 list-none">
