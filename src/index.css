@@ -2519,26 +2519,27 @@ textarea.field { height: auto; padding: 12px 14px; min-height: 92px; resize: ver
   color: var(--pjus-ink-3);
 }
 .study-interactive__content {
-  padding: 28px;
+  padding: 40px 44px 44px;
   cursor: text;
   user-select: text;
-  line-height: 1.7;
+  line-height: 1.75;
   outline: none;
   caret-color: transparent;
 }
 .study-interactive__content .si-heading {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 12.5px;
-  letter-spacing: 0.1em;
+  font-size: 13px;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: rgb(var(--brand-ink));
   display: flex;
-  align-items: baseline;
-  gap: 10px;
-  padding-left: 16px;
-  border-left: 4px solid rgb(var(--brand-gold));
-  margin: 28px 0 14px;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 0 6px 22px;
+  border-left: 3px solid rgb(var(--brand-gold));
+  margin: 40px 0 18px;
+  line-height: 1.45;
 }
 .study-interactive__content .si-heading::before {
   content: attr(data-num) ".";
@@ -2546,6 +2547,7 @@ textarea.field { height: auto; padding: 12px 14px; min-height: 92px; resize: ver
   font-size: 15px;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
 }
 .study-interactive__content .si-heading:first-child { margin-top: 0; }
 .study-interactive__content .si-sub {
