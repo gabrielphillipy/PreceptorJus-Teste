@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   buildMindMapModel,
   parseStudySections,
+  type MindMapPoint,
   type StudyMeta,
 } from "@/lib/study-parser";
 import { InlineText } from "@/components/study/InlineText";
@@ -170,6 +171,7 @@ export function StudyMindMap({ markdown, meta }: StudyMindMapProps) {
                       <p
                         className="font-display font-bold uppercase m-0"
                         style={{ fontSize: 11, letterSpacing: "0.09em", color: "#fff" }}
+                        title={branch.fullTitle}
                       >
                         <InlineText text={branch.title} />
                       </p>
@@ -194,7 +196,7 @@ export function StudyMindMap({ markdown, meta }: StudyMindMapProps) {
                             index={pi}
                             isOpen={isOpen}
                             palette={p}
-                            branchTitle={branch.title}
+                            branchTitle={branch.fullTitle}
                             onClick={() => toggle(key)}
                           />
                         );
@@ -212,7 +214,7 @@ export function StudyMindMap({ markdown, meta }: StudyMindMapProps) {
 }
 
 interface PointCardProps {
-  point: string;
+  point: MindMapPoint;
   index: number;
   isOpen: boolean;
   palette: (typeof BRANCH_COLORS)[number];
@@ -221,6 +223,7 @@ interface PointCardProps {
 }
 
 function PointCard({ point, index, isOpen, palette, branchTitle, onClick }: PointCardProps) {
+  const hasMore = point.full && point.full.length > point.short.length;
   return (
     <button
       type="button"
@@ -231,7 +234,7 @@ function PointCard({ point, index, isOpen, palette, branchTitle, onClick }: Poin
         background: isOpen ? palette.light : "#ffffff",
         border: `1.5px solid ${isOpen ? palette.border : "rgba(226,230,229,0.80)"}`,
         boxShadow: isOpen
-          ? `0 4px 16px -4px ${palette.bg}22`
+          ? `0 6px 20px -4px ${palette.bg}33`
           : "0 1px 4px rgba(0,0,0,0.04)",
         transition: "all 0.18s ease",
         cursor: "pointer",
@@ -256,31 +259,48 @@ function PointCard({ point, index, isOpen, palette, branchTitle, onClick }: Poin
 
         {/* Conteúdo */}
         <div className="flex-1 min-w-0">
+          {/* Quando aberto: mostra o texto COMPLETO. Quando fechado: a versão curta. */}
           <p
             className="m-0 leading-snug break-words"
             style={{
-              fontSize: 12,
+              fontSize: 12.5,
               color: isOpen ? palette.text : "rgb(var(--brand-ink-2))",
               fontWeight: isOpen ? 600 : 500,
               transition: "color 0.18s ease",
             }}
           >
-            <InlineText text={point} />
+            <InlineText text={isOpen ? point.full : point.short} />
           </p>
 
-          {/* Detalhe expandido */}
+          {/* Tag do ramo na expansão */}
           {isOpen && (
             <div
-              className="mt-2 pt-2 flex items-center gap-1.5"
+              className="mt-2.5 pt-2.5 flex flex-wrap items-center gap-1.5"
               style={{ borderTop: `1px solid ${palette.border}40` }}
             >
               <span
-                className="rounded-full px-2 py-0.5 text-white font-medium uppercase"
-                style={{ fontSize: 9, letterSpacing: "0.08em", background: palette.bg }}
+                className="rounded-full px-2 py-0.5 text-white font-bold uppercase"
+                style={{ fontSize: 9, letterSpacing: "0.10em", background: palette.bg }}
               >
                 {branchTitle}
               </span>
+              <span
+                className="font-medium"
+                style={{ fontSize: 10, color: palette.text, opacity: 0.65 }}
+              >
+                Ponto {String(index + 1).padStart(2, "0")}
+              </span>
             </div>
+          )}
+
+          {/* Hint "ver mais" quando há conteúdo escondido */}
+          {!isOpen && hasMore && (
+            <p
+              className="m-0 mt-1 font-medium"
+              style={{ fontSize: 10, color: palette.border, opacity: 0.85 }}
+            >
+              ver detalhe →
+            </p>
           )}
         </div>
 

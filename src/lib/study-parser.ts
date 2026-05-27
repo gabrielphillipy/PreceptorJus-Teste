@@ -181,9 +181,15 @@ export function parseStudyQuestions(rawLines: string[]): StudyQuestion[] {
  *  Mind map parser
  * ───────────────────────────────────────────────────────────── */
 
+export interface MindMapPoint {
+  short: string;
+  full: string;
+}
+
 export interface MindMapBranch {
   title: string;
-  points: string[];
+  fullTitle: string;
+  points: MindMapPoint[];
   index: number;
 }
 
@@ -236,18 +242,27 @@ function plainLinesFromRaw(rawLines: string[]): string[] {
     .filter((line) => !line.startsWith("### ") && !isMarkdownDivider(line));
 }
 
-/** Extrai pontos de uma lista de rawLines, evitando duplicatas e título. */
-function extractPointsFromRawLines(rawLines: string[], title: string): string[] {
+/** Limpa um raw line preservando todo o texto (sem truncar). */
+function cleanFullText(value: string): string {
+  return String(value || "")
+    .replace(/^[-*•]\s*/, "")
+    .replace(/\*\*/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Extrai pontos de rawLines com versão curta (card) + completa (expansão). */
+function extractPointsFromRawLines(rawLines: string[], title: string): MindMapPoint[] {
   const seen = new Set<string>();
   return plainLinesFromRaw(rawLines)
-    .map((line) => compactMindMapText(line, 48))
-    .filter((line) => {
-      const key = line.toLowerCase();
+    .map((line) => ({ short: compactMindMapText(line, 64), full: cleanFullText(line) }))
+    .filter((p) => {
+      const key = p.short.toLowerCase();
       if (!key || seen.has(key) || key === title.toLowerCase()) return false;
       seen.add(key);
       return true;
     })
-    .slice(0, 3);
+    .slice(0, 4);
 }
 
 /** Fallback parser: divide o texto bruto em "pseudo-seções" usando ###, **bold**
@@ -307,7 +322,8 @@ export function buildMindMapModel(sections: StudySectionParsed[], meta: StudyMet
 
   let normalized: MindMapBranch[] = branchSections.slice(0, 6).map((s, index) => {
     const title = compactBranchTitle(s.title || inferBranchTitle(index), index);
-    return { title, points: extractPointsFromRawLines(s.rawLines, title), index };
+    const fullTitle = cleanFullText(s.title || inferBranchTitle(index));
+    return { title, fullTitle, points: extractPointsFromRawLines(s.rawLines, title), index };
   });
 
   // Strategy 2: if no branches with content, try parsing the entire content
@@ -327,7 +343,8 @@ export function buildMindMapModel(sections: StudySectionParsed[], meta: StudyMet
         const title = isChunk
           ? inferBranchTitle(index)
           : compactBranchTitle(p.title, index);
-        return { title, points: extractPointsFromRawLines(p.lines, title), index };
+        const fullTitle = isChunk ? inferBranchTitle(index) : cleanFullText(p.title);
+        return { title, fullTitle, points: extractPointsFromRawLines(p.lines, title), index };
       });
     }
   }
@@ -335,18 +352,20 @@ export function buildMindMapModel(sections: StudySectionParsed[], meta: StudyMet
   // Strategy 3: last resort — chunk all content into 4 synthetic branches
   const stillEmpty = normalized.length === 0 || normalized.every((b) => b.points.length === 0);
   if (stillEmpty) {
-    const allLines = plainLinesFromRaw(
-      sections.flatMap((s) => s.rawLines),
-    ).map((l) => compactMindMapText(l, 48));
+    const fullLines = plainLinesFromRaw(sections.flatMap((s) => s.rawLines)).map((l) => ({
+      short: compactMindMapText(l, 64),
+      full: cleanFullText(l),
+    }));
 
-    if (allLines.length > 0) {
-      const chunkSize = Math.max(2, Math.ceil(allLines.length / 4));
-      const chunks: string[][] = [];
-      for (let i = 0; i < allLines.length && chunks.length < 4; i += chunkSize) {
-        chunks.push(allLines.slice(i, i + chunkSize).slice(0, 3));
+    if (fullLines.length > 0) {
+      const chunkSize = Math.max(2, Math.ceil(fullLines.length / 4));
+      const chunks: MindMapPoint[][] = [];
+      for (let i = 0; i < fullLines.length && chunks.length < 4; i += chunkSize) {
+        chunks.push(fullLines.slice(i, i + chunkSize).slice(0, 3));
       }
       normalized = chunks.map((points, index) => ({
         title: inferBranchTitle(index),
+        fullTitle: inferBranchTitle(index),
         points,
         index,
       }));
