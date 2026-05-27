@@ -2473,6 +2473,111 @@ textarea.field { height: auto; padding: 12px 14px; min-height: 92px; resize: ver
   .study-tab__label { display: none; }
 }
 
+/* ─── Study: Estudo Interativo ───────────────────────────────────── */
+.study-interactive { display: grid; gap: 12px; }
+.study-interactive__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.study-interactive__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--pjus-ink-3);
+}
+.study-interactive__content {
+  padding: 28px;
+  cursor: text;
+  user-select: text;
+  line-height: 1.7;
+}
+.study-interactive__content .si-heading {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgb(var(--brand-ink));
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding-left: 16px;
+  border-left: 4px solid rgb(var(--brand-gold));
+  margin: 28px 0 14px;
+}
+.study-interactive__content .si-heading::before {
+  content: attr(data-num) ".";
+  color: rgb(var(--brand-gold));
+  font-size: 15px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.study-interactive__content .si-heading:first-child { margin-top: 0; }
+.study-interactive__content .si-sub {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgb(var(--brand-ink));
+  margin: 14px 0 6px;
+}
+.study-interactive__content ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.study-interactive__content .si-item {
+  padding-left: 16px;
+  border-left: 2px solid rgba(201,168,76,0.4);
+  font-size: 14px;
+  line-height: 1.65;
+  color: rgb(var(--brand-ink-2));
+}
+.study-interactive__content .si-p {
+  font-size: 14px;
+  line-height: 1.65;
+  color: rgb(var(--brand-ink-2));
+  margin: 8px 0;
+}
+.study-interactive__content strong { color: rgb(var(--brand-ink)); font-weight: 600; }
+.study-interactive__content mark { border-radius: 2px; padding: 0 1px; }
+
+/* Tooltip de cores de grifo */
+.study-hi-tooltip {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 10px));
+  background: #fff;
+  border: 1px solid var(--pjus-hairline);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  gap: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  z-index: 200;
+}
+.study-hi-tooltip::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border-right: 1px solid var(--pjus-hairline);
+  border-bottom: 1px solid var(--pjus-hairline);
+  transform: translateX(-50%) rotate(45deg);
+}
+.study-hi-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,0.12);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.study-hi-btn:hover { transform: scale(1.15); }
+
 /* ─── Study: floating chat drawer ────────────────────────────────── */
 .study-drawer-backdrop {
   position: fixed;

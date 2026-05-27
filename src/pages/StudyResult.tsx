@@ -6,6 +6,7 @@ import { isMindMapMode } from "@/lib/study-parser";
 import { exportStudyElementPdf } from "@/lib/pdf-export";
 import { MI } from "@/components/brand/MaterialIcon";
 import { StudyDocument } from "@/components/study/StudyDocument";
+import { StudyInteractive } from "@/components/study/StudyInteractive";
 import { StudyMindMap } from "@/components/study/StudyMindMap";
 import { StudyChatDrawer } from "@/components/study/StudyChatDrawer";
 
@@ -45,6 +46,7 @@ export default function StudyResult() {
   const [exporting, setExporting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [tab, setTab] = useState<"documento" | "interativo">("documento");
 
   useEffect(() => {
     if (routeStudy) {
@@ -113,7 +115,19 @@ export default function StudyResult() {
             <MI name="arrow_back" size={15} />
             <span className="study-tab__label">Novo estudo</span>
           </button>
-          <button type="button" className="study-tab study-tab--active">
+          <button
+            type="button"
+            className={`study-tab ${tab === "interativo" ? "study-tab--active" : ""}`}
+            onClick={() => setTab("interativo")}
+          >
+            <MI name="auto_awesome" size={15} />
+            <span className="study-tab__label">Estudo Interativo</span>
+          </button>
+          <button
+            type="button"
+            className={`study-tab ${tab === "documento" ? "study-tab--active" : ""}`}
+            onClick={() => setTab("documento")}
+          >
             <MI name="description" size={15} />
             <span className="study-tab__label">Documento</span>
           </button>
@@ -139,12 +153,17 @@ export default function StudyResult() {
         </div>
       </div>
 
-      {/* Documento */}
+      {/* Conteúdo da aba ativa */}
       <div ref={resultRef} className="study-result-body">
         {useMindMap ? (
           <StudyMindMap
             markdown={study.text}
             meta={{ topic: study.topic, mode: study.mode, modeLabel: study.modeLabel }}
+          />
+        ) : tab === "interativo" ? (
+          <StudyInteractive
+            markdown={study.text}
+            meta={{ topic: study.topic }}
           />
         ) : (
           <StudyDocument
