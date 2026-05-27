@@ -1,27 +1,17 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
 
 import { callAI } from "@/lib/api";
-import { isMindMapMode } from "@/lib/study-parser";
-import { exportStudyElementPdf } from "@/lib/pdf-export";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { MI } from "@/components/brand/MaterialIcon";
 import { StudyForm, type StudyFormValues } from "@/components/study/StudyForm";
-import { StudyDocument } from "@/components/study/StudyDocument";
-import { StudyMindMap } from "@/components/study/StudyMindMap";
 import { StudyErrorState } from "@/components/study/StudyErrorState";
 import { PreceptorChatPanel } from "@/components/study/PreceptorChatPanel";
-
-interface LastStudy extends StudyFormValues {
-  text: string;
-}
 
 type ViewState =
   | { kind: "empty" }
   | { kind: "loading" }
-  | { kind: "result"; study: LastStudy }
   | { kind: "error"; message: string; lastValues: StudyFormValues };
 
 export default function Dashboard() {
@@ -40,8 +30,7 @@ export default function Dashboard() {
         goals: values.goals,
         sections: values.sections,
       });
-      const study: LastStudy = { ...values, text };
-      setView({ kind: "result", study });
+      const study = { ...values, text };
       saveStudy({
         id: `study-${Date.now()}`,
         topic: study.topic,
@@ -52,6 +41,7 @@ export default function Dashboard() {
         excerpt: text.replace(/\s+/g, " ").trim().slice(0, 130),
         date: new Date().toLocaleDateString("pt-BR"),
       });
+      navigate("/app/study/result", { state: { study } });
     } catch (error: any) {
       setView({ kind: "error", message: error?.message || "Erro ao gerar.", lastValues: values });
     }
@@ -59,27 +49,6 @@ export default function Dashboard() {
 
   const handleRetry = () => {
     if (view.kind === "error") handleGenerate(view.lastValues);
-  };
-
-  const onGenerateExam = () => {
-    if (view.kind === "result") {
-      navigate(`/app/exam?topic=${encodeURIComponent(view.study.topic)}`);
-    }
-  };
-
-  const resultRef = useRef<HTMLDivElement>(null);
-  const [exporting, setExporting] = useState(false);
-
-  const onExportPdf = async () => {
-    if (view.kind !== "result" || !resultRef.current || exporting) return;
-    setExporting(true);
-    try {
-      await exportStudyElementPdf(resultRef.current, { topic: view.study.topic });
-    } catch (err: any) {
-      toast.error("Não foi possível gerar o PDF.", { description: err?.message });
-    } finally {
-      setExporting(false);
-    }
   };
 
   return (
@@ -102,14 +71,11 @@ export default function Dashboard() {
             loading={view.kind === "loading"}
             onSubmit={handleGenerate}
           />
-          <ResultZone
-            view={view}
-            resultRef={resultRef}
-            exporting={exporting}
-            onRetry={handleRetry}
-            onGenerateExam={onGenerateExam}
-            onExportPdf={onExportPdf}
-          />
+          {view.kind === "empty" && <EmptyState />}
+          {view.kind === "loading" && <LoaderShimmer />}
+          {view.kind === "error" && (
+            <StudyErrorState message={view.message} onRetry={handleRetry} />
+          )}
         </div>
         <div>
           <PreceptorChatPanel variant="side" />
@@ -119,49 +85,6 @@ export default function Dashboard() {
   );
 }
 
-function ResultZone({
-  view,
-  resultRef,
-  exporting,
-  onRetry,
-  onGenerateExam,
-  onExportPdf,
-}: {
-  view: ViewState;
-  resultRef: React.RefObject<HTMLDivElement>;
-  exporting: boolean;
-  onRetry: () => void;
-  onGenerateExam: () => void;
-  onExportPdf: () => void;
-}) {
-  if (view.kind === "empty") return <EmptyState />;
-  if (view.kind === "loading") return <LoaderShimmer />;
-  if (view.kind === "error") return <StudyErrorState message={view.message} onRetry={onRetry} />;
-
-  const { study } = view;
-  const useMindMap = isMindMapMode({ mode: study.mode, topic: study.topic, modeLabel: study.modeLabel });
-
-  return (
-    <div className="stack" style={{ gap: 10 }}>
-      <ResultToolbar study={study} exporting={exporting} onGenerateExam={onGenerateExam} onExportPdf={onExportPdf} />
-      <div ref={resultRef}>
-        {useMindMap ? (
-          <StudyMindMap
-            markdown={study.text}
-            meta={{ topic: study.topic, mode: study.mode, modeLabel: study.modeLabel }}
-          />
-        ) : (
-          <StudyDocument
-            markdown={study.text}
-            meta={{ topic: study.topic, mode: study.mode, modeLabel: study.modeLabel }}
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Editorial empty state — small card with auto_stories icon.
 function EmptyState() {
   return (
     <div
@@ -188,7 +111,6 @@ function EmptyState() {
   );
 }
 
-// Editorial 4-line shimmer loader inside .summary chrome.
 function LoaderShimmer() {
   return (
     <div className="summary">
@@ -198,49 +120,6 @@ function LoaderShimmer() {
         <div className="loader__line" />
         <div className="loader__line" />
       </div>
-    </div>
-  );
-}
-
-function ResultToolbar({
-  study,
-  exporting,
-  onGenerateExam,
-  onExportPdf,
-}: {
-  study: LastStudy;
-  exporting: boolean;
-  onGenerateExam: () => void;
-  onExportPdf: () => void;
-}) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(study.text);
-      setCopied(true);
-      toast.success("Estudo copiado.", { duration: 1600 });
-      setTimeout(() => setCopied(false), 1400);
-    } catch {
-      toast.error("Não foi possível copiar.");
-    }
-  };
-
-  return (
-    <div className="toolbar">
-      <span className="toolbar__label">Resultado</span>
-      <button type="button" className="btn btn--outline btn--sm" onClick={handleCopy}>
-        <MI name={copied ? "check" : "content_copy"} size={16} />
-        {copied ? "Copiado" : "Copiar"}
-      </button>
-      <button type="button" className="btn btn--outline btn--sm" onClick={onExportPdf} disabled={exporting}>
-        <MI name="picture_as_pdf" size={16} />
-        {exporting ? "Gerando PDF…" : "Exportar PDF"}
-      </button>
-      <button type="button" className="btn btn--default btn--sm" onClick={onGenerateExam}>
-        <MI name="quiz" size={16} />
-        Gerar prova
-      </button>
     </div>
   );
 }

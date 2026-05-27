@@ -8,6 +8,7 @@ import { useStudyStats, useWorkspace } from "@/hooks/useWorkspace";
 import { PreceptorChatPanel } from "@/components/study/PreceptorChatPanel";
 
 const Dashboard = lazy(() => import("./Dashboard"));
+const StudyResult = lazy(() => import("./StudyResult"));
 const Exam = lazy(() => import("./Exam"));
 const Flashcards = lazy(() => import("./Flashcards"));
 const Library = lazy(() => import("./Library"));
@@ -395,6 +396,7 @@ export default function AppShell() {
         <Routes>
           <Route index element={<MenuPage />} />
           <Route path="study" element={<Dashboard />} />
+          <Route path="study/result" element={<StudyResult />} />
           <Route path="exam" element={<Exam />} />
           <Route path="flashcards" element={<Flashcards />} />
           <Route path="library" element={<Library />} />
