@@ -236,6 +236,61 @@ function plainLinesFromRaw(rawLines: string[]): string[] {
     .filter((line) => !line.startsWith("### ") && !isMarkdownDivider(line));
 }
 
+/** Extrai pontos de uma lista de rawLines, evitando duplicatas e título. */
+function extractPointsFromRawLines(rawLines: string[], title: string): string[] {
+  const seen = new Set<string>();
+  return plainLinesFromRaw(rawLines)
+    .map((line) => compactMindMapText(line, 48))
+    .filter((line) => {
+      const key = line.toLowerCase();
+      if (!key || seen.has(key) || key === title.toLowerCase()) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 3);
+}
+
+/** Fallback parser: divide o texto bruto em "pseudo-seções" usando ###, **bold**
+ *  como título, ou parágrafos consecutivos quando não há cabeçalhos.
+ */
+function extractPseudoSections(rawLines: string[]): { title: string; lines: string[] }[] {
+  const out: { title: string; lines: string[] }[] = [];
+  let current: { title: string; lines: string[] } | null = null;
+
+  const flush = () => {
+    if (current && current.lines.length) out.push(current);
+    current = null;
+  };
+
+  rawLines.forEach((rawLine) => {
+    const line = rawLine.trim();
+    if (!line || isMarkdownDivider(line)) {
+      // parágrafo vazio = quebra de seção quando não há cabeçalho
+      if (current && !current.title.startsWith("__chunk")) flush();
+      return;
+    }
+    // ### Heading or # Heading
+    const heading = line.match(/^#{1,3}\s+(.+)$/);
+    if (heading) {
+      flush();
+      current = { title: heading[1].replace(/\*\*/g, "").trim(), lines: [] };
+      return;
+    }
+    // **Bold heading** alone on a line
+    const boldHeading = line.match(/^\*\*(.+?)\*\*\s*:?\s*$/);
+    if (boldHeading) {
+      flush();
+      current = { title: boldHeading[1].trim(), lines: [] };
+      return;
+    }
+    if (!current) current = { title: `__chunk${out.length}`, lines: [] };
+    current.lines.push(rawLine);
+  });
+  flush();
+
+  return out;
+}
+
 export function buildMindMapModel(sections: StudySectionParsed[], meta: StudyMeta): MindMapModel {
   const topic = meta.topic || "Mapa mental jurídico";
   const central =
@@ -246,23 +301,57 @@ export function buildMindMapModel(sections: StudySectionParsed[], meta: StudyMet
   const candidate = compactMindMapText(centralLines[0] || "", 40);
   const centralText = candidate && candidate.length <= 32 ? candidate : compactMindMapText(topic, 32);
 
-  let branches = sections.filter((s) => s !== central && plainLinesFromRaw(s.rawLines).length);
-  if (branches.length < 2) branches = sections.filter((s) => s !== central);
+  // Strategy 1: ## section-based extraction
+  let branchSections = sections.filter((s) => s !== central && plainLinesFromRaw(s.rawLines).length);
+  if (branchSections.length < 2) branchSections = sections.filter((s) => s !== central);
 
-  const normalized: MindMapBranch[] = branches.slice(0, 6).map((s, index) => {
+  let normalized: MindMapBranch[] = branchSections.slice(0, 6).map((s, index) => {
     const title = compactBranchTitle(s.title || inferBranchTitle(index), index);
-    const seen = new Set<string>();
-    const points = plainLinesFromRaw(s.rawLines)
-      .map((line) => compactMindMapText(line, 48))
-      .filter((line) => {
-        const key = line.toLowerCase();
-        if (!key || seen.has(key) || key === title.toLowerCase()) return false;
-        seen.add(key);
-        return true;
-      })
-      .slice(0, 3);
-    return { title, points, index };
+    return { title, points: extractPointsFromRawLines(s.rawLines, title), index };
   });
+
+  // Strategy 2: if no branches with content, try parsing the entire content
+  // (every section's rawLines merged) using ###/bold/paragraph heuristics
+  const hasContent = normalized.some((b) => b.points.length > 0);
+  if (!hasContent) {
+    const allRawLines = sections.flatMap((s) =>
+      s === central ? s.rawLines : [`## ${s.title}`, ...s.rawLines],
+    );
+    const pseudo = extractPseudoSections(allRawLines).filter(
+      (p) => !p.title.startsWith("__chunk") || p.lines.length >= 2,
+    );
+
+    if (pseudo.length >= 2) {
+      normalized = pseudo.slice(0, 6).map((p, index) => {
+        const isChunk = p.title.startsWith("__chunk");
+        const title = isChunk
+          ? inferBranchTitle(index)
+          : compactBranchTitle(p.title, index);
+        return { title, points: extractPointsFromRawLines(p.lines, title), index };
+      });
+    }
+  }
+
+  // Strategy 3: last resort — chunk all content into 4 synthetic branches
+  const stillEmpty = normalized.length === 0 || normalized.every((b) => b.points.length === 0);
+  if (stillEmpty) {
+    const allLines = plainLinesFromRaw(
+      sections.flatMap((s) => s.rawLines),
+    ).map((l) => compactMindMapText(l, 48));
+
+    if (allLines.length > 0) {
+      const chunkSize = Math.max(2, Math.ceil(allLines.length / 4));
+      const chunks: string[][] = [];
+      for (let i = 0; i < allLines.length && chunks.length < 4; i += chunkSize) {
+        chunks.push(allLines.slice(i, i + chunkSize).slice(0, 3));
+      }
+      normalized = chunks.map((points, index) => ({
+        title: inferBranchTitle(index),
+        points,
+        index,
+      }));
+    }
+  }
 
   return { topic, centralText, branches: normalized };
 }
