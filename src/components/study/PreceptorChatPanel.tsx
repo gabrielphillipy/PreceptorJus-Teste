@@ -7,8 +7,8 @@ import { MI } from "@/components/brand/MaterialIcon";
 type Message = { role: "user" | "assistant"; content: string; time: string };
 
 interface PreceptorChatPanelProps {
-  /** "side" — sticky on Dashboard right rail · "full" — /app/chat */
-  variant?: "side" | "full";
+  /** "side" — sticky on right rail · "full" — /app/chat · "drawer" — inside slide-in drawer */
+  variant?: "side" | "full" | "drawer";
 }
 
 const SUGGESTED = [
@@ -69,6 +69,7 @@ export function PreceptorChatPanel({ variant = "side" }: PreceptorChatPanelProps
   };
 
   const isFull = variant === "full";
+  const isDrawer = variant === "drawer";
   const showSuggested = messages.length <= 1 && !loading;
 
   return (
@@ -77,6 +78,8 @@ export function PreceptorChatPanel({ variant = "side" }: PreceptorChatPanelProps
       style={
         isFull
           ? { maxWidth: 760, margin: "0 auto", width: "100%" }
+          : isDrawer
+          ? {}
           : { position: "sticky", top: 84 }
       }
     >

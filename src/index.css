@@ -2332,6 +2332,197 @@ textarea.field { height: auto; padding: 12px 14px; min-height: 92px; resize: ver
   line-height: 1.55;
 }
 
+/* ─── Study result: page header (open, sem card) ────────────────── */
+.study-page-header {
+  padding: 4px 0 0;
+}
+.study-page-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: rgb(var(--brand-gold));
+  margin: 0 0 10px;
+}
+.study-page-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: rgb(var(--brand-ink));
+  margin: 0 0 14px;
+  max-width: 28ch;
+}
+.study-page-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.study-page-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-radius: 20px;
+  background: rgba(201,168,76,0.14);
+  color: #7A5923;
+  border: 1px solid rgba(201,168,76,0.28);
+}
+.study-page-tag--muted {
+  background: var(--pjus-surface-2);
+  color: var(--pjus-ink-3);
+  border-color: var(--pjus-hairline);
+}
+
+/* ─── Study result: tab bar ──────────────────────────────────────── */
+.study-tabbar {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid var(--pjus-hairline);
+  background: var(--pjus-bg, #f6f4ef);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.study-tabbar__tabs {
+  display: flex;
+  align-items: stretch;
+}
+.study-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--pjus-ink-3);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.study-tab--active {
+  color: rgb(var(--brand-ink));
+  font-weight: 600;
+  border-bottom-color: rgb(var(--brand-gold));
+}
+.study-tab--back {
+  color: var(--pjus-ink-3);
+  font-size: 13px;
+}
+.study-tab--back:hover { color: rgb(var(--brand-ink-2)); }
+.study-tabbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 4px;
+}
+
+/* ─── Study: floating chat drawer ────────────────────────────────── */
+.study-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.22);
+  z-index: 90;
+  animation: fade-up 0.2s ease both;
+}
+.study-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(400px, 92vw);
+  z-index: 95;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #fff;
+  border-left: 1px solid var(--pjus-hairline);
+  box-shadow: -8px 0 40px rgba(0,0,0,0.14);
+  overflow-y: auto;
+}
+.study-drawer--open {
+  transform: translateX(0);
+}
+.study-drawer__inner {
+  padding: 72px 16px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ─── Study: section title (numbered heading with gold left bar) ─── */
+.study-section-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgb(var(--brand-ink));
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding-left: 16px;
+  border-left: 4px solid rgb(var(--brand-gold));
+  margin: 0;
+  line-height: 1.35;
+}
+.study-section-title__num {
+  color: rgb(var(--brand-gold));
+  font-size: 15px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Study: Pérolas Jurídicas sidebar card ─────────────────────── */
+.study-pearls-card {
+  background: rgb(var(--brand-primary-dark));
+  border-radius: 14px;
+  overflow: hidden;
+}
+.study-pearls-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 20px 14px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: rgb(var(--brand-gold));
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.study-pearls-card__body {
+  padding: 16px 20px 20px;
+  display: grid;
+  gap: 18px;
+}
+.study-pearl__cat {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: rgba(255,255,255,0.45);
+  margin: 0 0 4px;
+}
+.study-pearl__text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255,255,255,0.82);
+  margin: 0;
+}
+
 /* Editorial header */
 .pjus-editorial-title {
   font-family: var(--font-display);

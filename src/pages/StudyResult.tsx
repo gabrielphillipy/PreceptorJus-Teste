@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -7,7 +7,7 @@ import { exportStudyElementPdf } from "@/lib/pdf-export";
 import { MI } from "@/components/brand/MaterialIcon";
 import { StudyDocument } from "@/components/study/StudyDocument";
 import { StudyMindMap } from "@/components/study/StudyMindMap";
-import { PreceptorChatPanel } from "@/components/study/PreceptorChatPanel";
+import { StudyChatDrawer } from "@/components/study/StudyChatDrawer";
 
 interface StudyData {
   topic: string;
@@ -18,14 +18,40 @@ interface StudyData {
   text: string;
 }
 
+const STORAGE_KEY = "pjus_last_study";
+
+function estimateReadTime(text: string) {
+  const words = text.trim().split(/\s+/).length;
+  const minutes = Math.ceil(words / 200);
+  return minutes < 2 ? "~1 min de leitura" : `~${minutes} min de leitura`;
+}
+
+function loadSaved(): StudyData | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as StudyData) : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function StudyResult() {
   const location = useLocation();
   const navigate = useNavigate();
-  const study = location.state?.study as StudyData | undefined;
+  const routeStudy = location.state?.study as StudyData | undefined;
+  const study = routeStudy ?? loadSaved();
 
   const resultRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+
+  // Persiste sempre que chegar um estudo novo via rota
+  useEffect(() => {
+    if (routeStudy) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(routeStudy)); } catch {}
+    }
+  }, [routeStudy]);
 
   if (!study) {
     navigate("/app/study", { replace: true });
@@ -63,56 +89,81 @@ export default function StudyResult() {
 
   return (
     <div className="stack fade-up">
-      <div className="grid-study">
-        <div className="stack">
-          <div className="toolbar">
-            <button
-              type="button"
-              className="btn btn--outline btn--sm"
-              onClick={() => navigate("/app/study")}
-            >
-              <MI name="arrow_back" size={16} />
-              Novo estudo
-            </button>
-            <span className="toolbar__label">Resultado</span>
-            <button type="button" className="btn btn--outline btn--sm" onClick={handleCopy}>
-              <MI name={copied ? "check" : "content_copy"} size={16} />
-              {copied ? "Copiado" : "Copiar"}
-            </button>
-            <button
-              type="button"
-              className="btn btn--outline btn--sm"
-              onClick={handleExportPdf}
-              disabled={exporting}
-            >
-              <MI name="picture_as_pdf" size={16} />
-              {exporting ? "Gerando PDF…" : "Exportar PDF"}
-            </button>
-            <button type="button" className="btn btn--default btn--sm" onClick={handleGenerateExam}>
-              <MI name="quiz" size={16} />
-              Gerar prova
-            </button>
-          </div>
-
-          <div ref={resultRef}>
-            {useMindMap ? (
-              <StudyMindMap
-                markdown={study.text}
-                meta={{ topic: study.topic, mode: study.mode, modeLabel: study.modeLabel }}
-              />
-            ) : (
-              <StudyDocument
-                markdown={study.text}
-                meta={{ topic: study.topic, mode: study.mode, modeLabel: study.modeLabel }}
-              />
-            )}
-          </div>
+      {/* Cabeçalho aberto — fora de qualquer card */}
+      <header className="study-page-header">
+        <p className="study-page-eyebrow">
+          <MI name="auto_awesome" size={13} />
+          AI Study Insight
+        </p>
+        <h1 className="study-page-title">{study.topic}</h1>
+        <div className="study-page-tags">
+          <span className="study-page-tag">{study.modeLabel || "Nota jurídica"}</span>
+          <span className="study-page-tag study-page-tag--muted">{estimateReadTime(study.text)}</span>
         </div>
+      </header>
 
-        <div>
-          <PreceptorChatPanel variant="side" />
+      {/* Tab bar sticky */}
+      <div className="study-tabbar">
+        <div className="study-tabbar__tabs">
+          <button
+            type="button"
+            className="study-tab study-tab--back"
+            onClick={() => navigate("/app/study")}
+          >
+            <MI name="arrow_back" size={15} />
+            Novo estudo
+          </button>
+          <button type="button" className="study-tab study-tab--active">
+            <MI name="description" size={15} />
+            Documento
+          </button>
+        </div>
+        <div className="study-tabbar__actions">
+          <button type="button" className="btn btn--ghost btn--sm" onClick={handleCopy}>
+            <MI name={copied ? "check" : "content_copy"} size={15} />
+            {copied ? "Copiado" : "Copiar"}
+          </button>
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            onClick={handleExportPdf}
+            disabled={exporting}
+          >
+            <MI name="picture_as_pdf" size={15} />
+            {exporting ? "Gerando…" : "PDF"}
+          </button>
+          <button type="button" className="btn btn--default btn--sm" onClick={handleGenerateExam}>
+            <MI name="quiz" size={15} />
+            Gerar prova
+          </button>
+          <button
+            type="button"
+            className="btn btn--outline btn--sm"
+            onClick={() => setChatOpen((v) => !v)}
+          >
+            <MI name={chatOpen ? "close" : "chat"} size={15} />
+            {chatOpen ? "Fechar" : "Tire dúvidas"}
+          </button>
         </div>
       </div>
+
+      {/* Documento */}
+      <div ref={resultRef}>
+        {useMindMap ? (
+          <StudyMindMap
+            markdown={study.text}
+            meta={{ topic: study.topic, mode: study.mode, modeLabel: study.modeLabel }}
+          />
+        ) : (
+          <StudyDocument
+            markdown={study.text}
+            meta={{ topic: study.topic, mode: study.mode, modeLabel: study.modeLabel }}
+          />
+        )}
+      </div>
+
+      {/* Drawer: Pérolas + Chat */}
+      <StudyChatDrawer open={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   );
 }
