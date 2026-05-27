@@ -42,6 +42,48 @@ function extractExamJson(value: string): any {
   return null;
 }
 
+/**
+ * Recupera questões individuais de um JSON truncado.
+ * Percorre o texto char a char rastreando profundidade de chaves para
+ * extrair cada objeto de questão completo, mesmo que o array externo
+ * não tenha sido fechado pelo modelo (token limit atingido).
+ */
+function extractQuestionsFromPartialJson(text: string): any[] {
+  const arrayStart = text.search(/"questions"\s*:\s*\[/);
+  if (arrayStart < 0) return [];
+  const bracketPos = text.indexOf("[", arrayStart);
+  if (bracketPos < 0) return [];
+
+  const questions: any[] = [];
+  let depth = 0;
+  let start = -1;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = bracketPos + 1; i < text.length; i++) {
+    const ch = text[i];
+    if (escaped) { escaped = false; continue; }
+    if (ch === "\\" && inString) { escaped = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+
+    if (ch === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0 && start >= 0) {
+        try {
+          const obj = JSON.parse(text.slice(start, i + 1));
+          questions.push(obj);
+        } catch { /* objeto incompleto, descarta */ }
+        start = -1;
+      }
+    }
+  }
+  return questions;
+}
+
 function normalizeExamQuestion(question: any, index: number): ExamQuestion {
   const rawOptions = Array.isArray(question?.options) ? question.options : [];
   const rawJust =
@@ -85,6 +127,13 @@ export function parseExamPayload(markdown: string): ExamQuestion[] {
   const json = extractExamJson(markdown);
   if (!json) {
     console.error("[exam-parser] JSON parse failed. len=", markdown.length, "tail=", markdown.slice(-80));
+    const partial = extractQuestionsFromPartialJson(markdown);
+    if (partial.length) {
+      console.warn("[exam-parser] recovered %d questions from partial JSON (null branch)", partial.length);
+      return partial
+        .map((q: any, i: number) => normalizeExamQuestion(q, i))
+        .filter((q: ExamQuestion) => q.options.length >= 2 && q.correctLetter);
+    }
     return [];
   }
 
@@ -99,6 +148,14 @@ export function parseExamPayload(markdown: string): ExamQuestion[] {
 
   if (!raw.length) {
     console.error("[exam-parser] no questions array found. keys=", Object.keys(json));
+    // Tenta recuperação parcial (JSON truncado por token limit)
+    const partial = extractQuestionsFromPartialJson(markdown);
+    if (partial.length) {
+      console.warn("[exam-parser] recovered %d questions from partial JSON", partial.length);
+      return partial
+        .map((q: any, i: number) => normalizeExamQuestion(q, i))
+        .filter((q: ExamQuestion) => q.options.length >= 2 && q.correctLetter);
+    }
     return [];
   }
 
