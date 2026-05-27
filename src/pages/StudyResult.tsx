@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-import { isMindMapMode } from "@/lib/study-parser";
 import { exportStudyElementPdf } from "@/lib/pdf-export";
 import { MI } from "@/components/brand/MaterialIcon";
 import { StudyDocument } from "@/components/study/StudyDocument";
@@ -47,7 +46,8 @@ export default function StudyResult() {
   const [exporting, setExporting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const [tab, setTab] = useState<"documento" | "interativo">("documento");
+  const initialTab = routeStudy?.mode === "mapa" ? "mapa" : "documento";
+  const [tab, setTab] = useState<"documento" | "interativo" | "mapa">(initialTab);
 
   useEffect(() => {
     if (routeStudy) {
@@ -61,8 +61,7 @@ export default function StudyResult() {
 
   if (!study) return null;
 
-  const useMindMap = isMindMapMode({ mode: study.mode, topic: study.topic, modeLabel: study.modeLabel });
-  const showSidebar = tab === "interativo" && !useMindMap;
+  const showSidebar = tab === "interativo";
 
   const handleCopy = async () => {
     try {
@@ -120,6 +119,14 @@ export default function StudyResult() {
             <MI name="description" size={15} />
             <span>Documento</span>
           </button>
+          <button
+            type="button"
+            className={`study-tab ${tab === "mapa" ? "study-tab--active" : ""}`}
+            onClick={() => setTab("mapa")}
+          >
+            <MI name="account_tree" size={15} />
+            <span>Mapa Mental</span>
+          </button>
         </div>
         <div className="study-tabbar__actions">
           <button type="button" className="btn btn--ghost btn--sm" onClick={handleCopy}>
@@ -158,7 +165,7 @@ export default function StudyResult() {
             </div>
           </header>
 
-          {useMindMap ? (
+          {tab === "mapa" ? (
             <StudyMindMap
               markdown={study.text}
               meta={{ topic: study.topic, mode: study.mode, modeLabel: study.modeLabel }}
