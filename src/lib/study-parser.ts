@@ -205,6 +205,40 @@ function inferBranchTitle(index: number): string {
   return BRANCH_FALLBACK_TITLES[index] || `Ramo ${index + 1}`;
 }
 
+/** Cria um título curto e legível para o card fechado.
+ *  Tenta achar um corte natural (vírgula, dois-pontos, ponto-vírgula) antes de
+ *  qualquer corte arbitrário. Limita a ~50 chars sem "...".
+ */
+function makeShortTitle(text: string, maxLen = 50): string {
+  let clean = String(text || "")
+    .replace(/\*\*/g, "")
+    .replace(/\*/g, "")
+    .replace(/^[-*•]\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!clean) return "";
+
+  // Remove artigo inicial para deixar o título mais punchy
+  clean = clean.replace(/^(?:O|A|Os|As|Um|Uma)\s+/, "");
+
+  if (clean.length <= maxLen) return clean;
+
+  // 1) Procura quebra natural (: ; ,) dentro do limite + margem
+  const window = clean.slice(0, maxLen + 25);
+  for (const sep of [":", ";", ","]) {
+    const idx = window.indexOf(sep);
+    if (idx > 15 && idx <= maxLen + 10) {
+      const candidate = clean.slice(0, idx).trim();
+      if (candidate.length <= maxLen + 10) return candidate;
+    }
+  }
+
+  // 2) Corte por palavra, sem "..."
+  const cut = clean.slice(0, maxLen);
+  const lastSpace = cut.lastIndexOf(" ");
+  return clean.slice(0, lastSpace > maxLen / 2 ? lastSpace : maxLen).trim();
+}
+
 /** Lista de abreviações jurídicas comuns que terminam em "." mas NÃO indicam fim de sentença. */
 const LEGAL_ABBREV = /\b(?:art|arts|lei|leis|dec|decr|cf|cc|cp|cpc|cpp|clt|cdc|ctn|lc|lcp|s[uú]m|inc|incs|par|paragr|caput|n[ºo°]?|[ºª°]|min|sr|sra|dr|dra|prof|exmo|exa)$/i;
 
@@ -268,7 +302,7 @@ function cleanFullText(value: string): string {
 function extractPointsFromRawLines(rawLines: string[], title: string): MindMapPoint[] {
   const seen = new Set<string>();
   return plainLinesFromRaw(rawLines)
-    .map((line) => ({ short: compactMindMapText(line, 140), full: cleanFullText(line) }))
+    .map((line) => ({ short: makeShortTitle(line, 50), full: cleanFullText(line) }))
     .filter((p) => {
       const key = p.short.toLowerCase();
       if (!key || seen.has(key) || key === title.toLowerCase()) return false;

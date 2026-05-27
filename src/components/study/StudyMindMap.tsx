@@ -298,20 +298,20 @@ function PointCard({ point, index, isOpen, palette, onClick }: PointCardProps) {
 
         {/* Conteúdo */}
         <div className="flex-1 min-w-0">
-          {/* Fechado: texto completo como parágrafo. Aberto: bullets de tópicos + termos-chave */}
+          {/* Fechado: título curto e legível. Aberto: bullets de tópicos + termos-chave */}
           {!isOpen ? (
             <>
               <p
-                className="m-0 leading-snug break-words"
-                style={{ fontSize: 12.5, color: "rgb(var(--brand-ink-2))", fontWeight: 500 }}
+                className="m-0 leading-snug break-words font-display"
+                style={{ fontSize: 12.5, color: "rgb(var(--brand-ink))", fontWeight: 600 }}
               >
-                <InlineText text={point.full} />
+                <InlineText text={point.short} />
               </p>
               <p
-                className="m-0 mt-2 font-medium"
+                className="m-0 mt-1.5 font-medium"
                 style={{ fontSize: 10, color: palette.border, opacity: 0.85 }}
               >
-                ver em tópicos →
+                ver detalhe →
               </p>
             </>
           ) : (
