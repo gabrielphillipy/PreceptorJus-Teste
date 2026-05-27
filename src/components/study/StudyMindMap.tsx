@@ -387,25 +387,6 @@ function PointCard({ point, index, isOpen, palette, branchTitle, onClick }: Poin
                   </div>
                 </div>
               )}
-
-              {/* Rodapé com tag do ramo */}
-              <div
-                className="mt-2.5 pt-2.5 flex flex-wrap items-center gap-1.5"
-                style={{ borderTop: `1px solid ${palette.border}40` }}
-              >
-                <span
-                  className="rounded-full px-2 py-0.5 text-white font-bold uppercase"
-                  style={{ fontSize: 9, letterSpacing: "0.10em", background: palette.bg }}
-                >
-                  {branchTitle}
-                </span>
-                <span
-                  className="font-medium"
-                  style={{ fontSize: 10, color: palette.text, opacity: 0.65 }}
-                >
-                  Ponto {String(index + 1).padStart(2, "0")}
-                </span>
-              </div>
             </>
           )}
         </div>
