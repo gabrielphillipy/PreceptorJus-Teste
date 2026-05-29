@@ -1,6 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { markdownToHtml } from "@/lib/study-markdown";
 
+const CARET = '<span class="study-streaming__caret"></span>';
+
+/** Insere o cursor DENTRO do último bloco de texto, logo após a última
+ *  palavra escrita (em vez de soltá-lo abaixo de todo o conteúdo). */
+function withCaret(html: string): string {
+  if (!html) return CARET;
+  const tags = ["</p>", "</li>", "</h3>", "</h2>", "</td>", "</th>"];
+  let lastIdx = -1;
+  for (const t of tags) {
+    const i = html.lastIndexOf(t);
+    if (i > lastIdx) lastIdx = i;
+  }
+  if (lastIdx === -1) return html + CARET;
+  return html.slice(0, lastIdx) + CARET + html.slice(lastIdx);
+}
+
 interface Props {
   /** Texto-alvo: cresce conforme os pedaços chegam do streaming. */
   text: string;
@@ -79,7 +95,7 @@ export function StudyStreaming({ text, done = false, onDone }: Props) {
       <div
         ref={docRef}
         className="study-interactive__content study-streaming__doc"
-        dangerouslySetInnerHTML={{ __html: `${html}<span class="study-streaming__caret"></span>` }}
+        dangerouslySetInnerHTML={{ __html: withCaret(html) }}
       />
     </div>
   );
