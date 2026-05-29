@@ -328,14 +328,23 @@ function isTableRow(line: string): boolean {
   return t.startsWith("|") && (t.match(/\|/g) || []).length >= 2;
 }
 
+/** Rótulos genéricos de cabeçalho de tabela — sem valor informativo. */
+const TABLE_HEADER_LABEL =
+  /^(?:instituto|institutos|caracter[íi]stica|caracter[íi]sticas|crit[ée]rio|crit[ée]rios|aspecto|aspectos|conceito|item|itens|t[óo]pico|t[óo]picos|coluna|categoria|tipo|tipos|dimens[ãa]o|par[âa]metro|defini[çc][ãa]o|elemento|elementos|compara[çc][ãa]o)\b/i;
+
 function convertTableRow(line: string): string {
-  return line
+  const cells = line
     .trim()
     .replace(/^\||\|$/g, "")
     .split("|")
     .map((c) => c.trim())
-    .filter(Boolean)
-    .join(" — ");
+    .filter(Boolean);
+
+  if (cells.length === 0) return "";
+  // Descarta linha de cabeçalho (apenas nomes de coluna genéricos)
+  if (TABLE_HEADER_LABEL.test(cells[0])) return "";
+
+  return cells.join(" — ");
 }
 
 function plainLinesFromRaw(rawLines: string[]): string[] {
