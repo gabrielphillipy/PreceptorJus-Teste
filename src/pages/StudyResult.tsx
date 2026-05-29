@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-import { isMindMapMode } from "@/lib/study-parser";
+import { callAI, callAIStream } from "@/lib/api";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { exportStudyElementPdf } from "@/lib/pdf-export";
 import { MI } from "@/components/brand/MaterialIcon";
 import { StudyDocument } from "@/components/study/StudyDocument";
@@ -10,6 +11,10 @@ import { StudyInteractive } from "@/components/study/StudyInteractive";
 import { StudyMindMap } from "@/components/study/StudyMindMap";
 import { StudyChatDrawer } from "@/components/study/StudyChatDrawer";
 import { StudyPearlsCard } from "@/components/study/StudyPearlsCard";
+import { StudyThinking } from "@/components/study/StudyThinking";
+import { StudyStreaming } from "@/components/study/StudyStreaming";
+import { StudyErrorState } from "@/components/study/StudyErrorState";
+import type { StudyFormValues } from "@/components/study/StudyForm";
 
 interface StudyData {
   topic: string;
@@ -40,8 +45,17 @@ function loadSaved(): StudyData | null {
 export default function StudyResult() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { saveStudy } = useWorkspace();
   const routeStudy = location.state?.study as StudyData | undefined;
-  const study = routeStudy ?? loadSaved();
+  const generateReq = location.state?.generate as StudyFormValues | undefined;
+
+  const [generated, setGenerated] = useState<StudyData | null>(null);
+  // null = não está gerando; "" = pensando (sem texto ainda); texto = escrevendo
+  const [streamingText, setStreamingText] = useState<string | null>(null);
+  const [genError, setGenError] = useState<string | null>(null);
+  const [genMeta, setGenMeta] = useState<{ topic: string; modeLabel: string } | null>(null);
+
+  const study = routeStudy ?? generated ?? (generateReq ? null : loadSaved());
 
   const resultRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
@@ -50,6 +64,72 @@ export default function StudyResult() {
   const initialTab = routeStudy?.mode === "mapa" ? "mapa" : "documento";
   const [tab, setTab] = useState<"documento" | "interativo" | "mapa">(initialTab);
 
+  // ── Geração com streaming na própria tela ───────────────────────
+  const runGeneration = useCallback(
+    async (req: StudyFormValues) => {
+      setGenError(null);
+      setGenMeta({ topic: req.topic, modeLabel: req.modeLabel });
+      setStreamingText("");
+      let acc = "";
+      const payload = { mode: req.mode, topic: req.topic, goals: req.goals, sections: req.sections };
+
+      const persist = (text: string) => {
+        const studyData: StudyData = {
+          topic: req.topic,
+          mode: req.mode,
+          modeLabel: req.modeLabel,
+          text,
+        };
+        saveStudy({
+          id: `study-${Date.now()}`,
+          topic: req.topic,
+          text,
+          mode: req.mode,
+          modeLabel: req.modeLabel,
+          favorite: false,
+          excerpt: text.replace(/\s+/g, " ").trim().slice(0, 130),
+          date: new Date().toLocaleDateString("pt-BR"),
+        });
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(studyData)); } catch {}
+        if (req.mode === "mapa") setTab("mapa");
+        setGenerated(studyData);
+        setStreamingText(null);
+        navigate("/app/study/result", { replace: true, state: { study: studyData } });
+      };
+
+      try {
+        const text = await callAIStream(payload, (full) => {
+          acc = full;
+          setStreamingText(full);
+        });
+        persist(text || acc);
+      } catch (error: any) {
+        if (!acc.trim()) {
+          try {
+            const text = await callAI(payload);
+            persist(text);
+            return;
+          } catch (fallbackError: any) {
+            setStreamingText(null);
+            setGenError(fallbackError?.message || "Erro ao gerar.");
+            return;
+          }
+        }
+        setStreamingText(null);
+        setGenError(error?.message || "Erro ao gerar.");
+      }
+    },
+    [navigate, saveStudy],
+  );
+
+  const didStartRef = useRef(false);
+  useEffect(() => {
+    if (generateReq && !didStartRef.current) {
+      didStartRef.current = true;
+      runGeneration(generateReq);
+    }
+  }, [generateReq, runGeneration]);
+
   useEffect(() => {
     if (routeStudy) {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(routeStudy)); } catch {}
@@ -57,8 +137,73 @@ export default function StudyResult() {
   }, [routeStudy]);
 
   useEffect(() => {
-    if (!study) navigate("/app/study", { replace: true });
-  }, [study, navigate]);
+    if (!study && !generateReq && streamingText === null && !genError) {
+      navigate("/app/study", { replace: true });
+    }
+  }, [study, generateReq, streamingText, genError, navigate]);
+
+  // ── Estado: gerando (pensando / escrevendo) ─────────────────────
+  if (streamingText !== null) {
+    return (
+      <div className="study-result-page fade-up">
+        <div className="study-tabbar">
+          <div className="study-tabbar__tabs">
+            <button
+              type="button"
+              className="study-tab study-tab--back"
+              onClick={() => navigate("/app/study")}
+            >
+              <MI name="arrow_back" size={15} />
+              <span className="study-tab__label">Novo estudo</span>
+            </button>
+          </div>
+        </div>
+        <div className="study-result-layout">
+          <div className="study-result-body">
+            <header className="study-page-header">
+              <p className="study-page-eyebrow">
+                <MI name="auto_awesome" size={13} />
+                AI Study Insight
+              </p>
+              <h1 className="study-page-title">{genMeta?.topic}</h1>
+              <div className="study-page-tags">
+                <span className="study-page-tag">{genMeta?.modeLabel || "Nota jurídica"}</span>
+              </div>
+            </header>
+            {streamingText ? <StudyStreaming text={streamingText} /> : <StudyThinking />}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Estado: erro na geração ─────────────────────────────────────
+  if (genError) {
+    return (
+      <div className="study-result-page fade-up">
+        <div className="study-tabbar">
+          <div className="study-tabbar__tabs">
+            <button
+              type="button"
+              className="study-tab study-tab--back"
+              onClick={() => navigate("/app/study")}
+            >
+              <MI name="arrow_back" size={15} />
+              <span className="study-tab__label">Novo estudo</span>
+            </button>
+          </div>
+        </div>
+        <div className="study-result-layout">
+          <div className="study-result-body">
+            <StudyErrorState
+              message={genError}
+              onRetry={() => generateReq && runGeneration(generateReq)}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!study) return null;
 
