@@ -227,9 +227,11 @@ function makeShortTitle(text: string, maxLen = 50): string {
     .trim();
   if (!clean) return "";
 
-  // Tabela: "A — B" já é um rótulo limpo; mantém como está
+  // Tabela "Categoria — descrição": usa a categoria (lado esquerdo) como título.
   if (clean.includes(" — ")) {
-    return clean.length <= maxLen + 20 ? clean : clean.slice(0, maxLen + 20).trim();
+    const left = clean.split(" — ")[0].trim();
+    if (left.length >= 3 && left.length <= maxLen + 10) return left;
+    // lado esquerdo grande demais → cai no fluxo normal de corte por palavra
   }
 
   // 1) Primeira sentença (respeita abreviações jurídicas)
