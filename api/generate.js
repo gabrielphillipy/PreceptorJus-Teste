@@ -163,6 +163,130 @@ async function callGeminiWithRetries({ models, prompt, apiKey }) {
   return { error: message, status: lastStatus };
 }
 
+function buildGeminiBody(prompt) {
+  return JSON.stringify({
+    systemInstruction: { parts: [{ text: prompt.instructions }] },
+    contents: [{ role: "user", parts: [{ text: prompt.input }] }],
+    generationConfig: {
+      maxOutputTokens: Math.min(Number(prompt.max_output_tokens) || 2048, 8192),
+      temperature: 0.55,
+      ...(prompt.response_mime_type ? { responseMimeType: prompt.response_mime_type } : {}),
+      thinkingConfig: {
+        thinkingBudget: Number.isFinite(prompt.thinking_budget) ? prompt.thinking_budget : 0,
+      },
+    },
+  });
+}
+
+/**
+ * Streaming via Gemini `streamGenerateContent?alt=sse`.
+ * Repassa os deltas de texto crus ao cliente conforme chegam (res.write).
+ * Retorna { ok } se conseguiu escrever conteúdo; senão { ok:false, status, error }
+ * para o handler responder com JSON de erro (headers ainda não foram enviados).
+ */
+async function streamGenerate({ models, prompt, apiKey, res }) {
+  let lastErrorMessage = "";
+  let lastStatus = 502;
+  const startedAt = Date.now();
+
+  for (let i = 0; i < models.length; i += 1) {
+    const model = models[i];
+    const remainingMs = OVERALL_TIMEOUT_MS - (Date.now() - startedAt);
+    if (remainingMs <= 1500) {
+      lastStatus = 504;
+      lastErrorMessage = "A geração demorou demais e foi interrompida.";
+      break;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), Math.min(DEFAULT_TIMEOUT_MS, remainingMs - 500));
+    let started = false;
+    let total = "";
+
+    try {
+      const upstream = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`,
+        {
+          method: "POST",
+          signal: controller.signal,
+          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+          body: buildGeminiBody(prompt),
+        },
+      );
+
+      if (!upstream.ok || !upstream.body) {
+        const errText = await upstream.text().catch(() => "");
+        let parsed = "";
+        try { parsed = JSON.parse(errText)?.error?.message || ""; } catch {}
+        lastStatus = upstream.status;
+        lastErrorMessage = parsed || "Erro ao chamar o Gemini.";
+        clearTimeout(timeoutId);
+        if (RETRYABLE_STATUS.has(upstream.status) && i < models.length - 1) continue;
+        break;
+      }
+
+      const reader = upstream.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let nl;
+        while ((nl = buffer.indexOf("\n")) >= 0) {
+          const line = buffer.slice(0, nl).trim();
+          buffer = buffer.slice(nl + 1);
+          if (!line.startsWith("data:")) continue;
+          const jsonStr = line.slice(5).trim();
+          if (!jsonStr || jsonStr === "[DONE]") continue;
+          let chunk;
+          try { chunk = JSON.parse(jsonStr); } catch { continue; }
+          const delta = (chunk.candidates || [])
+            .flatMap((c) => c.content?.parts || [])
+            .filter((p) => !p.thought)
+            .map((p) => p.text || "")
+            .join("");
+          if (!delta) continue;
+          if (!started) {
+            res.statusCode = 200;
+            res.setHeader("Content-Type", "text/plain; charset=utf-8");
+            res.setHeader("Cache-Control", "no-store, no-transform");
+            res.setHeader("X-Accel-Buffering", "no");
+            started = true;
+          }
+          total += delta;
+          res.write(delta);
+        }
+      }
+
+      clearTimeout(timeoutId);
+      if (started) {
+        res.end();
+        return { ok: true };
+      }
+      // Nenhum conteúdo deste modelo — tenta o próximo.
+      lastStatus = 502;
+      lastErrorMessage = "Resposta vazia do provedor de IA.";
+      continue;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (started) {
+        // Já enviamos conteúdo parcial — encerra graciosamente.
+        try { res.end(); } catch {}
+        return { ok: true };
+      }
+      lastStatus = error?.name === "AbortError" ? 504 : 500;
+      lastErrorMessage = error?.message || "Erro inesperado ao chamar o Gemini.";
+      if (i < models.length - 1) continue;
+      break;
+    }
+  }
+
+  return { ok: false, status: lastStatus, error: lastErrorMessage };
+}
+
 async function handler(req, res) {
   if (req.method !== "POST") {
     return send(res, 405, { error: "Use POST." });
@@ -195,6 +319,24 @@ async function handler(req, res) {
 
     const prompt = domain.buildPrompt(body);
     const models = getModelCandidates();
+
+    // Streaming opt-in: repassa os deltas de texto conforme o Gemini escreve.
+    if (body.stream) {
+      res.setHeader("X-RateLimit-Limit", String(limit.limit));
+      res.setHeader("X-RateLimit-Remaining", String(limit.remaining));
+      const streamed = await streamGenerate({
+        models,
+        prompt,
+        apiKey: process.env.GOOGLE_API_KEY,
+        res,
+      });
+      if (!streamed.ok) {
+        // Nenhum byte foi enviado ainda → responde JSON de erro normalmente.
+        return send(res, streamed.status || 502, { error: streamed.error });
+      }
+      return; // resposta já encerrada dentro de streamGenerate
+    }
+
     const result = await callGeminiWithRetries({
       models,
       prompt,

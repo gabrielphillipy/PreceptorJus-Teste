@@ -52,6 +52,67 @@ export async function callAI(payload: GeneratePayload): Promise<string> {
   return data.text || "";
 }
 
+/**
+ * Variante de `callAI` que consome a resposta em streaming (`stream: true`).
+ * Chama `onText` com o texto acumulado a cada pedaço recebido e resolve com
+ * o texto final completo. Se o servidor responder JSON (erro), lança Error.
+ */
+export async function callAIStream(
+  payload: GeneratePayload,
+  onText: (fullText: string) => void,
+): Promise<string> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch("/api/generate", {
+      method: "POST",
+      signal: controller.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...payload, stream: true }),
+    });
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error?.name === "AbortError") {
+      throw new Error(
+        "A geração demorou demais e foi interrompida antes de travar. Tente novamente com um tema mais específico ou menos seções.",
+      );
+    }
+    throw error;
+  }
+
+  const contentType = response.headers.get("Content-Type") || "";
+  // Erro do backend (ou ambiente sem streaming) vem como JSON.
+  if (!response.ok || contentType.includes("application/json") || !response.body) {
+    clearTimeout(timeoutId);
+    const data = await response.json().catch(() => ({} as any));
+    throw new Error(data.error || "Não foi possível gerar com IA.");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let full = "";
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      full += decoder.decode(value, { stream: true });
+      onText(full);
+    }
+  } catch (error: any) {
+    // Aborto/queda no meio do stream: mantém o que já chegou se for útil.
+    if (full.trim().length > 0) return full;
+    if (error?.name === "AbortError") {
+      throw new Error("A geração demorou demais e foi interrompida.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+  return full;
+}
+
 export interface CheckoutResponse {
   url?: string;
   error?: string;
