@@ -51,9 +51,10 @@ function splitIntoTopics(text: string): string[] {
   const clean = String(text || "").trim();
   if (!clean) return [];
 
-  // 1) Quebra em sentenças: ponto/ponto-vírgula/dois-pontos seguido de espaço + maiúscula ou dígito
+  // 1) Quebra em sentenças: ponto/ponto-vírgula seguido de espaço + maiúscula/dígito.
+  //    NÃO quebra em ":" (geralmente introduz exemplo/lista — ex.: "(Ex: ...)").
   const initial = clean
-    .replace(/([.;:])\s+(?=[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ\d])/g, "$1\n")
+    .replace(/([.;])\s+(?=[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ\d])/g, "$1\n")
     .split("\n")
     .map((s) => s.trim())
     .filter((s) => s.length > 4);
