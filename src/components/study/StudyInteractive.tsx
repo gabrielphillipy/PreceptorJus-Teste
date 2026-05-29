@@ -24,10 +24,22 @@ function renderInline(text: string): string {
   return escHtml(text).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 }
 
+function isTableSep(line: string): boolean {
+  return /^\|?[\s:|-]*-{2,}[\s:|-]*\|?$/.test(line.trim()) && line.includes("-");
+}
+function isTableRow(line: string): boolean {
+  const t = line.trim();
+  return t.startsWith("|") && (t.match(/\|/g) || []).length >= 2;
+}
+function tableCells(line: string): string[] {
+  return line.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+}
+
 function markdownToHtml(markdown: string): string {
   const lines = markdown.split("\n");
   const parts: string[] = [];
   let listItems: string[] = [];
+  let tableRows: string[][] = [];
   let sectionNum = 0;
 
   const flushList = () => {
@@ -37,8 +49,30 @@ function markdownToHtml(markdown: string): string {
     }
   };
 
+  const flushTable = () => {
+    if (!tableRows.length) return;
+    const rows = tableRows;
+    tableRows = [];
+    const [headers, ...body] = rows;
+    if (body.length === 0) {
+      const text = headers.filter(Boolean).join(" · ");
+      if (text) parts.push(`<p class="si-p">${renderInline(text)}</p>`);
+      return;
+    }
+    const head = `<thead><tr>${headers.map((h) => `<th>${renderInline(h)}</th>`).join("")}</tr></thead>`;
+    const tbody = `<tbody>${body
+      .map((r) => `<tr>${r.map((c) => `<td>${renderInline(c)}</td>`).join("")}</tr>`)
+      .join("")}</tbody>`;
+    parts.push(`<div class="si-table-wrap"><table class="si-table">${head}${tbody}</table></div>`);
+  };
+
   for (const raw of lines) {
     const line = raw.trim();
+
+    if (isTableSep(line) && (tableRows.length || isTableRow(line))) { continue; }
+    if (isTableRow(line)) { flushList(); tableRows.push(tableCells(line)); continue; }
+    flushTable();
+
     if (!line || /^-{3,}$/.test(line)) { flushList(); continue; }
 
     if (line.startsWith("## ")) {
@@ -63,6 +97,7 @@ function markdownToHtml(markdown: string): string {
     parts.push(`<p class="si-p">${renderInline(line.replace(/^\d+\.\s+/, ""))}</p>`);
   }
   flushList();
+  flushTable();
   return parts.join("\n");
 }
 

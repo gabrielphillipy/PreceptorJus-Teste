@@ -10,7 +10,8 @@ import { LEGAL_LINE_REGEX } from "@/lib/brand";
 export type StudyLineItem =
   | { type: "paragraph"; text: string; legal: boolean }
   | { type: "subheading"; text: string }
-  | { type: "list"; items: string[] };
+  | { type: "list"; items: string[] }
+  | { type: "table"; headers: string[]; rows: string[][] };
 
 export interface StudySectionParsed {
   title: string;
@@ -65,10 +66,11 @@ export function parseStudySections(markdown: string, meta: StudyMeta): StudySect
   }));
 }
 
-/** Agrupa parágrafos, subheadings (### ...) e listas contíguas. */
+/** Agrupa parágrafos, subheadings (### ...), listas e tabelas contíguas. */
 function groupLinesIntoItems(rawLines: string[]): StudyLineItem[] {
   const items: StudyLineItem[] = [];
   let listBuffer: string[] = [];
+  let tableBuffer: string[][] = [];
 
   const flushList = () => {
     if (!listBuffer.length) return;
@@ -76,8 +78,36 @@ function groupLinesIntoItems(rawLines: string[]): StudyLineItem[] {
     listBuffer = [];
   };
 
+  const flushTable = () => {
+    if (!tableBuffer.length) return;
+    const rows = tableBuffer;
+    tableBuffer = [];
+    const [headers, ...body] = rows;
+    // Tabela só com cabeçalho (geração truncada) → vira parágrafo legível.
+    if (body.length === 0) {
+      const text = headers.filter(Boolean).join(" · ");
+      if (text) items.push({ type: "paragraph", text, legal: LEGAL_LINE_REGEX.test(text) });
+      return;
+    }
+    items.push({ type: "table", headers, rows: body });
+  };
+
   rawLines.forEach((rawLine) => {
     const line = rawLine.trim();
+
+    // ── Tabela markdown ──────────────────────────────────────────
+    // Linha separadora (|---|---|) mantém a tabela aberta sem virar linha.
+    if (isTableSeparator(line) && (tableBuffer.length || isTableRow(line))) {
+      return;
+    }
+    if (isTableRow(line)) {
+      flushList();
+      tableBuffer.push(parseTableCells(line));
+      return;
+    }
+    // Qualquer outra linha encerra a tabela em andamento.
+    flushTable();
+
     if (line.startsWith("### ")) {
       flushList();
       items.push({ type: "subheading", text: line.slice(4).trim() });
@@ -101,6 +131,7 @@ function groupLinesIntoItems(rawLines: string[]): StudyLineItem[] {
     });
   });
   flushList();
+  flushTable();
   return items;
 }
 
@@ -328,6 +359,15 @@ function isTableSeparator(line: string): boolean {
 function isTableRow(line: string): boolean {
   const t = line.trim();
   return t.startsWith("|") && (t.match(/\|/g) || []).length >= 2;
+}
+
+/** Divide uma linha de tabela em células, preservando posição (não filtra vazios). */
+function parseTableCells(line: string): string[] {
+  return line
+    .trim()
+    .replace(/^\||\|$/g, "")
+    .split("|")
+    .map((c) => c.trim());
 }
 
 /** Rótulos genéricos de cabeçalho de tabela — sem valor informativo. */

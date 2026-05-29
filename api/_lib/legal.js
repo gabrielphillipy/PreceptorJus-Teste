@@ -84,11 +84,11 @@ const STUDY_FINAL_INSTRUCTIONS = [
 // Per-format generation budgets — drives both maxOutputTokens and Gemini's thinking budget.
 // Gemini 2.5 family requires thinking budget to be either 0 (disabled) or >= 512.
 const STUDY_BUDGETS = {
-  fechamento:     { tokens: 3500, thinking: 512 },
+  fechamento:     { tokens: 7000, thinking: 512 },
   mapa:           { tokens: 1400, thinking: 0 },
-  peca:           { tokens: 3000, thinking: 512 },
-  jurisprudencia: { tokens: 3500, thinking: 512 },
-  questoes:       { tokens: 3200, thinking: 512 },
+  peca:           { tokens: 6000, thinking: 512 },
+  jurisprudencia: { tokens: 7000, thinking: 512 },
+  questoes:       { tokens: 6000, thinking: 512 },
 };
 
 function composeBase(domain) {

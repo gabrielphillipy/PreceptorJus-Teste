@@ -93,6 +93,30 @@ function ItemsBlock({ items }: { items: StudyLineItem[] }) {
             </p>
           );
         }
+        if (item.type === "table") {
+          return (
+            <div key={i} className="pjus-table-wrap">
+              <table className="pjus-table">
+                <thead>
+                  <tr>
+                    {item.headers.map((h, j) => (
+                      <th key={j}><InlineText text={h} /></th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {item.rows.map((row, r) => (
+                    <tr key={r}>
+                      {row.map((cell, c) => (
+                        <td key={c}><InlineText text={cell} /></td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
         // list
         return (
           <ul key={i} className="grid gap-2 m-0 p-0 list-none">
