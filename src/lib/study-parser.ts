@@ -281,11 +281,35 @@ function compactBranchTitle(value: string, index: number): string {
   return compactMindMapText(clean || inferBranchTitle(index), 18);
 }
 
+/** Linha separadora de tabela markdown: | :--- | :---: | ---: | */
+function isTableSeparator(line: string): boolean {
+  return /^\|?[\s:|-]*-{2,}[\s:|-]*\|?$/.test(line.trim()) && line.includes("-");
+}
+
+/** Linha de dados de tabela markdown: | A | B | C | → "A — B — C" */
+function isTableRow(line: string): boolean {
+  const t = line.trim();
+  return t.startsWith("|") && (t.match(/\|/g) || []).length >= 2;
+}
+
+function convertTableRow(line: string): string {
+  return line
+    .trim()
+    .replace(/^\||\|$/g, "")
+    .split("|")
+    .map((c) => c.trim())
+    .filter(Boolean)
+    .join(" — ");
+}
+
 function plainLinesFromRaw(rawLines: string[]): string[] {
   return rawLines
     .map((line) => line.trim().replace(/^[-*•]\s+/, ""))
     .filter(Boolean)
-    .filter((line) => !line.startsWith("### ") && !isMarkdownDivider(line));
+    .filter((line) => !line.startsWith("### ") && !isMarkdownDivider(line))
+    .filter((line) => !isTableSeparator(line))
+    .map((line) => (isTableRow(line) ? convertTableRow(line) : line))
+    .filter(Boolean);
 }
 
 /** Limpa um raw line preservando todo o texto (sem truncar). */
