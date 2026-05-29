@@ -7,6 +7,7 @@ import { Eyebrow } from "@/components/brand/Eyebrow";
 import { MI } from "@/components/brand/MaterialIcon";
 import { StudyForm, type StudyFormValues } from "@/components/study/StudyForm";
 import { StudyErrorState } from "@/components/study/StudyErrorState";
+import { StudyThinking } from "@/components/study/StudyThinking";
 import { PreceptorChatPanel } from "@/components/study/PreceptorChatPanel";
 
 type ViewState =
@@ -72,7 +73,7 @@ export default function Dashboard() {
             onSubmit={handleGenerate}
           />
           {view.kind === "empty" && <EmptyState />}
-          {view.kind === "loading" && <LoaderShimmer />}
+          {view.kind === "loading" && <StudyThinking />}
           {view.kind === "error" && (
             <StudyErrorState message={view.message} onRetry={handleRetry} />
           )}
@@ -107,19 +108,6 @@ function EmptyState() {
       <span style={{ fontSize: 13, color: "rgb(var(--brand-ink-2))" }}>
         Preencha o tema e gere o estudo.
       </span>
-    </div>
-  );
-}
-
-function LoaderShimmer() {
-  return (
-    <div className="summary">
-      <div className="loader">
-        <div className="loader__line" />
-        <div className="loader__line" />
-        <div className="loader__line" />
-        <div className="loader__line" />
-      </div>
     </div>
   );
 }

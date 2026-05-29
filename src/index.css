@@ -490,6 +490,121 @@ textarea.field { height: auto; padding: 12px 14px; min-height: 92px; resize: ver
 @keyframes shimmer { 0%{ background-position: 200% 0; } 100%{ background-position: -200% 0; } }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
+/* ─── Study: "Preceptor pensando" multi-step loader ─────────────── */
+.study-thinking { padding: 34px 40px 38px; }
+.study-thinking__head { margin-bottom: 24px; }
+.study-thinking__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(var(--brand-gold));
+  margin: 0 0 12px;
+}
+.study-thinking__eyebrow::before {
+  content: "";
+  width: 22px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgb(var(--brand-gold));
+}
+.study-thinking__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+  color: rgb(var(--brand-ink));
+  margin: 0 0 8px;
+  display: flex;
+  align-items: baseline;
+}
+.study-thinking__dots { display: inline-flex; gap: 3px; margin-left: 2px; }
+.study-thinking__dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgb(var(--brand-ink));
+  display: block;
+  animation: thinking-blink 1.4s ease-in-out infinite;
+}
+.study-thinking__dots i:nth-child(2) { animation-delay: 0.2s; }
+.study-thinking__dots i:nth-child(3) { animation-delay: 0.4s; }
+@keyframes thinking-blink {
+  0%, 80%, 100% { opacity: 0.2; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-2px); }
+}
+.study-thinking__sub {
+  font-size: 14px;
+  color: rgb(var(--brand-ink-2));
+  margin: 0;
+}
+
+.study-thinking__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.study-step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 4px;
+  transition: opacity 0.4s ease;
+}
+.study-step__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: background 0.35s ease, color 0.35s ease;
+}
+.study-step__text { display: grid; gap: 1px; min-width: 0; }
+.study-step__title { font-size: 14px; font-weight: 600; transition: color 0.3s ease; }
+.study-step__sub { font-size: 12.5px; transition: color 0.3s ease; }
+
+/* concluído */
+.study-step--done .study-step__icon {
+  background: rgb(var(--brand-primary-dark));
+  color: rgb(var(--brand-gold));
+}
+.study-step--done .study-step__title { color: rgb(var(--brand-primary)); }
+.study-step--done .study-step__sub { color: var(--pjus-ink-3); }
+
+/* ativo */
+.study-step--active { animation: step-rise 0.45s ease both; }
+.study-step--active .study-step__icon {
+  background: rgba(201, 168, 76, 0.16);
+  color: rgb(var(--brand-gold));
+  animation: step-pulse 1.6s ease-in-out infinite;
+}
+.study-step--active .study-step__title { color: rgb(var(--brand-ink)); }
+.study-step--active .study-step__sub { color: rgb(var(--brand-ink-2)); }
+
+/* pendente */
+.study-step--pending { opacity: 0.45; }
+.study-step--pending .study-step__icon {
+  background: var(--pjus-surface-2);
+  color: var(--pjus-ink-3);
+}
+.study-step--pending .study-step__title { color: var(--pjus-ink-3); }
+.study-step--pending .study-step__sub { color: var(--pjus-ink-3); }
+
+@keyframes step-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes step-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.0); }
+  50% { box-shadow: 0 0 0 5px rgba(201, 168, 76, 0.12); }
+}
+
 /* ─── Page transitions ──────────────────────────────────────────────── */
 @keyframes fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .fade-up { animation: fade-up 0.4s ease-out both; }
