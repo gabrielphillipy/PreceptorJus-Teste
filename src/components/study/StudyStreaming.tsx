@@ -1,16 +1,59 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { markdownToHtml } from "@/lib/study-markdown";
 
 interface Props {
+  /** Texto-alvo: cresce conforme os pedaços chegam do streaming. */
   text: string;
+  /** Stream terminou — ao acabar de "digitar", dispara onDone. */
+  done?: boolean;
+  onDone?: () => void;
 }
 
-/** Preview ao vivo: renderiza o markdown parcial conforme o texto chega. */
-export function StudyStreaming({ text }: Props) {
-  const html = useMemo(() => markdownToHtml(text), [text]);
+/**
+ * Preview ao vivo com efeito de digitação palavra-por-palavra.
+ * O texto recebido (que chega em blocos) é revelado de forma suave,
+ * como se a IA estivesse escrevendo. Quando alcança o fim e o stream
+ * terminou, chama onDone para a tela trocar pelo documento final.
+ */
+export function StudyStreaming({ text, done = false, onDone }: Props) {
+  const [shown, setShown] = useState(0);
+  const targetRef = useRef(text);
+  targetRef.current = text;
+  const firedRef = useRef(false);
   const docRef = useRef<HTMLDivElement>(null);
 
-  // Mantém o scroll acompanhando o fim do texto que vai sendo escrito.
+  // Avança a "digitação" em intervalos fixos, palavra por palavra.
+  useEffect(() => {
+    const id = setInterval(() => {
+      setShown((cur) => {
+        const target = targetRef.current;
+        if (cur >= target.length) return cur;
+        // Quanto mais texto pendente, mais palavras por tick (para alcançar).
+        const backlog = target.length - cur;
+        const words = backlog > 600 ? 8 : backlog > 200 ? 3 : 1;
+        let idx = cur;
+        for (let w = 0; w < words && idx < target.length; w++) {
+          while (idx < target.length && /\s/.test(target[idx])) idx++;
+          while (idx < target.length && !/\s/.test(target[idx])) idx++;
+        }
+        return idx;
+      });
+    }, 45);
+    return () => clearInterval(id);
+  }, []);
+
+  // Terminou de digitar tudo e o stream acabou → conclui.
+  useEffect(() => {
+    if (done && text.length > 0 && shown >= text.length && !firedRef.current) {
+      firedRef.current = true;
+      onDone?.();
+    }
+  }, [done, shown, text, onDone]);
+
+  const visible = text.slice(0, Math.min(shown, text.length));
+  const html = useMemo(() => markdownToHtml(visible), [visible]);
+
+  // Mantém o scroll acompanhando o fim do texto.
   useEffect(() => {
     const el = docRef.current;
     if (el) el.scrollTop = el.scrollHeight;

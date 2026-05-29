@@ -52,8 +52,13 @@ export default function StudyResult() {
   const [generated, setGenerated] = useState<StudyData | null>(null);
   // null = não está gerando; "" = pensando (sem texto ainda); texto = escrevendo
   const [streamingText, setStreamingText] = useState<string | null>(null);
+  const [streamDone, setStreamDone] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
   const [genMeta, setGenMeta] = useState<{ topic: string; modeLabel: string } | null>(null);
+
+  const reqRef = useRef<StudyFormValues | null>(null);
+  const finalTextRef = useRef("");
+  const persistedRef = useRef(false);
 
   const study = routeStudy ?? generated ?? (generateReq ? null : loadSaved());
 
@@ -64,50 +69,65 @@ export default function StudyResult() {
   const initialTab = routeStudy?.mode === "mapa" ? "mapa" : "documento";
   const [tab, setTab] = useState<"documento" | "interativo" | "mapa">(initialTab);
 
+  // ── Conclusão: chamada quando a digitação alcança o texto final ──
+  const persist = useCallback(() => {
+    const req = reqRef.current;
+    if (!req || persistedRef.current) return;
+    persistedRef.current = true;
+    const text = finalTextRef.current;
+    const studyData: StudyData = {
+      topic: req.topic,
+      mode: req.mode,
+      modeLabel: req.modeLabel,
+      text,
+    };
+    saveStudy({
+      id: `study-${Date.now()}`,
+      topic: req.topic,
+      text,
+      mode: req.mode,
+      modeLabel: req.modeLabel,
+      favorite: false,
+      excerpt: text.replace(/\s+/g, " ").trim().slice(0, 130),
+      date: new Date().toLocaleDateString("pt-BR"),
+    });
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(studyData)); } catch {}
+    if (req.mode === "mapa") setTab("mapa");
+    setGenerated(studyData);
+    setStreamingText(null);
+    setStreamDone(false);
+    navigate("/app/study/result", { replace: true, state: { study: studyData } });
+  }, [navigate, saveStudy]);
+
   // ── Geração com streaming na própria tela ───────────────────────
   const runGeneration = useCallback(
     async (req: StudyFormValues) => {
+      reqRef.current = req;
+      persistedRef.current = false;
       setGenError(null);
       setGenMeta({ topic: req.topic, modeLabel: req.modeLabel });
+      setStreamDone(false);
       setStreamingText("");
       let acc = "";
       const payload = { mode: req.mode, topic: req.topic, goals: req.goals, sections: req.sections };
-
-      const persist = (text: string) => {
-        const studyData: StudyData = {
-          topic: req.topic,
-          mode: req.mode,
-          modeLabel: req.modeLabel,
-          text,
-        };
-        saveStudy({
-          id: `study-${Date.now()}`,
-          topic: req.topic,
-          text,
-          mode: req.mode,
-          modeLabel: req.modeLabel,
-          favorite: false,
-          excerpt: text.replace(/\s+/g, " ").trim().slice(0, 130),
-          date: new Date().toLocaleDateString("pt-BR"),
-        });
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(studyData)); } catch {}
-        if (req.mode === "mapa") setTab("mapa");
-        setGenerated(studyData);
-        setStreamingText(null);
-        navigate("/app/study/result", { replace: true, state: { study: studyData } });
-      };
 
       try {
         const text = await callAIStream(payload, (full) => {
           acc = full;
           setStreamingText(full);
         });
-        persist(text || acc);
+        // Stream concluído: fixa o texto final e deixa o typewriter alcançar.
+        finalTextRef.current = text || acc;
+        setStreamingText(finalTextRef.current);
+        setStreamDone(true);
       } catch (error: any) {
         if (!acc.trim()) {
+          // Streaming não produziu nada → tenta o modo bufferizado.
           try {
             const text = await callAI(payload);
-            persist(text);
+            finalTextRef.current = text;
+            setStreamingText(text);
+            setStreamDone(true);
             return;
           } catch (fallbackError: any) {
             setStreamingText(null);
@@ -115,11 +135,12 @@ export default function StudyResult() {
             return;
           }
         }
-        setStreamingText(null);
-        setGenError(error?.message || "Erro ao gerar.");
+        // Recebeu parte antes de cair → digita o que tem e conclui.
+        finalTextRef.current = acc;
+        setStreamDone(true);
       }
     },
-    [navigate, saveStudy],
+    [],
   );
 
   const didStartRef = useRef(false);
@@ -170,7 +191,11 @@ export default function StudyResult() {
                 <span className="study-page-tag">{genMeta?.modeLabel || "Nota jurídica"}</span>
               </div>
             </header>
-            {streamingText ? <StudyStreaming text={streamingText} /> : <StudyThinking />}
+            {streamingText ? (
+              <StudyStreaming text={streamingText} done={streamDone} onDone={persist} />
+            ) : (
+              <StudyThinking />
+            )}
           </div>
         </div>
       </div>
