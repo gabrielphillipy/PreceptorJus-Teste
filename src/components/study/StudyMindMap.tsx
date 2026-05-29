@@ -51,31 +51,14 @@ function splitIntoTopics(text: string): string[] {
   const clean = String(text || "").trim();
   if (!clean) return [];
 
-  // 1) Quebra em sentenças: ponto/ponto-vírgula seguido de espaço + maiúscula/dígito.
-  //    NÃO quebra em ":" (geralmente introduz exemplo/lista — ex.: "(Ex: ...)").
-  const initial = clean
+  // Quebra APENAS em fronteira de frase real: ponto/ponto-vírgula + espaço +
+  // maiúscula/dígito. NÃO quebra em ":" nem em vírgula — vírgula + "que/onde…"
+  // é oração subordinada da MESMA frase, não um novo tópico.
+  return clean
     .replace(/([.;])\s+(?=[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ\d])/g, "$1\n")
     .split("\n")
     .map((s) => s.trim())
     .filter((s) => s.length > 4);
-
-  // 2) Sentenças longas: subdivide por vírgula + conectivo
-  const out: string[] = [];
-  initial.forEach((line) => {
-    if (line.length <= 140) {
-      out.push(line);
-      return;
-    }
-    const parts = line.split(
-      /,\s+(?=(?:que|onde|cuja|cujo|condicionad[oa]|ressalvad[oa]|salvo|exceto|al[eé]m|tamb[eé]m|por[eé]m|pois|portanto|enquanto|sendo|ou seja|isto [eé])\b)/i,
-    );
-    parts.forEach((p) => {
-      const t = p.trim().replace(/^[,;]\s*/, "");
-      if (t.length > 4) out.push(t);
-    });
-  });
-
-  return out;
 }
 
 /** Extrai termos jurídicos relevantes (artigos, leis, súmulas, termos em negrito). */
