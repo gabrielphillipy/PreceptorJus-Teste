@@ -83,12 +83,8 @@ function groupLinesIntoItems(rawLines: string[]): StudyLineItem[] {
     const rows = tableBuffer;
     tableBuffer = [];
     const [headers, ...body] = rows;
-    // Tabela só com cabeçalho (geração truncada) → vira parágrafo legível.
-    if (body.length === 0) {
-      const text = headers.filter(Boolean).join(" · ");
-      if (text) items.push({ type: "paragraph", text, legal: LEGAL_LINE_REGEX.test(text) });
-      return;
-    }
+    // Tabela só com cabeçalho (geração truncada) não carrega informação → descarta.
+    if (body.length === 0) return;
     items.push({ type: "table", headers, rows: body });
   };
 

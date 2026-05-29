@@ -47,11 +47,8 @@ export function markdownToHtml(markdown: string): string {
     const rows = tableRows;
     tableRows = [];
     const [headers, ...body] = rows;
-    if (body.length === 0) {
-      const text = headers.filter(Boolean).join(" · ");
-      if (text) parts.push(`<p class="si-p">${renderInline(text)}</p>`);
-      return;
-    }
+    // Tabela só com cabeçalho (truncada) não carrega informação → descarta.
+    if (body.length === 0) return;
     const head = `<thead><tr>${headers.map((h) => `<th>${renderInline(h)}</th>`).join("")}</tr></thead>`;
     const tbody = `<tbody>${body
       .map((r) => `<tr>${r.map((c) => `<td>${renderInline(c)}</td>`).join("")}</tr>`)
