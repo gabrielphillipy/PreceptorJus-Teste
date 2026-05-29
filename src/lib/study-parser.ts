@@ -205,9 +205,18 @@ function inferBranchTitle(index: number): string {
   return BRANCH_FALLBACK_TITLES[index] || `Ramo ${index + 1}`;
 }
 
-/** Cria um título curto e legível para o card fechado.
- *  Tenta achar um corte natural (vírgula, dois-pontos, ponto-vírgula) antes de
- *  qualquer corte arbitrário. Limita a ~50 chars sem "...".
+/** Palavras funcionais a remover do INÍCIO do título (preposições, artigos, conectores). */
+const LEADING_STOP =
+  /^(?:o|a|os|as|um|uma|uns|umas|de|do|da|dos|das|no|na|nos|nas|em|este|esta|estes|estas|esse|essa|esses|essas|aquele|aquela|outro|outra|outros|outras|por|para|com|sendo|al[eé]m|tamb[eé]m|tanto|quanto|quando|onde|cujo|cuja)\s+/i;
+
+/** Palavras funcionais a remover do FIM do título (deixa terminar em substantivo/adjetivo). */
+const TRAILING_STOP =
+  /\s+(?:que|e|ou|de|do|da|dos|das|no|na|nos|nas|em|com|para|por|se|como|[eé]|[àá]|ao|aos|[àá]s|a|o|os|as|um|uma|cujo|cuja|cujos|cujas|qual|quais|onde|sobre|entre|sob|ante|ap[oó]s|at[eé]|desde|sem|ser|est[aá]|s[aã]o|diz|respeito|reside|trata|refere)$/i;
+
+/** Cria um título curto, completo e legível para o card fechado.
+ *  - Usa a primeira sentença real (sem quebrar em "Art." / "Lei.")
+ *  - Remove preposições/artigos do início e conectores soltos do fim
+ *  - Limita a ~50 chars sem "..."
  */
 function makeShortTitle(text: string, maxLen = 50): string {
   let clean = String(text || "")
@@ -218,25 +227,52 @@ function makeShortTitle(text: string, maxLen = 50): string {
     .trim();
   if (!clean) return "";
 
-  // Remove artigo inicial para deixar o título mais punchy
-  clean = clean.replace(/^(?:O|A|Os|As|Um|Uma)\s+/, "");
+  // Tabela: "A — B" já é um rótulo limpo; mantém como está
+  if (clean.includes(" — ")) {
+    return clean.length <= maxLen + 20 ? clean : clean.slice(0, maxLen + 20).trim();
+  }
 
-  if (clean.length <= maxLen) return clean;
+  // 1) Primeira sentença (respeita abreviações jurídicas)
+  const sentence = extractFirstSentence(clean);
+  if (sentence && sentence.length >= 10) clean = sentence.replace(/[.!?;:]+$/, "").trim();
 
-  // 1) Procura quebra natural (: ; ,) dentro do limite + margem
-  const window = clean.slice(0, maxLen + 25);
-  for (const sep of [":", ";", ","]) {
-    const idx = window.indexOf(sep);
-    if (idx > 15 && idx <= maxLen + 10) {
-      const candidate = clean.slice(0, idx).trim();
-      if (candidate.length <= maxLen + 10) return candidate;
+  // 2) Remove palavras funcionais do início (repete: "Um dos" → "dos" → "")
+  let prev: string;
+  do {
+    prev = clean;
+    clean = clean.replace(LEADING_STOP, "");
+  } while (clean !== prev && clean.length > 0);
+
+  // 3) Trunca em quebra natural ou por palavra (sem "...")
+  if (clean.length > maxLen) {
+    let cutAt = -1;
+    const window = clean.slice(0, maxLen + 22);
+    for (const sep of [":", ";", ","]) {
+      const idx = window.indexOf(sep);
+      if (idx > 15 && idx <= maxLen + 8) {
+        cutAt = idx;
+        break;
+      }
+    }
+    if (cutAt > 0) {
+      clean = clean.slice(0, cutAt).trim();
+    } else {
+      const cut = clean.slice(0, maxLen);
+      const lastSpace = cut.lastIndexOf(" ");
+      clean = clean.slice(0, lastSpace > maxLen / 2 ? lastSpace : maxLen).trim();
     }
   }
 
-  // 2) Corte por palavra, sem "..."
-  const cut = clean.slice(0, maxLen);
-  const lastSpace = cut.lastIndexOf(" ");
-  return clean.slice(0, lastSpace > maxLen / 2 ? lastSpace : maxLen).trim();
+  // 4) Remove conectores soltos do fim ("é a" → "é" → "")
+  do {
+    prev = clean;
+    clean = clean.replace(TRAILING_STOP, "");
+  } while (clean !== prev && clean.length > 0);
+
+  // 5) Capitaliza primeira letra
+  if (clean) clean = clean.charAt(0).toUpperCase() + clean.slice(1);
+
+  return clean;
 }
 
 /** Lista de abreviações jurídicas comuns que terminam em "." mas NÃO indicam fim de sentença. */
