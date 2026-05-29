@@ -479,7 +479,20 @@ export function buildMindMapModel(sections: StudySectionParsed[], meta: StudyMet
     }
   }
 
-  return { topic, centralText, branches: normalized };
+  // Remove ramos sem conteúdo real (ex.: "Comparativo (se aplicável)" que só
+  // virou um rótulo de tabela curto). Um ramo é mantido se tiver >= 2 pontos,
+  // ou se seu único ponto tiver >= 5 palavras de conteúdo real.
+  const substantial = normalized.filter((b) => {
+    if (b.points.length === 0) return false;
+    if (b.points.length >= 2) return true;
+    const words = (b.points[0].full.match(/\S+/g) || []).length;
+    return words >= 5;
+  });
+
+  const kept = substantial.length >= 1 ? substantial : normalized;
+  const finalBranches = kept.map((b, i) => ({ ...b, index: i }));
+
+  return { topic, centralText, branches: finalBranches };
 }
 
 /* ───────────────────────────────────────────────────────────── *
