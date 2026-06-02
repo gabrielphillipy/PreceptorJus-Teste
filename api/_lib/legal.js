@@ -71,14 +71,15 @@ const DEFAULT_STUDY_FORMAT = [
   "## Para se aprofundar",
 ];
 
-// Seven compact lines, ordered: plan → density → completeness → depth probe → contrast → precision → format.
+// Compact lines, ordered: plan → density → completeness → depth probe → contrast → ABNT-citations → ABNT-references → format.
 const STUDY_FINAL_INSTRUCTIONS = [
   "Antes de redigir, identifique mentalmente 3 a 4 pontos do tema com maior peso de prova ou controvérsia, e concentre profundidade neles.",
   "Cada seção deve ter 2 a 4 parágrafos densos. Sem introdução, sem reformular o enunciado. Vá direto.",
-  "OBRIGATÓRIO cobrir TODAS as seções listadas com profundidade plena. Não encurte, não resuma, não pule — cada seção deve estar completa, incluindo Comparativo, Aplicação em prova e Para se aprofundar. Nunca interrompa no meio de uma seção, parágrafo ou tabela.",
+  "OBRIGATÓRIO cobrir TODAS as seções listadas com profundidade plena. Não encurte, não resuma, não pule — cada seção deve estar completa, incluindo Comparativo, Aplicação em prova, Para se aprofundar e Referências. Nunca interrompa no meio de uma seção, parágrafo ou tabela.",
   "Para cada conceito central, explique POR QUE existe (finalidade, princípio) e estabeleça conexão com requisitos, exceções ou institutos relacionados.",
   "Quando houver instituto próximo ou divergência relevante, contraste em uma tabela ou em dois parágrafos curtos (uma posição em cada).",
-  "Cite artigo, súmula ou tema com confiança quando tiver alta certeza. Caso contrário, diga 'verifique no Vade Mecum / site oficial' em vez de omitir. Inclua alertas de prova quando aplicável.",
+  "Citações no corpo do texto seguem ABNT NBR 10520:2023. Paráfrases: (SOBRENOME, ano). Citação direta curta (até 3 linhas): entre aspas + (SOBRENOME, ano, p. X). Citação direta longa: parágrafo separado, recuado, sem aspas, (SOBRENOME, ano, p. X) ao fim. Autor citado no texto: 'Segundo Sobrenome (ano, p. X), …'. Quatro ou mais autores: 'et al.'. Citação legal: 'art. X da Lei nº Y/ano' ou 'art. X da CF/88'; súmula: 'Súmula nº X do STJ/STF'.",
+  "A seção 'Referências' (última, obrigatória) deve seguir ABNT NBR 6023:2018: SOBRENOME em CAIXA-ALTA, título em **negrito**, *In* em itálico, ordenação alfabética. Use os modelos por tipo (livro, capítulo, artigo, Constituição, lei, código, súmula, acórdão). Sem URLs nem datas de acesso. Não invente: marque incertezas com 'verifique a edição mais recente'.",
   "Na seção 'Para se aprofundar': 4 blocos curtos (Doutrina, Legislação, Jurisprudência, Material complementar) com 2 a 3 indicações cada. Sem linhas divisórias '---', sem despedida.",
 ];
 
@@ -164,8 +165,23 @@ function buildFlashcardsPrompt(body, base) {
 // densas em uma única chamada (estourando tokens ou tempo de função).
 
 // Seção bibliográfica padrão usada no fim dos estudos longos.
-const REFERENCIAS_HINT =
-  "Liste em bullets de 5 a 8 referências bibliográficas confiáveis para o tema, em formato ABNT simplificado e legível. Cubra: 2 a 3 obras doutrinárias (autor, título, editora, ano), 2 a 3 dispositivos legais (lei e artigos principais), 1 a 2 súmulas/julgados-paradigma (tribunal + número/ano). NÃO invente referências: cite apenas obras e julgados de existência amplamente conhecida; se houver incerteza sobre edição/ano específicos, escreva 'verifique a edição mais recente' em vez de chutar. Não inclua URLs nem datas de acesso. Sem despedida e sem linhas '---'.";
+// Padrão ABNT NBR 6023:2018 rigoroso, com modelos por tipo de fonte.
+const REFERENCIAS_HINT = [
+  "Liste de 5 a 8 referências em formato ABNT NBR 6023:2018 RIGOROSO, ordenadas alfabeticamente por sobrenome do autor (ou pelo elemento de entrada da obra coletiva/legislativa). Use bullets ('-').",
+  "Convenções: SOBRENOME do autor em CAIXA-ALTA seguido de vírgula e Nome; título da obra em **negrito**; subtítulo após dois-pontos sem negrito; edição apenas a partir da 2ª (formato 'X. ed.'); a palavra 'In' em *itálico*. Termine cada referência com ponto final. Sem URLs nem datas de acesso.",
+  "Modelos por tipo (siga literalmente):",
+  "- Livro: SOBRENOME, Nome. **Título da obra**: subtítulo. X. ed. Cidade: Editora, ano.",
+  "- Capítulo em obra coletiva: SOBRENOME, Nome. Título do capítulo. *In*: SOBRENOME, Nome (org.). **Título da obra**. X. ed. Cidade: Editora, ano. p. X-Y.",
+  "- Artigo de periódico: SOBRENOME, Nome. Título do artigo. **Nome do Periódico**, Cidade, v. X, n. Y, p. Z-W, mês/ano.",
+  "- Constituição: BRASIL. [Constituição (1988)]. **Constituição da República Federativa do Brasil**. Brasília, DF: Senado Federal, 1988.",
+  "- Lei: BRASIL. Lei nº X.XXX, de DD de mês de AAAA. Ementa resumida.",
+  "- Código (referência única): BRASIL. **Código [Civil/Penal/de Processo Civil]**. Lei nº X.XXX, de DD de mês de AAAA.",
+  "- Súmula: BRASIL. [Tribunal por extenso]. Súmula n. X. Texto da súmula. Cidade: Tribunal, ano.",
+  "- Acórdão/julgado: BRASIL. [Tribunal] ([Órgão julgador]). [Tipo de recurso] n. X/UF. Relator: Min. Nome. [Data do julgamento]. **Diário da Justiça Eletrônico**: data de publicação.",
+  "Cubra um mix equilibrado: 2 a 3 obras doutrinárias, 2 a 3 dispositivos legais (Constituição, leis, códigos), 1 a 2 súmulas/acórdãos-paradigma.",
+  "NÃO invente: cite apenas obras e julgados de existência amplamente conhecida. Se houver dúvida sobre edição, volume ou ano específicos, escreva 'verifique a edição mais recente' em vez de chutar.",
+  "Sem despedida, sem comentários antes ou depois da lista, sem linhas divisórias '---'.",
+].join("\n");
 
 const FECHAMENTO_SECTIONS = [
   { title: "Conceito, natureza jurídica e finalidade" },
@@ -251,7 +267,9 @@ function buildSectionPrompt(body, base, section, allTitles, idx, total) {
       "Diretrizes gerais:",
       "- 2 a 4 parágrafos densos. Vá direto, sem introdução genérica, sem reformular o tema.",
       "- Explique POR QUE existe (finalidade, princípio) e conecte com requisitos, exceções ou institutos relacionados.",
-      "- Cite artigo, súmula ou tese com confiança quando tiver alta certeza. Caso contrário, diga 'verifique no Vade Mecum / site oficial' em vez de omitir.",
+      "- Citações no corpo do texto seguem ABNT NBR 10520:2023. Paráfrases: (SOBRENOME, ano). Citação direta curta (até 3 linhas): entre aspas + (SOBRENOME, ano, p. X). Citação direta longa (mais de 3 linhas): parágrafo separado, recuado, sem aspas, (SOBRENOME, ano, p. X) ao fim. Autor citado no texto: 'Segundo Sobrenome (ano, p. X), ...'. Dois autores: (SOBRENOME; SOBRENOME, ano); três: idem com três; quatro ou mais: (SOBRENOME et al., ano).",
+      "- Citação de dispositivos legais no texto: 'art. X da Lei nº Y/ano' ou 'art. X da CF/88'. Súmulas: 'Súmula nº X do STJ/STF'.",
+      "- Cite artigo, súmula, autor ou tese com confiança apenas quando tiver alta certeza. Caso contrário, diga 'verifique no Vade Mecum / site oficial' em vez de omitir.",
       "- Não escreva conclusão, despedida nem linhas divisórias '---'.",
     ].filter(Boolean).join("\n\n"),
     max_output_tokens: 2500,
