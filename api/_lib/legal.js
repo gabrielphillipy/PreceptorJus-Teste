@@ -71,10 +71,11 @@ const DEFAULT_STUDY_FORMAT = [
   "## Para se aprofundar",
 ];
 
-// Six compact lines, ordered: plan → density → depth probe → contrast → precision → format.
+// Seven compact lines, ordered: plan → density → budget → depth probe → contrast → precision → format.
 const STUDY_FINAL_INSTRUCTIONS = [
   "Antes de redigir, identifique mentalmente 3 a 4 pontos do tema com maior peso de prova ou controvérsia, e concentre profundidade neles.",
-  "Cada seção deve ter 2 a 4 parágrafos densos. Sem introdução, sem reformular o enunciado. Vá direto.",
+  "Cada seção deve ter 2 a 3 parágrafos densos. Sem introdução, sem reformular o enunciado. Vá direto.",
+  "OBRIGATÓRIO cobrir TODAS as seções listadas. Distribua o orçamento de saída entre elas: se o tema for amplo, encurte parágrafos das primeiras seções para garantir que Comparativo, Aplicação em prova e Para se aprofundar também sejam escritas por inteiro. Nunca abandone o estudo no meio de uma seção.",
   "Para cada conceito central, explique POR QUE existe (finalidade, princípio) e estabeleça conexão com requisitos, exceções ou institutos relacionados.",
   "Quando houver instituto próximo ou divergência relevante, contraste em uma tabela ou em dois parágrafos curtos (uma posição em cada).",
   "Cite artigo, súmula ou tema com confiança quando tiver alta certeza. Caso contrário, diga 'verifique no Vade Mecum / site oficial' em vez de omitir. Inclua alertas de prova quando aplicável.",
@@ -84,11 +85,11 @@ const STUDY_FINAL_INSTRUCTIONS = [
 // Per-format generation budgets — drives both maxOutputTokens and Gemini's thinking budget.
 // Gemini 2.5 family requires thinking budget to be either 0 (disabled) or >= 512.
 const STUDY_BUDGETS = {
-  fechamento:     { tokens: 7000, thinking: 512 },
+  fechamento:     { tokens: 8000, thinking: 512 },
   mapa:           { tokens: 1400, thinking: 0 },
-  peca:           { tokens: 6000, thinking: 512 },
-  jurisprudencia: { tokens: 7000, thinking: 512 },
-  questoes:       { tokens: 6000, thinking: 512 },
+  peca:           { tokens: 7000, thinking: 512 },
+  jurisprudencia: { tokens: 8000, thinking: 512 },
+  questoes:       { tokens: 7000, thinking: 512 },
 };
 
 function composeBase(domain) {
