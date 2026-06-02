@@ -157,6 +157,100 @@ function buildFlashcardsPrompt(body, base) {
   };
 }
 
+// ─── Seções estruturadas para geração em múltiplas chamadas ──────────
+// Cada modo "longo" é gerado seção por seção em chamadas separadas ao
+// Gemini, escritas em sequência no mesmo response stream. Isso evita o
+// truncamento que acontecia quando o modelo tentava escrever 8 seções
+// densas em uma única chamada (estourando tokens ou tempo de função).
+
+const FECHAMENTO_SECTIONS = [
+  { title: "Conceito, natureza jurídica e finalidade" },
+  { title: "Fundamento constitucional e legal (com artigos)" },
+  { title: "Elementos, pressupostos ou requisitos" },
+  { title: "Hipóteses, exceções e regras especiais" },
+  { title: "Controvérsias doutrinárias ou jurisprudenciais atuais" },
+  {
+    title: "Comparativo com institutos próximos",
+    hint: "Use uma tabela markdown comparando o instituto principal com 2 a 4 institutos próximos. Inclua 3 a 5 colunas relevantes (ex.: definição, requisito, fundamento legal, efeito jurídico). Após a tabela, escreva um parágrafo curto explicando a distinção decisiva.",
+  },
+  { title: "Aplicação em prova e pegadinhas típicas" },
+  {
+    title: "Para se aprofundar",
+    hint: "Estruture em 4 subseções com '### Doutrina', '### Legislação', '### Jurisprudência', '### Material complementar' — cada uma com 2 a 3 indicações em bullets. Sem despedida nem linhas '---'.",
+  },
+];
+
+const PECA_SECTIONS = [
+  { title: "Cabimento e fundamento legal" },
+  { title: "Competência, partes e legitimidade" },
+  { title: "Fundamentos jurídicos (com artigos, súmulas e teses)" },
+  { title: "Pedidos (principal, subsidiários e cautelar quando couber)" },
+  { title: "Provas e cautelas processuais" },
+  { title: "Teses contrárias antecipáveis" },
+  { title: "Checklist antes de protocolar", hint: "Liste 5 a 8 itens em bullets curtos e diretos." },
+];
+
+const JURIS_SECTIONS = [
+  { title: "Tese central e contexto" },
+  { title: "Posição consolidada dos tribunais (STF/STJ ou tribunal aplicável)" },
+  { title: "Súmulas, temas de repercussão geral e julgados-paradigma" },
+  { title: "Evolução recente ou mudança de entendimento" },
+  { title: "Divergências ou tese contrastante (quando houver)" },
+  { title: "Como a banca cobra o tema" },
+  {
+    title: "Para se aprofundar",
+    hint: "Estruture em 4 subseções com '### Doutrina', '### Legislação', '### Jurisprudência', '### Material complementar' — cada uma com 2 a 3 indicações em bullets.",
+  },
+];
+
+const QUESTOES_SECTIONS = [
+  { title: "Pontos que mais caem e por quê" },
+  { title: "Pegadinhas típicas da banca" },
+  {
+    title: "Questões modelo",
+    hint: "Escreva 3 a 4 questões completas, cada uma com enunciado, 4 alternativas (A-D) e a indicação da alternativa correta. NÃO inclua comentários ainda.",
+  },
+  {
+    title: "Comentários e gabaritos",
+    hint: "Para cada questão acima, escreva o gabarito e justifique cada alternativa, citando artigo/súmula/tese quando couber.",
+  },
+  { title: "Revisão final em bullets", hint: "Liste 5 a 8 pontos-chave de revisão em bullets curtos." },
+];
+
+const SECTIONS_BY_MODE = {
+  fechamento: FECHAMENTO_SECTIONS,
+  peca: PECA_SECTIONS,
+  jurisprudencia: JURIS_SECTIONS,
+  questoes: QUESTOES_SECTIONS,
+};
+
+function buildSectionPrompt(body, base, section, allTitles, idx, total) {
+  const topic = String(body.topic || "").trim().slice(0, 500);
+  const goals = Array.isArray(body.goals)
+    ? body.goals.map((g) => String(g).trim()).filter(Boolean).slice(0, 12)
+    : [];
+  const otherTitles = allTitles.filter((t) => t !== section.title);
+
+  return {
+    instructions: base,
+    input: [
+      `Estudo jurídico aprofundado sobre: ${topic}.`,
+      "Audiência: estudante de Direito já familiarizado com vocabulário técnico (OAB 2ª fase / fim de graduação). Foque profundidade e conexões; não explique o básico.",
+      goals.length ? `Priorize estes pontos quando relevantes nesta seção:\n- ${goals.join("\n- ")}` : "",
+      `Esta é a seção ${idx + 1} de ${total} de um estudo completo. As OUTRAS seções estão sendo escritas em chamadas separadas: ${otherTitles.map((t) => `"${t}"`).join("; ")}. NÃO repita o conteúdo das outras nesta resposta.`,
+      `ESCREVA APENAS O CONTEÚDO da seção "${section.title}". Não escreva o título "##" — o sistema já o adicionou antes do seu texto.`,
+      section.hint ? `Diretriz específica desta seção: ${section.hint}` : "",
+      "Diretrizes gerais:",
+      "- 2 a 4 parágrafos densos. Vá direto, sem introdução genérica, sem reformular o tema.",
+      "- Explique POR QUE existe (finalidade, princípio) e conecte com requisitos, exceções ou institutos relacionados.",
+      "- Cite artigo, súmula ou tese com confiança quando tiver alta certeza. Caso contrário, diga 'verifique no Vade Mecum / site oficial' em vez de omitir.",
+      "- Não escreva conclusão, despedida nem linhas divisórias '---'.",
+    ].filter(Boolean).join("\n\n"),
+    max_output_tokens: 2500,
+    thinking_budget: 0,
+  };
+}
+
 function buildStudyPrompt(body, base) {
   const topic = String(body.topic || "").trim().slice(0, 500);
   const goals = Array.isArray(body.goals)
@@ -232,6 +326,17 @@ const LEGAL_DOMAIN = {
       default:
         return buildStudyPrompt(body, base);
     }
+  },
+
+  /** Lista de seções para modos que suportam geração seção-por-seção. */
+  sectionsForMode(mode) {
+    return SECTIONS_BY_MODE[String(mode || "")] || null;
+  },
+
+  /** Constrói o prompt focado para uma única seção. */
+  buildSectionPrompt(body, section, allTitles, idx, total) {
+    const base = composeBase(this);
+    return buildSectionPrompt(body, base, section, allTitles, idx, total);
   },
 };
 

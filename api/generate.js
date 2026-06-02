@@ -289,6 +289,156 @@ async function streamGenerate({ models, prompt, apiKey, res }) {
   return { ok: false, status: lastStatus, error: lastErrorMessage };
 }
 
+/**
+ * Stream da resposta do Gemini para UMA chamada (uma seção, no contexto
+ * multi-section). Escreve os deltas de texto em `res` conforme chegam.
+ * Garante que os headers da resposta já tenham sido enviados.
+ */
+async function pipeSingleGeminiStream({ models, prompt, apiKey, res, deadlineMs }) {
+  let lastErrorMessage = "";
+  let lastStatus = 502;
+
+  for (let i = 0; i < models.length; i += 1) {
+    const model = models[i];
+    const remainingMs = deadlineMs - Date.now();
+    if (remainingMs <= 1500) {
+      return { ok: false, status: 504, error: "Tempo esgotado durante a geração." };
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), Math.min(DEFAULT_TIMEOUT_MS, remainingMs - 500));
+    let wrote = false;
+
+    const processBuffer = (bufRef) => {
+      let nl;
+      while ((nl = bufRef.value.indexOf("\n")) >= 0) {
+        const line = bufRef.value.slice(0, nl).trim();
+        bufRef.value = bufRef.value.slice(nl + 1);
+        if (!line.startsWith("data:")) continue;
+        const jsonStr = line.slice(5).trim();
+        if (!jsonStr || jsonStr === "[DONE]") continue;
+        let chunk;
+        try { chunk = JSON.parse(jsonStr); } catch { continue; }
+        const delta = (chunk.candidates || [])
+          .flatMap((c) => c.content?.parts || [])
+          .filter((p) => !p.thought)
+          .map((p) => p.text || "")
+          .join("");
+        if (delta) { res.write(delta); wrote = true; }
+      }
+    };
+
+    try {
+      const upstream = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`,
+        {
+          method: "POST",
+          signal: controller.signal,
+          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+          body: buildGeminiBody(prompt),
+        },
+      );
+
+      if (!upstream.ok || !upstream.body) {
+        const errText = await upstream.text().catch(() => "");
+        let parsed = "";
+        try { parsed = JSON.parse(errText)?.error?.message || ""; } catch {}
+        lastStatus = upstream.status;
+        lastErrorMessage = parsed || "Erro ao chamar o Gemini.";
+        clearTimeout(timeoutId);
+        if (RETRYABLE_STATUS.has(upstream.status) && i < models.length - 1) continue;
+        break;
+      }
+
+      const reader = upstream.body.getReader();
+      const decoder = new TextDecoder();
+      const bufRef = { value: "" };
+
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        bufRef.value += decoder.decode(value, { stream: true });
+        processBuffer(bufRef);
+      }
+      // Flush final do decoder e qualquer linha residual no buffer.
+      bufRef.value += decoder.decode();
+      processBuffer(bufRef);
+      clearTimeout(timeoutId);
+
+      if (wrote) return { ok: true };
+      lastStatus = 502;
+      lastErrorMessage = "Resposta vazia do modelo nesta seção.";
+      continue;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (wrote) return { ok: true, partial: true };
+      lastStatus = error?.name === "AbortError" ? 504 : 500;
+      lastErrorMessage = error?.message || "Erro inesperado.";
+      if (i < models.length - 1) continue;
+      break;
+    }
+  }
+
+  return { ok: false, status: lastStatus, error: lastErrorMessage };
+}
+
+/**
+ * Gera um estudo seção-por-seção. Cada seção é uma chamada independente
+ * ao Gemini, cujo conteúdo é escrito sequencialmente no mesmo response
+ * stream. O cabeçalho "## Title" é escrito pelo servidor antes do conteúdo
+ * de cada seção. Se uma seção falhar (mas alguma já foi escrita), encerra
+ * preservando o que já chegou.
+ */
+async function streamMultiSection({ domain, body, sections, models, apiKey, res }) {
+  let started = false;
+  const startResponse = () => {
+    if (started) return;
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store, no-transform");
+    res.setHeader("X-Accel-Buffering", "no");
+    started = true;
+  };
+
+  const allTitles = sections.map((s) => s.title);
+  const startedAt = Date.now();
+
+  for (let i = 0; i < sections.length; i += 1) {
+    const section = sections[i];
+    const remainingMs = OVERALL_TIMEOUT_MS - (Date.now() - startedAt);
+    if (remainingMs <= 3000) {
+      // Tempo acabando — encerra preservando o que já saiu.
+      if (started) { try { res.end(); } catch {} return { ok: true, partial: true }; }
+      return { ok: false, status: 504, error: "A geração demorou demais." };
+    }
+
+    const prompt = domain.buildSectionPrompt(body, section, allTitles, i, sections.length);
+
+    startResponse();
+    const heading = i > 0 ? `\n\n## ${section.title}\n\n` : `## ${section.title}\n\n`;
+    res.write(heading);
+
+    const result = await pipeSingleGeminiStream({
+      models,
+      prompt,
+      apiKey,
+      res,
+      deadlineMs: Date.now() + Math.min(DEFAULT_TIMEOUT_MS, remainingMs - 500),
+    });
+
+    if (!result.ok) {
+      // Falha numa seção: se algum byte foi enviado nesta requisição, encerra
+      // preservando o conteúdo parcial. Se nada saiu ainda, devolve erro JSON.
+      if (started) { try { res.end(); } catch {} return { ok: true, partial: true }; }
+      return { ok: false, status: result.status, error: result.error };
+    }
+  }
+
+  startResponse();
+  try { res.end(); } catch {}
+  return { ok: true };
+}
+
 async function handler(req, res) {
   if (req.method !== "POST") {
     return send(res, 405, { error: "Use POST." });
@@ -326,17 +476,34 @@ async function handler(req, res) {
     if (body.stream) {
       res.setHeader("X-RateLimit-Limit", String(limit.limit));
       res.setHeader("X-RateLimit-Remaining", String(limit.remaining));
-      const streamed = await streamGenerate({
-        models,
-        prompt,
-        apiKey: process.env.GOOGLE_API_KEY,
-        res,
-      });
+
+      // Para modos longos (fechamento, jurisprudência, peça, questões) usamos
+      // geração seção-por-seção, evitando o truncamento por orçamento único.
+      const sections = typeof domain.sectionsForMode === "function"
+        ? domain.sectionsForMode(body.mode)
+        : null;
+
+      const streamed = sections && sections.length > 0
+        ? await streamMultiSection({
+            domain,
+            body,
+            sections,
+            models,
+            apiKey: process.env.GOOGLE_API_KEY,
+            res,
+          })
+        : await streamGenerate({
+            models,
+            prompt,
+            apiKey: process.env.GOOGLE_API_KEY,
+            res,
+          });
+
       if (!streamed.ok) {
         // Nenhum byte foi enviado ainda → responde JSON de erro normalmente.
         return send(res, streamed.status || 502, { error: streamed.error });
       }
-      return; // resposta já encerrada dentro de streamGenerate
+      return; // resposta já encerrada
     }
 
     const result = await callGeminiWithRetries({
