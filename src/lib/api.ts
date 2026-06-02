@@ -17,10 +17,10 @@ export interface GeneratePayload {
   difficulty?: string;
 }
 
-// Server-side OVERALL_TIMEOUT_MS = 55_000 e Vercel maxDuration = 60s.
-// O cliente espera um pouco mais que o servidor para receber a mensagem
-// de erro real do backend em vez de abortar prematuramente.
-const TIMEOUT_MS = 58_000;
+// Server-side OVERALL_TIMEOUT_MS = 290_000 (Vercel maxDuration = 300s em Pro,
+// ou 60s em Hobby — Vercel capeia automaticamente). O cliente espera um pouco
+// mais que o servidor para receber a mensagem de erro real do backend.
+const TIMEOUT_MS = 295_000;
 
 export async function callAI(payload: GeneratePayload): Promise<string> {
   const controller = new AbortController();

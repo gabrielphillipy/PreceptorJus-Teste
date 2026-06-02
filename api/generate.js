@@ -1,9 +1,11 @@
 const { send, readBody, checkRateLimit, getActiveDomain } = require("./_lib/utils");
 
-// Timeouts increased to accommodate deeper outputs + thinking budget.
-// Vercel maxDuration is 60s (see vercel.json) — keep OVERALL below that minus buffer.
-const DEFAULT_TIMEOUT_MS = 50_000;
-const OVERALL_TIMEOUT_MS = 55_000;
+// Timeouts ajustados para gerar estudos completos sem cortar. Vercel
+// maxDuration está em 300s (vercel.json) para planos Pro — em Hobby
+// será automaticamente capeado em 60s, então o estudo termina dentro
+// do que couber no tempo disponível.
+const DEFAULT_TIMEOUT_MS = 280_000;
+const OVERALL_TIMEOUT_MS = 290_000;
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 const MAX_ATTEMPTS = 1;
 const BASE_BACKOFF_MS = 900;
@@ -76,7 +78,7 @@ async function callGeminiWithRetries({ models, prompt, apiKey }) {
               systemInstruction: { parts: [{ text: prompt.instructions }] },
               contents: [{ role: "user", parts: [{ text: prompt.input }] }],
               generationConfig: {
-                maxOutputTokens: Math.min(Number(prompt.max_output_tokens) || 2048, 8192),
+                maxOutputTokens: Math.min(Number(prompt.max_output_tokens) || 2048, 32768),
                 temperature: 0.55,
                 ...(prompt.response_mime_type ? { responseMimeType: prompt.response_mime_type } : {}),
                 thinkingConfig: {
@@ -168,7 +170,7 @@ function buildGeminiBody(prompt) {
     systemInstruction: { parts: [{ text: prompt.instructions }] },
     contents: [{ role: "user", parts: [{ text: prompt.input }] }],
     generationConfig: {
-      maxOutputTokens: Math.min(Number(prompt.max_output_tokens) || 2048, 8192),
+      maxOutputTokens: Math.min(Number(prompt.max_output_tokens) || 2048, 32768),
       temperature: 0.55,
       ...(prompt.response_mime_type ? { responseMimeType: prompt.response_mime_type } : {}),
       thinkingConfig: {
