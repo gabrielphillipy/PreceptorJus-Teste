@@ -163,6 +163,10 @@ function buildFlashcardsPrompt(body, base) {
 // truncamento que acontecia quando o modelo tentava escrever 8 seções
 // densas em uma única chamada (estourando tokens ou tempo de função).
 
+// Seção bibliográfica padrão usada no fim dos estudos longos.
+const REFERENCIAS_HINT =
+  "Liste em bullets de 5 a 8 referências bibliográficas confiáveis para o tema, em formato ABNT simplificado e legível. Cubra: 2 a 3 obras doutrinárias (autor, título, editora, ano), 2 a 3 dispositivos legais (lei e artigos principais), 1 a 2 súmulas/julgados-paradigma (tribunal + número/ano). NÃO invente referências: cite apenas obras e julgados de existência amplamente conhecida; se houver incerteza sobre edição/ano específicos, escreva 'verifique a edição mais recente' em vez de chutar. Não inclua URLs nem datas de acesso. Sem despedida e sem linhas '---'.";
+
 const FECHAMENTO_SECTIONS = [
   { title: "Conceito, natureza jurídica e finalidade" },
   { title: "Fundamento constitucional e legal (com artigos)" },
@@ -178,6 +182,7 @@ const FECHAMENTO_SECTIONS = [
     title: "Para se aprofundar",
     hint: "Estruture em 4 subseções com '### Doutrina', '### Legislação', '### Jurisprudência', '### Material complementar' — cada uma com 2 a 3 indicações em bullets. Sem despedida nem linhas '---'.",
   },
+  { title: "Referências", hint: REFERENCIAS_HINT },
 ];
 
 const PECA_SECTIONS = [
@@ -188,6 +193,7 @@ const PECA_SECTIONS = [
   { title: "Provas e cautelas processuais" },
   { title: "Teses contrárias antecipáveis" },
   { title: "Checklist antes de protocolar", hint: "Liste 5 a 8 itens em bullets curtos e diretos." },
+  { title: "Referências", hint: REFERENCIAS_HINT },
 ];
 
 const JURIS_SECTIONS = [
@@ -201,6 +207,7 @@ const JURIS_SECTIONS = [
     title: "Para se aprofundar",
     hint: "Estruture em 4 subseções com '### Doutrina', '### Legislação', '### Jurisprudência', '### Material complementar' — cada uma com 2 a 3 indicações em bullets.",
   },
+  { title: "Referências", hint: REFERENCIAS_HINT },
 ];
 
 const QUESTOES_SECTIONS = [
@@ -215,6 +222,7 @@ const QUESTOES_SECTIONS = [
     hint: "Para cada questão acima, escreva o gabarito e justifique cada alternativa, citando artigo/súmula/tese quando couber.",
   },
   { title: "Revisão final em bullets", hint: "Liste 5 a 8 pontos-chave de revisão em bullets curtos." },
+  { title: "Referências", hint: REFERENCIAS_HINT },
 ];
 
 const SECTIONS_BY_MODE = {
