@@ -18,6 +18,17 @@ const SM2_OPTIONS = [
   { q: 3, label: "Fácil", due: "4d" },
 ];
 
+const DIFFICULTY_LEVELS = [
+  { value: "iniciante",     label: "Iniciante",     desc: "Conceitos básicos para fixar o tema." },
+  { value: "intermediario", label: "Intermediário", desc: "Distinções entre institutos e súmulas comuns." },
+  { value: "avancado",      label: "Avançado",      desc: "Aplicação, exceções, súmulas e pegadinhas." },
+  { value: "oab",           label: "OAB 2ª fase",   desc: "Casos práticos no padrão de peça/parecer." },
+  { value: "concurso",      label: "Concurso",      desc: "Divergências, julgados específicos, detalhes finos." },
+] as const;
+
+type DifficultyValue = (typeof DIFFICULTY_LEVELS)[number]["value"];
+const DEFAULT_DIFFICULTY: DifficultyValue = "avancado";
+
 type Phase =
   | { kind: "form" }
   | { kind: "loading" }
@@ -27,14 +38,22 @@ type Phase =
 export default function Flashcards() {
   const [params] = useSearchParams();
   const [topic, setTopic] = useState(params.get("topic") || "");
+  const [difficulty, setDifficulty] = useState<DifficultyValue>(DEFAULT_DIFFICULTY);
   const [phase, setPhase] = useState<Phase>({ kind: "form" });
+
+  const currentLevel =
+    DIFFICULTY_LEVELS.find((d) => d.value === difficulty) ?? DIFFICULTY_LEVELS[2];
 
   const generate = async (e: FormEvent) => {
     e.preventDefault();
     if (!topic.trim()) return;
     setPhase({ kind: "loading" });
     try {
-      const text = await callAI({ mode: "flashcards", topic: topic.trim() });
+      const text = await callAI({
+        mode: "flashcards",
+        topic: topic.trim(),
+        difficulty,
+      });
       const cards = parseFlashcards(text);
       if (!cards.length) {
         setPhase({
@@ -108,6 +127,30 @@ export default function Flashcards() {
                 autoFocus
               />
             </div>
+
+            <div className="fg">
+              <span className="fg__label">
+                <span className="num">II</span>
+                Nível de dificuldade
+              </span>
+              <p className="fg__sub">
+                {currentLevel.desc} Padrão: <b>Avançado</b>. Use OAB 2ª fase para casos
+                práticos ou Concurso para divergências e detalhes finos.
+              </p>
+              <div className="chips">
+                {DIFFICULTY_LEVELS.map((level) => (
+                  <button
+                    key={level.value}
+                    type="button"
+                    className={`chip ${difficulty === level.value ? "on" : ""}`}
+                    onClick={() => setDifficulty(level.value)}
+                    aria-pressed={difficulty === level.value}
+                  >
+                    {level.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -120,6 +163,10 @@ export default function Flashcards() {
             <div className="exam-summary__row big">
               <dt>Cards</dt>
               <dd>6</dd>
+            </div>
+            <div className="exam-summary__row">
+              <dt>Nível</dt>
+              <dd>{currentLevel.label}</dd>
             </div>
             <div className="exam-summary__row">
               <dt>Distribuição</dt>

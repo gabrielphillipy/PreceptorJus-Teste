@@ -138,22 +138,64 @@ function buildExamPrompt(body, base) {
   };
 }
 
+// ── Níveis de dificuldade dos flashcards ─────────────────────────────
+// O nível ajusta o estilo das frentes (definição vs caso prático),
+// a profundidade do verso (fundamento principal vs julgado-paradigma exato)
+// e a presença de pegadinhas/divergências.
+const FLASHCARDS_DIFFICULTIES = {
+  iniciante: {
+    label: "Iniciante",
+    directive:
+      "NÍVEL INICIANTE — flashcards introdutórios para fixação do tema: perguntas conceituais diretas sobre definição, classificação básica e finalidade. Verso curto e didático, sem citar súmulas pouco conhecidas. Evite pegadinhas e casos práticos.",
+  },
+  intermediario: {
+    label: "Intermediário",
+    directive:
+      "NÍVEL INTERMEDIÁRIO — exija distinções entre institutos próximos, condições de aplicação e súmulas amplamente cobradas. Inclua pelo menos 1 caso prático curto. Verso fundamentado com artigo principal.",
+  },
+  avancado: {
+    label: "Avançado",
+    directive:
+      "NÍVEL AVANÇADO — as frentes focam EXCEÇÕES à regra, distinções sutis entre institutos próximos, súmulas com jurisprudência atualizada e pegadinhas clássicas de prova. Pelo menos 2 dos 6 cards trazem mini-caso prático na frente (1 a 2 frases concretas). O verso é OBRIGATORIAMENTE fundamentado: artigo exato + súmula ou julgado-paradigma + a razão (princípio/finalidade) em uma frase.",
+  },
+  oab: {
+    label: "OAB 2ª fase",
+    directive:
+      "NÍVEL OAB 2ª FASE — todos os 6 cards têm como frente um mini-caso prático (3 a 5 linhas com fatos concretos) ou um ponto de fundamentação esperado em peça/parecer. Verso indica a peça cabível, a competência, a tese central com artigo exato e a súmula ou julgado relevante; cite também prazo e legitimidade quando importarem.",
+  },
+  concurso: {
+    label: "Concurso (Magistratura/MP)",
+    directive:
+      "NÍVEL CONCURSO (Magistratura/Ministério Público/Defensoria) — exija conhecimento de divergência doutrinária, posicionamento específico de tribunal superior em julgado nominado, exceções pouco lembradas e detalhes processuais finos. Quando houver divergência, mencione as DUAS posições no verso. Cite julgado/súmula com Tribunal + número + ano. Pelo menos 1 dos 6 cards aborda uma divergência atual.",
+  },
+};
+
+const DEFAULT_FLASHCARDS_DIFFICULTY = "avancado";
+
 function buildFlashcardsPrompt(body, base) {
   const topic = String(body.topic || "").trim().slice(0, 500);
+  const requested = String(body.difficulty || "").toLowerCase().trim();
+  const level =
+    FLASHCARDS_DIFFICULTIES[requested] ||
+    FLASHCARDS_DIFFICULTIES[DEFAULT_FLASHCARDS_DIFFICULTY];
+
   return {
     instructions: base,
     input: [
       `Crie 6 flashcards jurídicos sobre: ${topic}.`,
-      "Distribua: 1-2 de conceito, 1-2 de base legal, 1 de jurisprudência/súmula, 1 de pegadinha de prova.",
-      "Frente: pergunta curta e específica (evite genérica tipo 'o que é X'). Verso: resposta objetiva com fundamento jurídico quando couber.",
-      "Sem introdução. Formato por card:",
+      level.directive,
+      "Distribua: 1-2 de conceito (sempre aplicado, nunca definição genérica), 1-2 de base legal (com artigo exato), 1 de jurisprudência/súmula, 1 de pegadinha de prova ou exceção.",
+      "Frente: pergunta específica e desafiadora; evite enunciados como 'o que é X'. Pode usar pequeno caso (1 a 3 frases) quando ajudar a forçar aplicação.",
+      "Verso: resposta objetiva, mas SEMPRE com fundamento — artigo, súmula, tese ou julgado — e a razão (princípio ou finalidade) em uma frase final.",
+      "Citações no verso seguem ABNT NBR 10520:2023: 'art. X da Lei nº Y/ano' ou 'art. X da CF/88', 'Súmula nº X do STJ/STF', '(SOBRENOME, ano)' para doutrina.",
+      "Sem introdução, sem comentários antes ou depois. Formato por card:",
       "### Frente",
       "...",
       "### Verso",
       "...",
       "---",
     ].join("\n"),
-    max_output_tokens: 1300,
+    max_output_tokens: 1800,
     thinking_budget: 0,
   };
 }
