@@ -1,14 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { startCheckout } from "@/lib/api";
 import { LogoMark } from "@/components/brand/LogoMark";
 import { FeedbackDialog } from "@/components/feedback/FeedbackDialog";
+import { useAuthContext } from "@/context/AuthContext";
 
 export default function Landing() {
   const navigate = useNavigate();
+  const { session, loading } = useAuthContext();
   const [checkingOut, setCheckingOut] = useState(false);
+
+  // Redireciona usuário autenticado direto para o app
+  // (cobre o caso de clicar no link de confirmação de e-mail)
+  useEffect(() => {
+    if (!loading && session) navigate("/app", { replace: true });
+  }, [session, loading, navigate]);
 
   const openApp = () => navigate("/app");
 
