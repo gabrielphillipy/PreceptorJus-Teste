@@ -107,8 +107,8 @@ export function useAuth() {
         }
       }
 
-      // Signup via API proxy — valida server-side + cria usuário com service_role (R2, R8)
-      const res = await withMinDelay(() =>
+      // Passo 1: Validação server-side (senha, HIBP, tamanho de campos)
+      const validation = await withMinDelay(() =>
         fetch('/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -121,13 +121,24 @@ export function useAuth() {
         }),
       )
 
-      // Sempre retornar a mesma mensagem de sucesso (anti-enumeração R1)
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string }
-        // Erros de validação (senha fraca etc.) são mostrados
-        if (res.status === 400 && body.error) return { error: body.error }
-        // Qualquer outro erro → mesma mensagem de sucesso (não revela existência)
+      if (!validation.ok) {
+        const body = (await validation.json().catch(() => ({}))) as { error?: string }
+        if (validation.status === 400 && body.error) return { error: body.error }
       }
+
+      // Passo 2: Criar conta via Supabase (envia e-mail de confirmação automaticamente)
+      await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name.slice(0, 100),
+            team: team?.slice(0, 100) ?? null,
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+      // Sempre retorna sucesso (anti-enumeração R1 — não revela se e-mail já existe)
 
       void writeAuditEvent({ action: 'signup', metadata: { email } })
       return { error: null, success: true }
