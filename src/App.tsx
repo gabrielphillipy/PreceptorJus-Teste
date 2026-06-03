@@ -3,9 +3,17 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/context/AuthContext";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
+// Páginas de autenticação (lazy para não aumentar o bundle inicial)
 const Landing = lazy(() => import("./pages/Landing"));
 const AppShell = lazy(() => import("./pages/AppShell"));
+const AuthPage = lazy(() => import("./pages/auth/AuthPage"));
+const ResetPassword = lazy(() => import("./pages/auth/ResetPassword"));
+const ResetConfirm = lazy(() => import("./pages/auth/ResetConfirm"));
+const MFAEnroll = lazy(() => import("./pages/auth/MFAEnroll"));
+const MFAChallenge = lazy(() => import("./pages/auth/MFAChallenge"));
 
 function Loading() {
   return (
@@ -23,15 +31,36 @@ function Loading() {
 
 export default function App() {
   return (
-    <TooltipProvider delayDuration={150}>
-      <Suspense fallback={<Loading />}>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/app/*" element={<AppShell />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
-      <Toaster position="bottom-right" />
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider delayDuration={150}>
+        <Suspense fallback={<Loading />}>
+          <Routes>
+            {/* Pública */}
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<AuthPage />} />
+            <Route path="/signup" element={<AuthPage />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/reset-confirm" element={<ResetConfirm />} />
+
+            {/* Auth — requer sessão (aal1) */}
+            <Route path="/auth/mfa-enroll" element={<MFAEnroll />} />
+            <Route path="/auth/mfa-challenge" element={<MFAChallenge />} />
+
+            {/* App — protegido: requer sessão válida + MFA se necessário */}
+            <Route
+              path="/app/*"
+              element={
+                <ProtectedRoute>
+                  <AppShell />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+        <Toaster position="bottom-right" />
+      </TooltipProvider>
+    </AuthProvider>
   );
 }
