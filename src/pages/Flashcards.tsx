@@ -10,6 +10,7 @@ import { Eyebrow } from "@/components/brand/Eyebrow";
 import { MI } from "@/components/brand/MaterialIcon";
 import { InlineText } from "@/components/study/InlineText";
 import { StudyErrorState } from "@/components/study/StudyErrorState";
+import { AIDisclaimer } from "@/components/study/AIDisclaimer";
 
 const SM2_OPTIONS = [
   { q: 0, label: "Errei", due: "1m" },
@@ -309,6 +310,8 @@ function Deck({ topic, cards, onReset }: { topic: string; cards: Flashcard[]; on
           </div>
         </div>
       </header>
+
+      <AIDisclaimer variant="compact" />
 
       <div className="deck-stats">
         <div>

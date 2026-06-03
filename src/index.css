@@ -490,6 +490,38 @@ textarea.field { height: auto; padding: 12px 14px; min-height: 92px; resize: ver
 @keyframes shimmer { 0%{ background-position: 200% 0; } 100%{ background-position: -200% 0; } }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
+/* ─── Banner persistente: aviso sobre IA ─────────────────────────── */
+/* Aparece em toda página onde conteúdo de IA é exibido. Não dispensável
+   de propósito: pra produto jurídico, é responsabilidade lembrar a cada
+   visita que o usuário deve conferir a fonte. */
+.ai-disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 14px;
+  background: rgba(201, 168, 76, 0.10);
+  border: 1px solid rgba(201, 168, 76, 0.32);
+  border-left: 3px solid rgb(var(--brand-gold));
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgb(var(--brand-ink-2));
+  margin: 0 0 18px;
+}
+.ai-disclaimer__icon {
+  color: rgb(var(--brand-gold));
+  flex-shrink: 0;
+  margin-top: 1px;
+  display: inline-flex;
+}
+.ai-disclaimer__text { min-width: 0; }
+.ai-disclaimer strong { color: rgb(var(--brand-ink)); font-weight: 700; }
+.ai-disclaimer--compact {
+  padding: 8px 12px;
+  font-size: 12px;
+  margin: 0 0 14px;
+}
+
 /* ─── Study: preview de streaming (texto ao vivo) ───────────────── */
 /* Seletor combinado p/ vencer .study-interactive__content (padding) e .pjus-summary (overflow). */
 .study-interactive__content.study-streaming__doc {

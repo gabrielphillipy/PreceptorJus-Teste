@@ -14,6 +14,7 @@ import { StudyPearlsCard } from "@/components/study/StudyPearlsCard";
 import { StudyThinking } from "@/components/study/StudyThinking";
 import { StudyStreaming } from "@/components/study/StudyStreaming";
 import { StudyErrorState } from "@/components/study/StudyErrorState";
+import { AIDisclaimer } from "@/components/study/AIDisclaimer";
 import type { StudyFormValues } from "@/components/study/StudyForm";
 
 interface StudyData {
@@ -191,6 +192,7 @@ export default function StudyResult() {
                 <span className="study-page-tag">{genMeta?.modeLabel || "Nota jurídica"}</span>
               </div>
             </header>
+            <AIDisclaimer variant="compact" />
             {streamingText ? (
               <StudyStreaming text={streamingText} done={streamDone} onDone={persist} />
             ) : (
@@ -335,6 +337,8 @@ export default function StudyResult() {
               <span className="study-page-tag study-page-tag--muted">{estimateReadTime(study.text)}</span>
             </div>
           </header>
+
+          <AIDisclaimer />
 
           {tab === "mapa" ? (
             <StudyMindMap
