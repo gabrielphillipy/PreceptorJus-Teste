@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
-// Páginas de autenticação (lazy para não aumentar o bundle inicial)
 const Landing = lazy(() => import("./pages/Landing"));
 const AppShell = lazy(() => import("./pages/AppShell"));
 const AuthPage = lazy(() => import("./pages/auth/AuthPage"));
@@ -36,21 +35,24 @@ export default function App() {
       <TooltipProvider delayDuration={150}>
         <Suspense fallback={<Loading />}>
           <Routes>
-            {/* Pública */}
-            <Route path="/" element={<Landing />} />
+            {/* Raiz: tela de login/cadastro */}
+            <Route path="/" element={<AuthPage />} />
             <Route path="/login" element={<AuthPage />} />
             <Route path="/signup" element={<AuthPage />} />
+
+            {/* Landing page de marketing (acessível via /home) */}
+            <Route path="/home" element={<Landing />} />
+
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/reset-confirm" element={<ResetConfirm />} />
 
-            {/* Callback de confirmação de e-mail / OAuth */}
+            {/* Callback de confirmação de e-mail — entra direto no app */}
             <Route path="/auth/callback" element={<AuthCallback />} />
 
-            {/* Auth — requer sessão (aal1) */}
             <Route path="/auth/mfa-enroll" element={<MFAEnroll />} />
             <Route path="/auth/mfa-challenge" element={<MFAChallenge />} />
 
-            {/* App — protegido: requer sessão válida + MFA se necessário */}
+            {/* App protegido */}
             <Route
               path="/app/*"
               element={
