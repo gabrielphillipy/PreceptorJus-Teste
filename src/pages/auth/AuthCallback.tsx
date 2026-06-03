@@ -1,23 +1,38 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 
-// Recebe o redirect após confirmação de e-mail ou OAuth.
-// O SDK processa o token/code da URL e dispara onAuthStateChange.
 export default function AuthCallback() {
   const navigate = useNavigate()
+  const [timedOut, setTimedOut] = useState(false)
 
   useEffect(() => {
+    // Aguarda o SDK trocar o code por sessão (PKCE flow)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         navigate('/app', { replace: true })
-      } else if (event === 'INITIAL_SESSION' && !session) {
-        // Token expirado ou inválido
-        navigate('/login?error=link_expirado', { replace: true })
+        return
+      }
+      // Só redireciona para login se não há code na URL (link inválido)
+      const hasCode = new URLSearchParams(window.location.search).has('code')
+      const hasToken = window.location.hash.includes('access_token')
+      if (!hasCode && !hasToken) {
+        navigate('/login', { replace: true })
       }
     })
-    return () => subscription.unsubscribe()
+
+    // Fallback: se demorar mais de 5s sem sessão, vai para login
+    const timeout = setTimeout(() => setTimedOut(true), 5000)
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(timeout)
+    }
   }, [navigate])
+
+  useEffect(() => {
+    if (timedOut) navigate('/login', { replace: true })
+  }, [timedOut, navigate])
 
   return (
     <div className="min-h-screen grid place-items-center bg-[var(--pjus-canvas)]">
