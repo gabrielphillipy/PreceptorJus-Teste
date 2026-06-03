@@ -9,7 +9,7 @@ async function handler(req, res) {
     return send(res, 405, { error: "Use POST." });
   }
 
-  const limit = checkRateLimit(req, { scope: "feedback" });
+  const limit = await checkRateLimit(req, { scope: "feedback" });
   if (limit.blocked) {
     res.setHeader("Retry-After", String(limit.retryAfterSec));
     return send(res, 429, {

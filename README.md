@@ -54,9 +54,19 @@ Crie um `.env` local com:
 
 ```bash
 GOOGLE_API_KEY=sua_chave_aqui
-GEMINI_MODEL=gemini-2.0-flash-lite
+GEMINI_MODEL=gemini-2.5-flash-lite
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_PRICE_PRECEPTOR=price_...
+
+# Rate limit em Redis (recomendado em produção; opcional em dev).
+# Sem essas duas, o limit cai para um Map em memória — frágil em serverless.
+UPSTASH_REDIS_REST_URL=https://xxx.upstash.io
+UPSTASH_REDIS_REST_TOKEN=AaAaAa...
+
+# Quantidade de gerações por hora por IP (opcional, padrão 30).
+RATE_LIMIT_PER_HOUR=30
+# Quantidade de feedbacks por hora por IP (opcional, padrão 10).
+FEEDBACK_RATE_LIMIT_PER_HOUR=10
 ```
 
 ## Build
@@ -72,9 +82,11 @@ npm run typecheck   # apenas tipos
 Configure as variáveis de ambiente no painel:
 
 - `GOOGLE_API_KEY` (Gemini)
-- `GEMINI_MODEL` (opcional, padrão `gemini-2.0-flash-lite`)
+- `GEMINI_MODEL` (opcional, padrão `gemini-2.5-flash-lite`)
 - `STRIPE_SECRET_KEY`
 - `STRIPE_PRICE_PRECEPTOR`
+- `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN` — **fortemente recomendado em produção** para que o rate-limit funcione de verdade (em memória ele zera a cada cold start e é ineficaz contra abuso).
+- `RATE_LIMIT_PER_HOUR` (opcional, padrão 30) e `FEEDBACK_RATE_LIMIT_PER_HOUR` (opcional, padrão 10).
 
 A Vercel detecta o `framework: vite` em `vercel.json` e faz o build automaticamente. As funções em `api/` continuam serverless.
 

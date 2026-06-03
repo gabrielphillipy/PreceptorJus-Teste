@@ -444,8 +444,8 @@ async function handler(req, res) {
     return send(res, 405, { error: "Use POST." });
   }
 
-  // Rate limit per IP (in-memory; resets on cold start)
-  const limit = checkRateLimit(req, { scope: "generate" });
+  // Rate limit por IP (Upstash Redis quando configurado; in-memory caso contrário).
+  const limit = await checkRateLimit(req, { scope: "generate" });
   if (limit.blocked) {
     res.setHeader("Retry-After", String(limit.retryAfterSec));
     const minutes = Math.max(1, Math.ceil(limit.retryAfterSec / 60));

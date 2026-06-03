@@ -41,23 +41,78 @@ function getClientIp(req) {
   return req.socket?.remoteAddress || "unknown";
 }
 
-// In-memory rate limit. Resets on cold start, but combined with Vercel's
-// function reuse gives a reasonable first defense against abuse.
-// For real production, swap for Upstash Redis (env: UPSTASH_REDIS_REST_URL).
-const RATE_WINDOW_MS = 60 * 60 * 1000;
-const RATE_BUCKETS = new Map();
+// Rate limit. Quando UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN
+// estão configurados, usa Redis (persistente e compartilhado entre todas
+// as instâncias). Caso contrário, cai para um Map em memória — frágil em
+// serverless (cada cold start zera, cada instância tem seu próprio mapa),
+// mas funciona em dev/teste.
+const RATE_WINDOW_SEC = 60 * 60;
+const RATE_BUCKETS = new Map(); // fallback in-memory
 const RATE_PRUNE_THRESHOLD = 5000;
 
-function checkRateLimit(req, { max, key, scope = "default" } = {}) {
+function rateLimitParams({ max, key, scope = "default" }, req) {
   const envKey = scope === "feedback" ? "FEEDBACK_RATE_LIMIT_PER_HOUR" : "RATE_LIMIT_PER_HOUR";
   const envDefault = scope === "feedback" ? 10 : 30;
   const limit = Number(max || process.env[envKey]) || envDefault;
-  const id = `${scope}:${key || getClientIp(req)}`;
-  const now = Date.now();
+  const id = `ratelimit:${scope}:${key || getClientIp(req)}`;
+  return { limit, id };
+}
 
+// ── Upstash Redis (REST API, sem dependência de npm) ────────────────
+function upstashConfigured() {
+  return Boolean(
+    process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN,
+  );
+}
+
+async function upstashPipeline(commands) {
+  const url = `${process.env.UPSTASH_REDIS_REST_URL.replace(/\/+$/, "")}/pipeline`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 2500);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(commands),
+    });
+    if (!res.ok) throw new Error(`upstash ${res.status}`);
+    return await res.json();
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function checkRateLimitRedis(id, limit) {
+  // INCR key → count
+  // EXPIRE key TTL NX → garante TTL apenas se ainda não tem (1ª chamada da janela)
+  // TTL key → segundos restantes
+  const results = await upstashPipeline([
+    ["INCR", id],
+    ["EXPIRE", id, String(RATE_WINDOW_SEC), "NX"],
+    ["TTL", id],
+  ]);
+  const count = Number(results?.[0]?.result ?? 0);
+  let ttl = Number(results?.[2]?.result ?? RATE_WINDOW_SEC);
+  if (!Number.isFinite(ttl) || ttl < 0) ttl = RATE_WINDOW_SEC;
+
+  return {
+    blocked: count > limit,
+    remaining: Math.max(0, limit - count),
+    retryAfterSec: ttl,
+    limit,
+  };
+}
+
+// ── Fallback in-memory ──────────────────────────────────────────────
+function checkRateLimitMemory(id, limit) {
+  const now = Date.now();
   let bucket = RATE_BUCKETS.get(id);
   if (!bucket || now > bucket.resetAt) {
-    bucket = { count: 0, resetAt: now + RATE_WINDOW_MS };
+    bucket = { count: 0, resetAt: now + RATE_WINDOW_SEC * 1000 };
   }
   bucket.count++;
   RATE_BUCKETS.set(id, bucket);
@@ -74,6 +129,22 @@ function checkRateLimit(req, { max, key, scope = "default" } = {}) {
     retryAfterSec: Math.ceil((bucket.resetAt - now) / 1000),
     limit,
   };
+}
+
+async function checkRateLimit(req, opts = {}) {
+  const { limit, id } = rateLimitParams(opts, req);
+
+  if (upstashConfigured()) {
+    try {
+      return await checkRateLimitRedis(id, limit);
+    } catch (err) {
+      // Falha do Redis (timeout, indisponível) → fail open com fallback
+      // in-memory, para não bloquear o serviço por uma indisponibilidade
+      // do Upstash. Loga para visibilidade.
+      console.error("rate-limit: Upstash falhou, usando in-memory fallback:", err?.message || err);
+    }
+  }
+  return checkRateLimitMemory(id, limit);
 }
 
 // Returns the active domain object. To add PreceptorMed:
