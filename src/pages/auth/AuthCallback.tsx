@@ -2,20 +2,21 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 
-// Rota intermediária que recebe o token do link de confirmação de e-mail
-// e redireciona para o app após o SDK processar a sessão.
+// Recebe o redirect após confirmação de e-mail ou OAuth.
+// O SDK processa o token/code da URL e dispara onAuthStateChange.
 export default function AuthCallback() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         navigate('/app', { replace: true })
-      } else {
-        // Se chegou aqui sem sessão, o link pode ter expirado
-        navigate('/login', { replace: true })
+      } else if (event === 'INITIAL_SESSION' && !session) {
+        // Token expirado ou inválido
+        navigate('/login?error=link_expirado', { replace: true })
       }
     })
+    return () => subscription.unsubscribe()
   }, [navigate])
 
   return (
