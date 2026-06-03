@@ -11,6 +11,7 @@ const Landing = lazy(() => import("./pages/Landing"));
 const AppShell = lazy(() => import("./pages/AppShell"));
 const AuthPage = lazy(() => import("./pages/auth/AuthPage"));
 const ResetPassword = lazy(() => import("./pages/auth/ResetPassword"));
+const AuthCallback = lazy(() => import("./pages/auth/AuthCallback"));
 const ResetConfirm = lazy(() => import("./pages/auth/ResetConfirm"));
 const MFAEnroll = lazy(() => import("./pages/auth/MFAEnroll"));
 const MFAChallenge = lazy(() => import("./pages/auth/MFAChallenge"));
@@ -41,6 +42,9 @@ export default function App() {
             <Route path="/signup" element={<AuthPage />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/reset-confirm" element={<ResetConfirm />} />
+
+            {/* Callback de confirmação de e-mail / OAuth */}
+            <Route path="/auth/callback" element={<AuthCallback />} />
 
             {/* Auth — requer sessão (aal1) */}
             <Route path="/auth/mfa-enroll" element={<MFAEnroll />} />
