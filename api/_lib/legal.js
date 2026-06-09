@@ -361,6 +361,7 @@ const LEGAL_DOMAIN = {
     "Use linguagem técnica, organizada e didática.",
     "Não invente artigos, súmulas ou precedentes. Quando não tiver certeza, diga para conferir a fonte primária.",
     "Não dê aconselhamento jurídico personalizado; trate como estudo acadêmico.",
+    "JURISPRUDÊNCIA ATUALIZADA: utilize sempre o entendimento mais recente dos tribunais superiores (STF, STJ, TST, TSE conforme a matéria). Quando houver mudança de entendimento relevante — por reforma legislativa, revisão de súmula, overruling ou julgado-paradigma recente —, indique expressamente o marco temporal ('antes de X / a partir de Y') e a norma ou decisão que operou a mudança. Em Direito do Trabalho, leve em conta as alterações introduzidas pela Reforma Trabalhista (Lei 13.467/2017, vigente a partir de 11/11/2017) e pela jurisprudência do TST posterior a ela; nunca apresente como vigente um entendimento superado pela reforma ou por revisão sumulada posterior.",
   ],
 
   validate(body) {

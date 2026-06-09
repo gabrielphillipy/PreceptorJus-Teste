@@ -6,12 +6,14 @@ import { Eyebrow } from "@/components/brand/Eyebrow";
 import { MI } from "@/components/brand/MaterialIcon";
 import { useStudyStats, useWorkspace } from "@/hooks/useWorkspace";
 import { PreceptorChatPanel } from "@/components/study/PreceptorChatPanel";
+import { AdminRoute } from "@/components/admin/AdminRoute";
 
 const Dashboard = lazy(() => import("./Dashboard"));
 const StudyResult = lazy(() => import("./StudyResult"));
 const Exam = lazy(() => import("./Exam"));
 const Flashcards = lazy(() => import("./Flashcards"));
 const Library = lazy(() => import("./Library"));
+const CRMShell = lazy(() => import("./admin/CRMShell"));
 
 function PageFallback() {
   return (
@@ -401,6 +403,14 @@ export default function AppShell() {
           <Route path="flashcards" element={<Flashcards />} />
           <Route path="library" element={<Library />} />
           <Route path="chat" element={<ChatPage />} />
+          <Route
+            path="admin/crm/*"
+            element={
+              <AdminRoute>
+                <CRMShell />
+              </AdminRoute>
+            }
+          />
         </Routes>
       </Suspense>
     </AppLayout>

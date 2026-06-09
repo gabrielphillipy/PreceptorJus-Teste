@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { MI } from "@/components/brand/MaterialIcon";
 import { LogoMark, Wordmark } from "@/components/brand/LogoMark";
 import { FeedbackDialog } from "@/components/feedback/FeedbackDialog";
+import { useAuthContext } from "@/context/AuthContext";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -54,6 +55,8 @@ export function AppLayout({ children, hideTopbarActions = false }: AppLayoutProp
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { profile } = useAuthContext();
+  const isAdmin = profile?.role === "admin";
 
   useEffect(() => {
     setMobileOpen(false);
@@ -116,6 +119,48 @@ export function AppLayout({ children, hideTopbarActions = false }: AppLayoutProp
             })}
           </div>
         ))}
+
+        {isAdmin && (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 px-3 mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-brand-gold/70">
+                Admin
+              </span>
+              <span className="flex-1 h-px bg-gradient-to-r from-brand-gold/20 to-transparent" aria-hidden />
+            </div>
+            {[
+              { icon: "contacts", label: "CRM", path: "/app/admin/crm" },
+            ].map((item) => {
+              const active = location.pathname.startsWith(item.path);
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className={cn(
+                    "group/navitem relative w-full flex items-center gap-3 py-2.5 px-3 rounded-lg text-sm font-medium transition-all duration-200",
+                    active
+                      ? "text-white bg-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
+                      : "text-white/70 hover:text-white hover:bg-white/[0.06]",
+                  )}
+                >
+                  {active && (
+                    <span
+                      className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full"
+                      style={{ background: "linear-gradient(180deg, #E0C068 0%, #C9A84C 100%)" }}
+                      aria-hidden
+                    />
+                  )}
+                  <MI
+                    name={item.icon}
+                    fill={active}
+                    className={cn("text-[22px] transition-colors", active ? "text-brand-gold" : "text-white/80 group-hover/navitem:text-white")}
+                  />
+                  <span className="flex-1 text-left">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </nav>
 
       <div className="mt-auto pt-6 border-t border-white/15 px-4">
