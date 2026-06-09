@@ -3,17 +3,11 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "functions": {
-    "api/generate.js":           { "maxDuration": 300 },
-    "api/checkout.js":           { "maxDuration": 15  },
-    "api/feedback.js":           { "maxDuration": 10  },
-    "api/auth/signup.js":        { "maxDuration": 15  },
-    "api/auth/pre-login.js":     { "maxDuration": 10  },
-    "api/auth/record-attempt.js":{ "maxDuration": 5   },
-    "api/auth/audit.js":         { "maxDuration": 5   },
-    "api/auth/hibp.js":          { "maxDuration": 10  },
-    "api/auth/disable-mfa.js":   { "maxDuration": 10  },
-    "api/auth/mfa-recovery.js":  { "maxDuration": 10  },
-    "api/auth/recovery-login.js":{ "maxDuration": 10  }
+    "api/generate.js":  { "maxDuration": 300 },
+    "api/auth/*.js":    { "maxDuration": 15  },
+    "api/checkout.js":  { "maxDuration": 15  },
+    "api/feedback.js":  { "maxDuration": 10  },
+    "api/workspace.js": { "maxDuration": 10  }
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
