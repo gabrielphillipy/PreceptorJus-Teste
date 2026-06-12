@@ -175,7 +175,7 @@ export function AppLayout({ children, hideTopbarActions = false }: AppLayoutProp
               variant="gold"
               size="sm"
               className="w-full text-xs"
-              onClick={() => navigate("/pricing")}
+              onClick={() => navigate("/home#planos")}
             >
               Conhecer planos
             </Button>
@@ -183,7 +183,7 @@ export function AppLayout({ children, hideTopbarActions = false }: AppLayoutProp
         </div>
 
         <Link
-          to="/"
+          to="/home"
           className="w-full text-white/60 text-xs font-medium flex items-center gap-2 py-2 px-3 rounded-lg hover:text-white hover:bg-white/10 transition-all"
         >
           <MI name="arrow_back" className="text-[18px]" />
