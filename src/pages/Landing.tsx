@@ -5,18 +5,26 @@ import { toast } from "sonner";
 import { startCheckout } from "@/lib/api";
 import { LogoMark } from "@/components/brand/LogoMark";
 import { FeedbackDialog } from "@/components/feedback/FeedbackDialog";
-import { useAuthContext } from "@/context/AuthContext";
 
 export default function Landing() {
   const navigate = useNavigate();
-  const { session, loading } = useAuthContext();
   const [checkingOut, setCheckingOut] = useState(false);
 
-  // Redireciona usuário autenticado direto para o app
-  // (cobre o caso de clicar no link de confirmação de e-mail)
+  // Usuário logado pode ver a landing normalmente (ex.: "Voltar ao site" e
+  // "Conhecer planos" vindos do app). Para entrar no app há os botões "Entrar"/
+  // "Painel". NÃO redirecionamos automaticamente — isso expulsava o usuário
+  // logado de volta pro /app e impedia ver a landing/planos.
+  //
+  // Rola até a âncora (#planos) depois que o conteúdo lazy renderizou — o pulo
+  // nativo do navegador falha porque a seção ainda não existe no carregamento.
   useEffect(() => {
-    if (!loading && session) navigate("/app", { replace: true });
-  }, [session, loading, navigate]);
+    const id = window.location.hash.slice(1);
+    if (!id) return;
+    const t = setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 250);
+    return () => clearTimeout(t);
+  }, []);
 
   const openApp = () => navigate("/app");
 
