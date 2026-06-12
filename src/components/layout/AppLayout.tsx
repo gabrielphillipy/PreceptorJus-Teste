@@ -175,20 +175,20 @@ export function AppLayout({ children, hideTopbarActions = false }: AppLayoutProp
               variant="gold"
               size="sm"
               className="w-full text-xs"
-              onClick={() => navigate("/home#planos")}
+              onClick={() => { window.location.href = "/home#planos" }}
             >
               Conhecer planos
             </Button>
           </div>
         </div>
 
-        <Link
-          to="/home"
+        <a
+          href="/home"
           className="w-full text-white/60 text-xs font-medium flex items-center gap-2 py-2 px-3 rounded-lg hover:text-white hover:bg-white/10 transition-all"
         >
           <MI name="arrow_back" className="text-[18px]" />
           <span>Voltar ao site</span>
-        </Link>
+        </a>
 
         <div className="mt-4 pt-4 border-t border-white/5 px-2 flex items-center justify-between">
           <span className="text-[10px] text-white/25 tracking-wide">v2.0</span>
