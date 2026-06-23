@@ -3621,6 +3621,8 @@ em.term {
 .anatomy__notes.right { text-align: left; }
 .anatomy__note { position: relative; display: grid; grid-template-columns: 32px 1fr; gap: 12px; }
 .anatomy__notes.left .anatomy__note { grid-template-columns: 1fr 32px; }
+.anatomy__notes.left .anatomy__note > .anatomy__note-mark { order: 2; }
+.anatomy__notes.left .anatomy__note > div { order: 1; }
 .anatomy__note-mark {
   display: inline-grid; place-items: center;
   width: 32px; height: 32px; border-radius: 50%;
