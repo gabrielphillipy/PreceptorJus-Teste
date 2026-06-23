@@ -118,11 +118,11 @@ export interface CheckoutResponse {
   error?: string;
 }
 
-export async function startCheckout(plan: string): Promise<CheckoutResponse> {
+export async function startCheckout(plan: string, email?: string): Promise<CheckoutResponse> {
   const response = await fetch("/api/checkout", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ plan }),
+    body: JSON.stringify({ plan, email }),
   });
   return (await response.json().catch(() => ({}))) as CheckoutResponse;
 }

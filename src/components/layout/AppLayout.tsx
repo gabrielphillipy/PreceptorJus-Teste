@@ -175,7 +175,7 @@ export function AppLayout({ children, hideTopbarActions = false }: AppLayoutProp
               variant="gold"
               size="sm"
               className="w-full text-xs"
-              onClick={() => { window.location.href = "/home#planos" }}
+              onClick={() => navigate("/planos")}
             >
               Conhecer planos
             </Button>

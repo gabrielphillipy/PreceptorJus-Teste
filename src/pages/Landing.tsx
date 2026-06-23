@@ -1,22 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
-import { startCheckout } from "@/lib/api";
 import { LogoMark } from "@/components/brand/LogoMark";
 import { FeedbackDialog } from "@/components/feedback/FeedbackDialog";
 
 export default function Landing() {
   const navigate = useNavigate();
-  const [checkingOut, setCheckingOut] = useState(false);
 
-  // Usuário logado pode ver a landing normalmente (ex.: "Voltar ao site" e
-  // "Conhecer planos" vindos do app). Para entrar no app há os botões "Entrar"/
-  // "Painel". NÃO redirecionamos automaticamente — isso expulsava o usuário
-  // logado de volta pro /app e impedia ver a landing/planos.
+  // Usuário logado pode ver a landing normalmente (ex.: "Voltar ao site" vindo
+  // do app). Para entrar no app há os botões "Entrar"/"Painel". NÃO
+  // redirecionamos automaticamente — isso expulsava o usuário logado de volta
+  // pro /app e impedia ver a landing.
   //
-  // Rola até a âncora (#planos) depois que o conteúdo lazy renderizou — o pulo
-  // nativo do navegador falha porque a seção ainda não existe no carregamento.
+  // Rola até a âncora (#rito, #minuta…) depois que o conteúdo lazy renderizou —
+  // o pulo nativo do navegador falha porque a seção ainda não existe no load.
   useEffect(() => {
     const id = window.location.hash.slice(1);
     if (!id) return;
@@ -27,25 +24,7 @@ export default function Landing() {
   }, []);
 
   const openApp = () => navigate("/app");
-
-  const goCheckout = async () => {
-    if (checkingOut) return;
-    setCheckingOut(true);
-    try {
-      const r = await startCheckout("preceptor");
-      if (r.url) {
-        window.location.href = r.url;
-        return;
-      }
-      toast("Checkout indisponível", {
-        description: r.error || "Tente novamente em instantes.",
-      });
-    } catch (e: any) {
-      toast("Checkout indisponível", { description: e?.message || "Erro de rede." });
-    } finally {
-      setCheckingOut(false);
-    }
-  };
+  const goPlans = () => navigate("/planos");
 
   return (
     <>
@@ -75,7 +54,7 @@ export default function Landing() {
           <nav className="nav__links" aria-label="Seções">
             <a href="#rito">Rito do estudo</a>
             <a href="#minuta">Anatomia da minuta</a>
-            <a href="#planos">Planos</a>
+            <a href="/planos" onClick={(e) => { e.preventDefault(); goPlans(); }}>Planos</a>
             <a href="#cabinete">No gabinete</a>
           </nav>
           <div className="nav__actions">
@@ -390,7 +369,7 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* PLANOS */}
+        {/* PLANOS — chamada para a página dedicada /planos */}
         <section className="plans" id="planos">
           <div className="plans__inner">
             <header className="section-head center">
@@ -400,72 +379,11 @@ export default function Landing() {
               </h2>
               <p className="section-sub">Pagamento seguro. Cancele a qualquer momento.</p>
             </header>
-
-            <div className="plans__grid">
-              <article className="plan">
-                <header className="plan__head">
-                  <span className="plan__num">I</span>
-                  <h3>Essencial</h3>
-                </header>
-                <div className="plan__price">
-                  <span className="plan__amount">Grátis</span>
-                </div>
-                <p className="plan__desc">Para testar fechamentos, flashcards e simulados curtos.</p>
-                <ul className="plan__features">
-                  <li><span className="check">✓</span> Até 5 fechamentos / semana</li>
-                  <li><span className="check">✓</span> Simulados básicos</li>
-                  <li><span className="check">✓</span> Biblioteca pessoal local</li>
-                </ul>
-                <button type="button" className="btn btn--outline btn--block" onClick={openApp}>
-                  Criar conta
-                </button>
-              </article>
-
-              <article className="plan plan--featured">
-                <span className="plan__badge">Mais escolhido</span>
-                <header className="plan__head">
-                  <span className="plan__num">II</span>
-                  <h3>Preceptor</h3>
-                </header>
-                <div className="plan__price">
-                  <span className="plan__amount">R$&nbsp;29</span>
-                  <span className="plan__period">/mês</span>
-                </div>
-                <p className="plan__desc">Para OAB, faculdade e rotina intensa de revisão.</p>
-                <ul className="plan__features">
-                  <li><span className="check">✓</span> Fechamentos & simulados ilimitados</li>
-                  <li><span className="check">✓</span> Repetição espaçada SM-2</li>
-                  <li><span className="check">✓</span> Peças práticas e mapas mentais</li>
-                  <li><span className="check">✓</span> Exportação PDF jurídico</li>
-                </ul>
-                <button
-                  type="button"
-                  className="btn btn--default btn--block btn-shimmer"
-                  onClick={goCheckout}
-                  disabled={checkingOut}
-                >
-                  {checkingOut ? "Abrindo checkout…" : "Assinar agora"}
-                </button>
-              </article>
-
-              <article className="plan">
-                <header className="plan__head">
-                  <span className="plan__num">III</span>
-                  <h3>Turmas</h3>
-                </header>
-                <div className="plan__price">
-                  <span className="plan__amount">Sob consulta</span>
-                </div>
-                <p className="plan__desc">
-                  Para grupos de estudo, mentores e cursinhos preparatórios.
-                </p>
-                <ul className="plan__features">
-                  <li><span className="check">✓</span> Painel de mentor</li>
-                  <li><span className="check">✓</span> Decks compartilhados</li>
-                  <li><span className="check">✓</span> Métricas por aluno</li>
-                </ul>
-                <FeedbackDialog />
-              </article>
+            <div className="final-cta__row" style={{ justifyContent: "center", marginTop: 8 }}>
+              <button type="button" className="btn btn--gold btn--lg btn-shimmer" onClick={goPlans}>
+                Ver planos e assinar
+                <span className="arrow">→</span>
+              </button>
             </div>
           </div>
         </section>
@@ -556,7 +474,7 @@ export default function Landing() {
                 Abrir a plataforma
                 <span className="arrow">→</span>
               </button>
-              <a href="#planos" className="link-quiet final-cta__link">ou conheça os planos</a>
+              <a href="/planos" onClick={(e) => { e.preventDefault(); goPlans(); }} className="link-quiet final-cta__link">ou conheça os planos</a>
             </div>
           </div>
         </section>
@@ -589,7 +507,7 @@ export default function Landing() {
             <div>
               <h4>Gabinete</h4>
               <a href="#rito">Como funciona</a>
-              <a href="#planos">Planos</a>
+              <a href="/planos" onClick={(e) => { e.preventDefault(); goPlans(); }}>Planos</a>
               <FeedbackDialog />
             </div>
           </nav>

@@ -7,6 +7,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 const Landing = lazy(() => import("./pages/Landing"));
+const Plans = lazy(() => import("./pages/Plans"));
 const AppShell = lazy(() => import("./pages/AppShell"));
 const AuthPage = lazy(() => import("./pages/auth/AuthPage"));
 const ResetPassword = lazy(() => import("./pages/auth/ResetPassword"));
@@ -35,13 +36,16 @@ export default function App() {
       <TooltipProvider delayDuration={150}>
         <Suspense fallback={<Loading />}>
           <Routes>
-            {/* Raiz: tela de login/cadastro */}
-            <Route path="/" element={<AuthPage />} />
+            {/* Raiz: landing page de marketing (primeira coisa que o visitante vê) */}
+            <Route path="/" element={<Landing />} />
+            <Route path="/home" element={<Landing />} />
+
+            {/* Página de planos / assinatura */}
+            <Route path="/planos" element={<Plans />} />
+
+            {/* Login / cadastro */}
             <Route path="/login" element={<AuthPage />} />
             <Route path="/signup" element={<AuthPage />} />
-
-            {/* Landing page de marketing (acessível via /home) */}
-            <Route path="/home" element={<Landing />} />
 
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/reset-confirm" element={<ResetConfirm />} />

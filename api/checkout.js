@@ -65,13 +65,21 @@ module.exports = async function handler(req, res) {
   const origin = getOrigin(req);
   const params = new URLSearchParams({
     mode: "subscription",
-    success_url: `${origin}/?checkout=success&plan=${encodeURIComponent(planId)}&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/?checkout=cancelled&plan=${encodeURIComponent(planId)}`,
+    success_url: `${origin}/app?checkout=success&plan=${encodeURIComponent(planId)}&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${origin}/planos?checkout=cancelled&plan=${encodeURIComponent(planId)}`,
     "line_items[0][price]": priceId,
     "line_items[0][quantity]": "1",
     "metadata[plan]": planId,
     allow_promotion_codes: "true",
   });
+
+  // Vincula a assinatura à conta: o e-mail do usuário logado vai pro Stripe,
+  // que cria/recupera o customer por e-mail. Mantém o assinante rastreável.
+  const email = typeof body.email === "string" ? body.email.trim() : "";
+  if (email) {
+    params.set("customer_email", email);
+    params.set("metadata[email]", email);
+  }
 
   const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
